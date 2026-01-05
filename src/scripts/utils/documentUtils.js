@@ -144,20 +144,17 @@ export class DocumentManager {
         const fileRef = ref(this.storage, storagePath);
         const snapshot = await uploadBytes(fileRef, file);
         const url = await getDownloadURL(snapshot.ref);
-        const newDocument = {
+        const createDocApi = httpsCallable(this.functions, 'createDocumentoRecordApi');
+        await createDocApi({
             entityId: this.currentEntityId,
             entityCollection: this.entityCollection,
-            userId: user.uid,
-            userName: user.displayName || user.email,
-            createdAt: serverTimestamp(),
             name: file.name,
-            url: url,
             path: snapshot.ref.fullPath,
+            url: url,
             size: file.size,
             type: file.type,
-            description: description || ""
-        };
-        await addDoc(collection(this.db, this.documentsCollectionName), newDocument);
+            description: description || ''
+        });
 
         // Registra l'azione nell'audit log
         try {
@@ -234,10 +231,8 @@ export class DocumentManager {
     
     async deleteDocument(docId, storagePath, fileName, description) {
         try {
-            const fileRef = ref(this.storage, storagePath);
-            await deleteObject(fileRef);
-            const docRef = doc(this.db, this.documentsCollectionName, docId);
-            await deleteDoc(docRef);
+            const deleteDocApi = httpsCallable(this.functions, 'deleteDocumentoApi');
+            await deleteDocApi({ docId, storagePath });
 
             // Registra l'azione nell'audit log
             try {

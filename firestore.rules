@@ -140,17 +140,6 @@ service cloud.firestore {
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // COLLEZIONE LEGGI (Database normativa)
-    // ═══════════════════════════════════════════════════════════════════════
-    match /leggi/{leggeId} {
-      // Lettura: tutti gli utenti autenticati
-      allow read: if request.auth != null;
-
-      // Scrittura: NEGATA (viene gestita dal cron job server-side)
-      allow write: if false;
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
     // REGOLA DI FALLBACK - NEGA TUTTO IL RESTO
     // ═══════════════════════════════════════════════════════════════════════
     match /{document=**} {

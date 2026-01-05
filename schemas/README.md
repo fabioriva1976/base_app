@@ -10,10 +10,10 @@ Tutti i documenti (sia caricati manualmente che scaricati automaticamente) seguo
 
 ```json
 {
-  "nome": "string - Nome del file (es: 'Contratto.pdf', 'Legge 123.txt')",
+  "nome": "string - Nome del file (es: 'Contratto.pdf')",
   "tipo": "string - MIME type (es: 'application/pdf', 'text/plain')",
-  "storagePath": "string - Percorso in Firebase Storage (es: 'documenti/file.pdf', 'leggi/025U0081.txt')",
-  "entityType": "string - Tipo entità collegata ('pratiche', 'clienti', 'utenti', 'leggi', 'altro')",
+  "storagePath": "string - Percorso in Firebase Storage (es: 'documenti/file.pdf')",
+  "entityType": "string - Tipo entità collegata ('clienti', 'utenti', 'altro')",
   "entityId": "string|null - ID dell'entità collegata",
   "createdAt": "string - Data creazione ISO 8601",
   "updatedAt": "string - Data ultimo aggiornamento ISO 8601",
@@ -23,32 +23,12 @@ Tutti i documenti (sia caricati manualmente che scaricati automaticamente) seguo
     "fonte": "string - Fonte del documento (es: 'Normattiva', 'Upload Manuale')",
     "dimensione": "number - Dimensione file in bytes",
     "tags": "array - Tag per categorizzazione",
-
-    // Campi specifici per documenti caricati manualmente
     "titolo": "string - Titolo del documento",
     "descrizione": "string - Descrizione del documento",
     "tipologia": "string - Tipologia del documento",
     "stato": "boolean - Stato attivo/inattivo",
-
-    // Campi specifici per leggi da Normattiva
-    "codiceRedazionale": "string - Codice redazionale della legge"
+    "codiceRedazionale": "string - Codice redazionale (se usi sorgenti esterne, opzionale)"
   }
-}
-```
-
-### Collezione `leggi`
-
-Metadati delle leggi scaricate da Normattiva:
-
-```json
-{
-  "codiceRedazionale": "string - Codice redazionale (es: '025U0081')",
-  "dataGU": "string - Data pubblicazione Gazzetta Ufficiale (ISO)",
-  "numeroAtto": "string - Numero dell'atto",
-  "titolo": "string - Titolo della legge",
-  "dataDownload": "string - Data download (ISO 8601)",
-  "stato": "string - Stato ('scaricato', 'errore', 'in_elaborazione')",
-  "storageFilePath": "string - Percorso file .txt in Storage (es: 'leggi/025U0081.txt')"
 }
 ```
 
@@ -57,33 +37,7 @@ Metadati delle leggi scaricate da Normattiva:
 ### Server-side (Firebase Functions)
 
 ```javascript
-const { createDocumento, createLegge, createLeggeMetadata } = require("../schemas/entityFactory");
-
-// Creare un documento per una legge
-const documentoData = createDocumento({
-  nome: `${titolo}.txt`,
-  tipo: 'text/plain',
-  storagePath: fileName,
-  entityType: 'leggi',
-  entityId: leggeId,
-  createdBy: null,
-  createdByEmail: 'system@normattiva',
-  metadata: createLeggeMetadata({
-    codiceRedazionale: codiceRedazionale,
-    fonte: 'Normattiva',
-    dimensione: testoCompleto.length
-  })
-});
-
-// Creare i metadati della legge
-const leggeData = createLegge({
-  codiceRedazionale: codiceRedazionale,
-  dataGU: dataGU,
-  numeroAtto: numeroAtto,
-  titolo: titoloAtto,
-  storageFilePath: storageFilePath,
-  stato: "scaricato"
-});
+const { createDocumento, createDocumentoMetadata } = require("../schemas/entityFactory");
 ```
 
 ### Client-side (Web App)

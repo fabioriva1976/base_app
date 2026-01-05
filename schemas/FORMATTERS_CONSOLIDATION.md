@@ -98,8 +98,8 @@ Renderizza array di tag come HTML badges.
 **Esempio:**
 ```javascript
 import { formatTags } from './utils/formatters.js';
-formatTags(['legge', 'decreto', 'normattiva']);
-// <span class="tag">legge</span>...
+formatTags(['contratto', 'decreto']);
+// <span class="tag">contratto</span>...
 ```
 
 ### `truncateText(text, maxLength, suffix)`

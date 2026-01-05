@@ -100,6 +100,11 @@ exports.updateClienteApi = clientiApi.updateClienteApi;
 exports.deleteClienteApi = clientiApi.deleteClienteApi;
 exports.listClientiApi = clientiApi.listClientiApi;
 
+// === FUNZIONI API - DOCUMENTI ===
+const documentiApi = require("./api/documenti");
+exports.createDocumentoRecordApi = documentiApi.createDocumentoRecordApi;
+exports.deleteDocumentoApi = documentiApi.deleteDocumentoApi;
+
 // Triggers Firestore
 exports.onUtentiChange = require("./triggers/onUtentiChange").onUtentiChange;
 
