@@ -22,7 +22,8 @@ export function initPageAnagraficaUtentiPage() {
     const availableRoles = getAvailableRoles();
     ruoloMultiselect = new Multiselect({
         elementId: 'ruolo-multiselect',
-        selectOptions: availableRoles.map(r => r.label),
+        // Usa key/label per preservare il valore del ruolo
+        selectOptions: availableRoles.map(r => ({ key: r.value, label: r.label })),
         multiple: false
     });
     setupEventListeners();
@@ -33,7 +34,7 @@ function setupEventListeners() {
     //Form 1
     document.getElementById('new-entity-btn').addEventListener('click', () => {
         document.getElementById('entity-form').reset();
-        ruoloMultiselect.setValue('');
+        ruoloMultiselect.setValue([]);
         document.getElementById('entity-form-title').textContent = labelNewEntity;
         currentEntityId = null;
         hideTabsForNewEntity();
@@ -145,8 +146,7 @@ async function saveEntity(e) {
             document.getElementById('entity-id').value = uid;
 
             // Salva i dati aggiuntivi su Firestore
-            const selectedRoleLabel = ruoloMultiselect.getValue();
-            const roleValue = getAvailableRoles().find(r => r.label === selectedRoleLabel)?.value || '';
+            const roleValue = ruoloMultiselect.getValue(); // restituisce la key (es. 'superuser')
 
             const currentUser = auth.currentUser;
             const data = {
@@ -154,7 +154,7 @@ async function saveEntity(e) {
                 cognome: cognome,
                 email: email,
                 telefono: document.getElementById('telefono').value,
-                ruolo: roleValue,
+                ruolo: roleValue ? [roleValue] : [],
                 status: document.getElementById('toggle-status').checked,
                 changed: now,
                 lastModifiedBy: currentUser?.uid || null,
@@ -200,8 +200,7 @@ async function saveEntity(e) {
             await userUpdateApi(updateData);
 
             // Aggiorna i dati su Firestore
-            const selectedRoleLabel = ruoloMultiselect.getValue();
-            const roleValue = getAvailableRoles().find(r => r.label === selectedRoleLabel)?.value;
+            const roleValue = ruoloMultiselect.getValue(); // restituisce la key (es. 'admin')
 
             const currentUser = auth.currentUser;
             const data = {
@@ -218,7 +217,7 @@ async function saveEntity(e) {
             // Aggiungi il ruolo solo se è stato selezionato un valore valido
             // Altrimenti preserva il valore esistente nel database
             if (roleValue) {
-                data.ruolo = roleValue;
+                data.ruolo = [roleValue];
             }
 
             await setDoc(doc(db, collection_name, uid), data, { merge: true });
@@ -274,7 +273,12 @@ const editEntity = async (id) => {
     document.getElementById('cognome').value = data.cognome || '';
     document.getElementById('email').value = data.email || '';
     document.getElementById('telefono').value = data.telefono || '';
-    ruoloMultiselect.setValue(getRoleLabel(data.ruolo) || '');
+    const normalizedRole = Array.isArray(data.ruolo)
+        ? data.ruolo
+        : data.ruolo
+        ? [data.ruolo]
+        : [];
+    ruoloMultiselect.setValue(normalizedRole);
     document.getElementById('toggle-status').checked = data.status || false;
 
     hidePasswordField(); // Nascondi il campo password in modifica

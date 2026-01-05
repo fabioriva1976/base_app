@@ -8,7 +8,7 @@ declare namespace App {
       uid: string;
       email?: string;
       emailVerified?: boolean;
-      ruolo?: UserRole;
+      ruolo?: UserRole | UserRole[];
     };
   }
 }

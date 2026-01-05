@@ -4,11 +4,14 @@ import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
 import { getStorage, connectStorageEmulator } from 'firebase/storage';
 import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
 
+// Project ID centralizzato (override con PUBLIC_FIREBASE_PROJECT_ID se serve)
+const projectId = import.meta.env.PUBLIC_FIREBASE_PROJECT_ID || 'base-app-12108';
+
 const firebaseConfig = {
   apiKey: "AIzaSyD8Wqok8hADg9bipYln3KpQbQ99nHVI-4s",
-  authDomain: "base-app-12108.firebaseapp.com",
-  projectId: "base-app-12108",
-  storageBucket: "base-app-12108.firebasestorage.app",
+  authDomain: `${projectId}.firebaseapp.com`,
+  projectId: projectId,
+  storageBucket: `${projectId}.firebasestorage.app`,
   messagingSenderId: "261397129842",
   appId: "1:261397129842:web:e465329890a1220ed6b0eb"
 };

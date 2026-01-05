@@ -1,5 +1,5 @@
 import { db, storage, auth, functions } from '../lib/firebase-client';
-import { doc, getDoc, setDoc, collection, getDocs, limit, query } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import { updateProfile, updateEmail, updatePassword } from "firebase/auth";
 import { httpsCallable } from "firebase/functions";
 import * as documentUtils from './utils/documentUtils.js';
@@ -132,39 +132,43 @@ async function saveProfile(e) {
             lastModifiedByEmail: user.email
         };
 
+        // Se l'utente esiste già, preserva/normalizza il ruolo (array)
+        if (userExists) {
+            const existingRole = userDocSnap.data()?.ruolo;
+            const normalizedRole = Array.isArray(existingRole)
+                ? existingRole
+                : existingRole
+                ? [existingRole]
+                : [];
+            if (normalizedRole.length > 0) {
+                data.ruolo = normalizedRole;
+            }
+        }
+
         // Se l'utente non esiste, controlla se è il primo utente del sistema
         let saveMessage = 'Profilo aggiornato con successo!';
 
         if (!userExists) {
-            // Controlla quanti utenti esistono nella collezione
-            const usersQuery = query(collection(db, collection_name), limit(1));
-            const usersSnapshot = await getDocs(usersQuery);
-            const isFirstUser = usersSnapshot.empty;
+            // Prova a inizializzare come primo utente tramite Cloud Function (bypassa le regole client)
+            const initializeFirstUser = httpsCallable(functions, 'initializeFirstUserApi');
 
-            if (isFirstUser) {
-                // È il primo utente: chiama la Cloud Function per impostare i custom claims
-                try {
-                    const initializeFirstUser = httpsCallable(functions, 'initializeFirstUserApi');
-                    await initializeFirstUser();
-
-                    // Imposta il ruolo anche in Firestore
-                    data.ruolo = ['superuser'];
-                    data.created = now;
-                    console.log('🎉 Primo utente del sistema - Assegnato ruolo SUPERUSER');
-                    saveMessage = 'Profilo creato con ruolo SUPERUSER (primo utente del sistema)!';
-                } catch (claimsError) {
-                    console.error('Errore impostazione custom claims:', claimsError);
-                    // Continua comunque a salvare in Firestore, ma avvisa l'utente
-                    data.ruolo = ['superuser'];
-                    data.created = now;
-                    saveMessage = 'Profilo creato. ATTENZIONE: Esegui logout e login per attivare i permessi SUPERUSER.';
-                }
-            } else {
-                // Non è il primo utente: crea senza ruolo (sarà assegnato da un admin)
-                data.ruolo = [];
+            try {
+                await initializeFirstUser({ nome, cognome, email, telefono });
+                data.ruolo = ['superuser'];
                 data.created = now;
-                console.log('📝 Nuovo utente creato - Ruolo da assegnare da parte di un admin');
-                saveMessage = 'Profilo creato! Contatta un amministratore per ottenere i permessi.';
+                console.log('🎉 Primo utente del sistema - Assegnato ruolo SUPERUSER');
+                saveMessage = 'Profilo creato con ruolo SUPERUSER (primo utente del sistema)!';
+            } catch (claimsError) {
+                // Se la collezione non è vuota, la funzione risponde con failed-precondition: prosegui come utente normale
+                if (claimsError?.code === 'failed-precondition') {
+                    // Non è il primo utente: il profilo va gestito dalla pagina anagrafica-utenti
+                    throw new Error('Non puoi creare un nuovo profilo da questa pagina. Contatta un amministratore.');
+                }
+
+                console.error('Errore impostazione custom claims:', claimsError);
+                data.ruolo = ['superuser'];
+                data.created = now;
+                saveMessage = 'Profilo creato. ATTENZIONE: Esegui logout e login per attivare i permessi SUPERUSER.';
             }
         }
 

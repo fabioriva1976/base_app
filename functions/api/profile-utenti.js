@@ -5,7 +5,8 @@ const {
     requireAdmin,
     canManageUser,
     canCreateUserWithRole,
-    getUserRole
+    getUserRole,
+    isSuperUser
 } = require("../utils/authHelpers");
 
 // Inizializza l'Admin SDK (se non è già stato fatto nel file principale)
@@ -143,10 +144,16 @@ const userUpdateApi = onCall({
 
     try {
         // Ottieni il ruolo corrente dell'utente target
-        const currentTargetRole = await getUserRole(uid);
+        let currentTargetRole = await getUserRole(uid);
 
         if (!currentTargetRole) {
-            throw new HttpsError('not-found', 'Utente non trovato in Firestore.');
+            // Se il documento manca, permetti ai superuser di procedere assumendo ruolo operatore (fallback sicuro)
+            if (isSuperUser(callerRole)) {
+                console.warn(`Utente ${uid} non trovato in Firestore, procedo come 'operatore' (fallback superuser)`);
+                currentTargetRole = 'operatore';
+            } else {
+                throw new HttpsError('not-found', 'Utente non trovato in Firestore.');
+            }
         }
 
         // ✅ SECURITY: Verifica che l'admin possa gestire questo utente

@@ -1,8 +1,20 @@
 const { HttpsError } = require("firebase-functions/v2/https");
 const admin = require("firebase-admin");
 
+// Normalizza il campo ruolo (può essere string o array) in un array di stringhe
+function normalizeRoles(ruoloField) {
+    if (Array.isArray(ruoloField)) {
+        return ruoloField.filter(r => typeof r === 'string' && r.trim().length > 0);
+    }
+    if (typeof ruoloField === 'string' && ruoloField.trim().length > 0) {
+        return [ruoloField.trim()];
+    }
+    return [];
+}
+
 /**
- * Ottiene il ruolo dell'utente da Firestore
+ * Ottiene il ruolo principale dell'utente da Firestore
+ * Restituisce il primo ruolo disponibile oppure null.
  * @param {string} uid - UID dell'utente
  * @returns {Promise<string|null>} Il ruolo dell'utente o null se non trovato
  */
@@ -16,9 +28,11 @@ async function getUserRole(uid) {
             return null;
         }
 
-        const ruolo = userDoc.data().ruolo;
-        console.log(`Ruolo utente ${uid}: ${ruolo}`);
-        return ruolo;
+        const roles = normalizeRoles(userDoc.data().ruolo);
+        const primaryRole = roles[0] || null;
+
+        console.log(`Ruolo utente ${uid}: ${primaryRole || 'nessuno'}`);
+        return primaryRole;
     } catch (error) {
         console.error(`Errore nel recupero ruolo per ${uid}:`, error);
         return null;
@@ -31,7 +45,7 @@ async function getUserRole(uid) {
  * @returns {boolean}
  */
 function isSuperUser(ruolo) {
-    return ruolo === 'superuser';
+    return normalizeRoles(ruolo).includes('superuser');
 }
 
 /**
@@ -40,7 +54,8 @@ function isSuperUser(ruolo) {
  * @returns {boolean}
  */
 function isAdmin(ruolo) {
-    return ruolo === 'admin' || ruolo === 'superuser';
+    const roles = normalizeRoles(ruolo);
+    return roles.includes('admin') || roles.includes('superuser');
 }
 
 /**
@@ -49,7 +64,8 @@ function isAdmin(ruolo) {
  * @returns {boolean}
  */
 function isOperator(ruolo) {
-    return ruolo === 'operatore' || ruolo === 'admin' || ruolo === 'superuser';
+    const roles = normalizeRoles(ruolo);
+    return roles.includes('operatore') || roles.includes('admin') || roles.includes('superuser');
 }
 
 /**

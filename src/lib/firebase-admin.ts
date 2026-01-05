@@ -6,7 +6,7 @@ let app: App;
 
 // Il Project ID viene letto dalle variabili d'ambiente, che sono standard in Google Cloud.
 // Questo elimina l'hardcoding e rende il codice portabile.
-const projectId = process.env.GCLOUD_PROJECT || process.env.FIREBASE_PROJECT_ID || 'legal-816fa';
+const projectId = process.env.FIREBASE_PROJECT_ID || process.env.GCLOUD_PROJECT || process.env.GOOGLE_CLOUD_PROJECT || 'base-app-12108';
 
 if (!getApps().length) {
   // Questa singola chiamata a initializeApp() funziona ovunque:

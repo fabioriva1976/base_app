@@ -12,17 +12,34 @@ if (process.env.FUNCTIONS_EMULATOR === 'true') {
     }
 }
 
-admin.initializeApp();
+// Forza il projectId esplicitamente per evitare mismatch di audience tra token e service account
+const projectId = process.env.FIREBASE_PROJECT_ID || process.env.GCLOUD_PROJECT || process.env.GOOGLE_CLOUD_PROJECT || "base-app-12108";
+admin.initializeApp({
+    credential: admin.credential.applicationDefault(),
+    projectId
+});
 
 // --- CONFIGURAZIONE GLOBALE ---
 
 // Esporta le configurazioni globali in modo che altri file possano importarle.
 exports.region = "europe-west1";
 exports.timezone = "Europe/Rome";
-exports.corsOrigins = [
-    "https://legal-816fa.web.app",
-    "https://legal-816fa.firebaseapp.com"
+
+// Origini CORS consentite. In locale includiamo anche localhost per permettere le chiamate dagli emulatori/UI dev.
+const baseCorsOrigins = [
+    `https://${projectId}.web.app`,
+    `https://${projectId}.firebaseapp.com`
 ];
+
+const isEmulator = process.env.FUNCTIONS_EMULATOR === 'true';
+const localCorsOrigins = isEmulator ? [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173"
+] : [];
+
+exports.corsOrigins = [...baseCorsOrigins, ...localCorsOrigins];
 
 // ============================================================================
 // NOTA IMPORTANTE: MIGRAZIONE A FIRESTORE COMPLETATA
@@ -57,6 +74,9 @@ exports.userCreateApi = userManagement.userCreateApi;
 exports.userUpdateApi = userManagement.userUpdateApi;
 exports.userDeleteApi = userManagement.userDeleteApi;
 
+// === FUNZIONE API - INIZIALIZZAZIONE PRIMO UTENTE ===
+exports.initializeFirstUserApi = require("./api/initialize-first-user").initializeFirstUserApi;
+
 // === FUNZIONI API - AUDIT LOGS ===
 const auditLogs = require("./api/page-auditLogs");
 exports.getEntityAuditLogsApi = auditLogs.getEntityAuditLogsApi;
@@ -77,4 +97,3 @@ exports.onAnagraficaClientiDelete = anagraficaTriggers.onAnagraficaClientiDelete
 exports.onDocumentiCreate = anagraficaTriggers.onDocumentiCreate;
 exports.onDocumentiUpdate = anagraficaTriggers.onDocumentiUpdate;
 exports.onDocumentiDelete = anagraficaTriggers.onDocumentiDelete;
-

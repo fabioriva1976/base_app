@@ -1,27 +1,35 @@
 // Tipi di ruoli disponibili nell'applicazione
 export type UserRole = 'superuser' | 'admin' | 'operatore';
 
-// Interfaccia per l'utente con ruolo
+// Interfaccia per l'utente con ruolo (ruolo può essere string o array)
 export interface UserWithRole {
   uid: string;
   email: string | null;
   emailVerified: boolean;
-  ruolo?: UserRole;
+  ruolo?: UserRole | UserRole[];
+}
+
+function normalizeRoles(role: UserRole | UserRole[] | undefined): UserRole[] {
+  if (Array.isArray(role)) return role;
+  if (role) return [role];
+  return [];
 }
 
 // Verifica se l'utente è superuser
 export function isSuperUser(user: UserWithRole | null | undefined): boolean {
-  return user?.ruolo === 'superuser';
+  return normalizeRoles(user?.ruolo).includes('superuser');
 }
 
 // Verifica se l'utente è admin o superuser
 export function isAdmin(user: UserWithRole | null | undefined): boolean {
-  return user?.ruolo === 'admin' || user?.ruolo === 'superuser';
+  const roles = normalizeRoles(user?.ruolo);
+  return roles.includes('admin') || roles.includes('superuser');
 }
 
 // Verifica se l'utente è operatore (o superiore)
 export function isOperator(user: UserWithRole | null | undefined): boolean {
-  return user?.ruolo === 'operatore' || user?.ruolo === 'admin' || user?.ruolo === 'superuser';
+  const roles = normalizeRoles(user?.ruolo);
+  return roles.includes('operatore') || roles.includes('admin') || roles.includes('superuser');
 }
 
 // Verifica se l'utente può creare altri utenti
@@ -40,8 +48,9 @@ export function canDelete(user: UserWithRole | null | undefined): boolean {
 }
 
 // Ottiene il label del ruolo per visualizzazione
-export function getRoleLabel(role: UserRole | undefined): string {
-  switch (role) {
+export function getRoleLabel(role: UserRole | UserRole[] | undefined): string {
+  const primary = normalizeRoles(role)[0];
+  switch (primary) {
     case 'superuser':
       return 'Super User';
     case 'admin':

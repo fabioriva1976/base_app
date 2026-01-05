@@ -24,10 +24,14 @@ services:
     command: >
       bash -lc "
         set -euo pipefail
-        firebase emulators:start --import=./emulator-data --export-on-exit=./emulator-data --project=legal-816fa &
+        # Usa il projectId centralizzato (override con env FIREBASE_PROJECT_ID)
+        firebase emulators:start --import=./emulator-data --export-on-exit=./emulator-data --project=${FIREBASE_PROJECT_ID:-base-app-12108} &
         npm run dev -- --host --port 3000
        "
     environment:
+      - FIREBASE_PROJECT_ID=base-app-12108
+      # Esporta anche per il frontend; usa fallback per evitare stringhe vuote
+      - PUBLIC_FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID:-base-app-12108}
       - CHOKIDAR_USEPOLLING=true
       - WATCHPACK_POLLING=true
       - CHOKIDAR_INTERVAL=500
