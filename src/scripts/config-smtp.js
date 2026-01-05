@@ -1,5 +1,4 @@
-import { db, auth, functions } from '../lib/firebase-client';
-import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import { auth, functions } from '../lib/firebase-client';
 import { httpsCallable } from "firebase/functions";
 
 export function initConfigSmtpPage() {
@@ -63,10 +62,11 @@ function setupEventListeners() {
 
 async function loadCurrentConfig() {
     try {
-        const configDoc = await getDoc(doc(db, 'configurazioni', 'smtp'));
+        const getConfig = httpsCallable(functions, 'getConfigApi');
+        const result = await getConfig({ type: 'smtp' });
 
-        if (configDoc.exists()) {
-            const data = configDoc.data();
+        if (result.data?.exists) {
+            const data = result.data.data || {};
 
             // Popola il form
             document.getElementById('smtp-host').value = data.host || '';
@@ -98,16 +98,13 @@ async function handleSubmit(e) {
 
     const submitBtn = e.target.querySelector('button[type="submit"]');
     const originalText = submitBtn.innerHTML;
+    const originalWidth = submitBtn.getBoundingClientRect().width;
 
+    submitBtn.style.minWidth = `${originalWidth}px`;
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<span class="btn-loader"></span>Salvataggio...';
 
     try {
-        const currentUser = auth.currentUser;
-        if (!currentUser) {
-            throw new Error('Utente non autenticato');
-        }
-
         const formData = new FormData(e.target);
         const configData = {
             host: formData.get('host'),
@@ -116,19 +113,17 @@ async function handleSubmit(e) {
             password: formData.get('password'),
             from: formData.get('from'),
             fromName: formData.get('fromName'),
-            secure: document.getElementById('smtp-secure').checked,
-            updatedAt: serverTimestamp(),
-            updatedBy: currentUser.uid,
-            updatedByEmail: currentUser.email
+            secure: document.getElementById('smtp-secure').checked
         };
 
-        await setDoc(doc(db, 'configurazioni', 'smtp'), configData, { merge: true });
-
-        // Ricarica i dati da Firestore per ottenere il timestamp aggiornato
-        const updatedDoc = await getDoc(doc(db, 'configurazioni', 'smtp'));
-        if (updatedDoc.exists()) {
-            updateStatus(updatedDoc.data());
+        const saveConfig = httpsCallable(functions, 'saveConfigApi');
+        const result = await saveConfig({ type: 'smtp', data: configData });
+        if (!result.data?.success && result.data?.success !== undefined) {
+            throw new Error('Salvataggio non riuscito');
         }
+
+        // Ricarica i dati dal server
+        await loadCurrentConfig();
 
         showMessage('Configurazione salvata con successo!', 'success');
 
@@ -138,6 +133,7 @@ async function handleSubmit(e) {
     } finally {
         submitBtn.disabled = false;
         submitBtn.innerHTML = originalText;
+        submitBtn.style.minWidth = '';
     }
 }
 
@@ -168,6 +164,7 @@ async function sendTestEmail() {
     const emailInput = document.getElementById('test-email-input');
     const sendBtn = document.getElementById('send-test-email-btn');
     const originalText = sendBtn.textContent;
+    const originalWidth = sendBtn.getBoundingClientRect().width;
 
     const testEmail = emailInput.value.trim();
 
@@ -185,6 +182,7 @@ async function sendTestEmail() {
         return;
     }
 
+    sendBtn.style.minWidth = `${originalWidth}px`;
     sendBtn.disabled = true;
     sendBtn.innerHTML = '<span class="btn-loader"></span>Invio in corso...';
 
@@ -242,6 +240,7 @@ async function sendTestEmail() {
     } finally {
         sendBtn.disabled = false;
         sendBtn.textContent = originalText;
+        sendBtn.style.minWidth = '';
     }
 }
 
@@ -283,12 +282,13 @@ function updateStatus(data) {
 }
 
 function showMessage(message, type) {
-    const messageElement = document.getElementById('form-message');
+    // Preferisci il messaggio vicino ai pulsanti
+    const messageElement = document.getElementById('save-message') || document.getElementById('form-message');
     if (!messageElement) return;
 
     messageElement.textContent = message;
-    messageElement.className = `form-message ${type}`;
-    messageElement.style.display = 'block';
+    messageElement.className = `save-message ${type}`;
+    messageElement.style.display = 'inline-block';
 
     setTimeout(() => {
         messageElement.style.display = 'none';

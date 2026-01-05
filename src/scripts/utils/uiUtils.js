@@ -63,3 +63,17 @@ export function showErrorMessage(elementId, message) {
         }, 5000);
     }
 }
+
+// Variante compatta per mostrare messaggi temporanei con classi custom (success/error)
+export function showTemporaryMessage(elementId, message, type = 'success', duration = 3000) {
+    const element = document.getElementById(elementId);
+    if (!element) return;
+
+    element.textContent = message;
+    element.className = `form-message ${type}`;
+    element.style.display = 'block';
+
+    setTimeout(() => {
+        element.style.display = 'none';
+    }, duration);
+}

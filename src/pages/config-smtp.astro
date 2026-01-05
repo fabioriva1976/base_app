@@ -143,3 +143,24 @@ const canModify = canAccessConfig(user);
     initConfigSmtpPage();
   }
 </script>
+
+<style>
+  .config-card .form-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: nowrap;
+  }
+  .config-card .form-actions .save-message {
+    margin-left: auto;
+    white-space: nowrap;
+    min-width: 200px;
+    text-align: right;
+    display: none;
+  }
+  .config-card .form-actions .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+</style>

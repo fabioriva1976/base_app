@@ -170,3 +170,24 @@ const canModify = canAccessConfig(user);
     initConfigAiPage();
   }
 </script>
+
+<style>
+  .config-card .form-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: nowrap;
+  }
+  .config-card .form-actions .save-message {
+    margin-left: 12px;
+    white-space: nowrap;
+    min-width: 180px;
+    text-align: left;
+    display: none;
+  }
+  .config-card .form-actions .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+</style>

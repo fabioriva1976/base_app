@@ -1,5 +1,4 @@
-import { db, auth, functions } from '../lib/firebase-client';
-import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import { auth, functions } from '../lib/firebase-client';
 import { httpsCallable } from "firebase/functions";
 import { showTemporaryMessage } from './utils/uiUtils.js';
 
@@ -54,10 +53,11 @@ function setupEventListeners() {
 
 async function loadCurrentConfig() {
     try {
-        const configDoc = await getDoc(doc(db, 'configurazioni', 'ai'));
+        const getConfig = httpsCallable(functions, 'getConfigApi');
+        const result = await getConfig({ type: 'ai' });
 
-        if (configDoc.exists()) {
-            const data = configDoc.data();
+        if (result.data?.exists) {
+            const data = result.data.data || {};
 
             // Popola il form
             document.getElementById('ai-provider').value = data.provider || 'google';
@@ -93,16 +93,13 @@ async function handleSubmit(e) {
 
     const submitBtn = e.target.querySelector('button[type="submit"]');
     const originalText = submitBtn.innerHTML;
+    const originalWidth = submitBtn.getBoundingClientRect().width;
 
+    submitBtn.style.minWidth = `${originalWidth}px`;
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<span class="btn-loader"></span>Salvataggio...';
 
     try {
-        const currentUser = auth.currentUser;
-        if (!currentUser) {
-            throw new Error('Utente non autenticato');
-        }
-
         const formData = new FormData(e.target);
 
         // Debug: stampa tutti i valori del form
@@ -122,21 +119,18 @@ async function handleSubmit(e) {
             ragCorpusId: formData.get('ragCorpusId') || '',
             ragLocation: formData.get('ragLocation') || 'europe-west1',
             enableContext: document.getElementById('ai-enable-context').checked,
-            enableSafety: document.getElementById('ai-enable-safety').checked,
-            updatedAt: serverTimestamp(),
-            updatedBy: currentUser.uid,
-            updatedByEmail: currentUser.email
+            enableSafety: document.getElementById('ai-enable-safety').checked
         };
 
         console.log('💾 Saving config data:', configData);
 
-        await setDoc(doc(db, 'configurazioni', 'ai'), configData, { merge: true });
-
-        // Ricarica i dati da Firestore per ottenere il timestamp aggiornato
-        const updatedDoc = await getDoc(doc(db, 'configurazioni', 'ai'));
-        if (updatedDoc.exists()) {
-            updateStatus(updatedDoc.data());
+        const saveConfig = httpsCallable(functions, 'saveConfigApi');
+        const result = await saveConfig({ type: 'ai', data: configData });
+        if (!result.data?.success && result.data?.success !== undefined) {
+            throw new Error('Salvataggio non riuscito');
         }
+
+        await loadCurrentConfig();
 
         showTemporaryMessage('save-message', 'Configurazione salvata con successo!');
 
@@ -146,13 +140,16 @@ async function handleSubmit(e) {
     } finally {
         submitBtn.disabled = false;
         submitBtn.innerHTML = originalText;
+        submitBtn.style.minWidth = '';
     }
 }
 
 async function testAI() {
     const btn = document.getElementById('test-ai-btn');
     const originalText = btn.textContent;
+    const originalWidth = btn.getBoundingClientRect().width;
 
+    btn.style.minWidth = `${originalWidth}px`;
     btn.disabled = true;
     btn.innerHTML = '<span class="btn-loader"></span>Test in corso...';
 
@@ -197,6 +194,7 @@ async function testAI() {
     } finally {
         btn.disabled = false;
         btn.textContent = originalText;
+        btn.style.minWidth = '';
     }
 }
 
