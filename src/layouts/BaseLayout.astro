@@ -120,4 +120,12 @@ const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(display
       clearTokenCookie();
     }
   });
+
+  // Gestione click sull'icona profilo
+  const profileToggle = document.getElementById('profile-toggle');
+  if (profileToggle) {
+    profileToggle.addEventListener('click', () => {
+      window.location.href = '/profile';
+    });
+  }
 </script>

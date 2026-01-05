@@ -1,4 +1,4 @@
-import { db, auth, functions } from './firebase-config.js';
+import { db, auth, functions } from '../lib/firebase-client';
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 

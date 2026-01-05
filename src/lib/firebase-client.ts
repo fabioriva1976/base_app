@@ -5,12 +5,12 @@ import { getStorage, connectStorageEmulator } from 'firebase/storage';
 import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyA1SVPwsTYb6n2Jv2A5nAed4DSOWkZRRFY",
-  authDomain: "legal-816fa.firebaseapp.com",
-  projectId: "legal-816fa",
-  storageBucket: "legal-816fa.firebasestorage.app",
-  messagingSenderId: "344057379796",
-  appId: "1:344057379796:web:0fcec2f4583ad23e633441"
+  apiKey: "AIzaSyD8Wqok8hADg9bipYln3KpQbQ99nHVI-4s",
+  authDomain: "base-app-12108.firebaseapp.com",
+  projectId: "base-app-12108",
+  storageBucket: "base-app-12108.firebasestorage.app",
+  messagingSenderId: "261397129842",
+  appId: "1:261397129842:web:e465329890a1220ed6b0eb"
 };
 
 const region = 'europe-west1';

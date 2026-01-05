@@ -46,10 +46,6 @@ exports.corsOrigins = [
 // === ASTRO SSR - APPLICAZIONE WEB ===
 exports.astroSSR = require("./astro").astroSSR;
 
-// === FUNZIONI API - PAGINE ===
-exports.ragChatApi = require("./api/page-ragChat").ragChatApi;
-exports.extractTextFromFileApi = require("./api/extractTextFromFile").extractTextFromFileApi;
-
 // === FUNZIONI API - TEST CONFIGURAZIONI ===
 exports.testSmtpApi = require("./api/testConfig-smtp").testSmtpApi;
 exports.testAiApi = require("./api/testConfig-ai").testAiApi;
@@ -68,12 +64,6 @@ exports.getUserAuditLogsApi = auditLogs.getUserAuditLogsApi;
 exports.searchAuditLogsApi = auditLogs.searchAuditLogsApi;
 exports.createAuditLogApi = auditLogs.createAuditLogApi;
 
-// === FUNZIONI API - PRATICHE ===
-const pratiche = require("./api/pratiche");
-exports.createPraticaApi = pratiche.createPraticaApi;
-exports.updatePraticaApi = pratiche.updatePraticaApi;
-exports.deletePraticaApi = pratiche.deletePraticaApi;
-
 // Triggers Firestore
 exports.onUtentiChange = require("./triggers/onUtentiChange").onUtentiChange;
 
@@ -88,5 +78,3 @@ exports.onDocumentiCreate = anagraficaTriggers.onDocumentiCreate;
 exports.onDocumentiUpdate = anagraficaTriggers.onDocumentiUpdate;
 exports.onDocumentiDelete = anagraficaTriggers.onDocumentiDelete;
 
-// === FUNZIONI CRON ===
-exports.scaricaLeggiNormattiva = require("./cron/scaricaLeggiNormattiva").scaricaLeggiNormattiva;

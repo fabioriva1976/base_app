@@ -1,4 +1,4 @@
-import { db, storage, auth, functions } from './firebase-config.js';
+import { db, storage, auth, functions } from '../lib/firebase-client';
 import { collection, getDocs, doc, getDoc, setDoc, deleteDoc } from "firebase/firestore";
 import * as ui from './utils/uiUtils.js';
 import * as documentUtils from './utils/documentUtils.js';

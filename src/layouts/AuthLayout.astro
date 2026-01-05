@@ -16,14 +16,14 @@ const user = Astro.locals.user;
 </BaseLayout>
 
 <script>
-  // Inizializzazione Firebase client-side per features interattive
+  // Features UI aggiuntive per AuthLayout
   import { auth } from '../lib/firebase-client';
-  import { onAuthStateChanged, signOut } from 'firebase/auth';
+  import { onAuthStateChanged } from 'firebase/auth';
 
   // Gestione tema
   const themeToggle = document.getElementById('theme-toggle');
   const savedTheme = localStorage.getItem('theme') || 'light';
-  
+
   if (savedTheme === 'dark') {
     document.documentElement.classList.add('dark-mode');
   }
@@ -53,29 +53,6 @@ const user = Astro.locals.user;
     sidebar?.classList.toggle('mobile-open');
   });
 
-  // Gestione click profilo
-  const profileBtn = document.getElementById('profile-toggle');
-  profileBtn?.addEventListener('click', () => {
-    window.location.href = '/profile';
-  });
-
-  // Gestione logout
-  const logoutBtn = document.getElementById('logout-btn');
-  logoutBtn?.addEventListener('click', async (e) => {
-    e.preventDefault();
-    try {
-      // Chiama l'API per cancellare il cookie di sessione SSR
-      await fetch('/api/auth/logout', { method: 'POST' });
-      // Poi fai il signOut client-side
-      await signOut(auth);
-      // Forza reload completo alla pagina login
-      window.location.replace('/login');
-    } catch (error) {
-      console.error('Logout error:', error);
-      window.location.replace('/login');
-    }
-  });
-
   // Aggiorna avatar se Firebase fornisce un photoURL personalizzato
   onAuthStateChanged(auth, (user) => {
     if (user && user.photoURL) {
@@ -85,4 +62,7 @@ const user = Astro.locals.user;
       }
     }
   });
+
+  // NOTA: Gestione profilo e logout sono gestiti da BaseLayout e Sidebar
+  // per evitare duplicazioni di codice
 </script>

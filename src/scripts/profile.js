@@ -1,5 +1,6 @@
-import { db, storage, auth, functions } from './firebase-config.js';
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { db, storage, auth, functions } from '../lib/firebase-client';
+import { doc, getDoc, setDoc, collection, getDocs, limit, query } from "firebase/firestore";
+import { updateProfile, updateEmail, updatePassword } from "firebase/auth";
 import { httpsCallable } from "firebase/functions";
 import * as documentUtils from './utils/documentUtils.js';
 
@@ -98,28 +99,29 @@ async function saveProfile(e) {
         const displayName = `${nome} ${cognome}`.trim();
         const now = new Date().toISOString();
 
-        // Aggiorna Firebase Auth se email, displayName o password sono cambiati
+        // Aggiorna Firebase Auth lato client
         const user = auth.currentUser;
-        const userUpdateApi = httpsCallable(functions, 'userUpdateApi');
 
-        const updateData = {
-            uid: currentUserId,
+        // Aggiorna displayName
+        await updateProfile(user, {
             displayName: displayName
-        };
+        });
 
         // Se email è cambiata, aggiornala
         if (email !== user.email) {
-            updateData.email = email;
+            await updateEmail(user, email);
         }
 
         // Se è stata inserita una password, aggiornala
         if (password && password.trim() !== '') {
-            updateData.password = password;
+            await updatePassword(user, password);
         }
 
-        await userUpdateApi(updateData);
+        // Controlla se l'utente esiste già in Firestore
+        const userDocSnap = await getDoc(doc(db, collection_name, currentUserId));
+        const userExists = userDocSnap.exists();
 
-        // Aggiorna i dati su Firestore
+        // Prepara i dati da salvare
         const data = {
             nome: nome,
             cognome: cognome,
@@ -130,9 +132,45 @@ async function saveProfile(e) {
             lastModifiedByEmail: user.email
         };
 
+        // Se l'utente non esiste, controlla se è il primo utente del sistema
+        let saveMessage = 'Profilo aggiornato con successo!';
+
+        if (!userExists) {
+            // Controlla quanti utenti esistono nella collezione
+            const usersQuery = query(collection(db, collection_name), limit(1));
+            const usersSnapshot = await getDocs(usersQuery);
+            const isFirstUser = usersSnapshot.empty;
+
+            if (isFirstUser) {
+                // È il primo utente: chiama la Cloud Function per impostare i custom claims
+                try {
+                    const initializeFirstUser = httpsCallable(functions, 'initializeFirstUserApi');
+                    await initializeFirstUser();
+
+                    // Imposta il ruolo anche in Firestore
+                    data.ruolo = ['superuser'];
+                    data.created = now;
+                    console.log('🎉 Primo utente del sistema - Assegnato ruolo SUPERUSER');
+                    saveMessage = 'Profilo creato con ruolo SUPERUSER (primo utente del sistema)!';
+                } catch (claimsError) {
+                    console.error('Errore impostazione custom claims:', claimsError);
+                    // Continua comunque a salvare in Firestore, ma avvisa l'utente
+                    data.ruolo = ['superuser'];
+                    data.created = now;
+                    saveMessage = 'Profilo creato. ATTENZIONE: Esegui logout e login per attivare i permessi SUPERUSER.';
+                }
+            } else {
+                // Non è il primo utente: crea senza ruolo (sarà assegnato da un admin)
+                data.ruolo = [];
+                data.created = now;
+                console.log('📝 Nuovo utente creato - Ruolo da assegnare da parte di un admin');
+                saveMessage = 'Profilo creato! Contatta un amministratore per ottenere i permessi.';
+            }
+        }
+
         await setDoc(doc(db, collection_name, currentUserId), data, { merge: true });
 
-        showSaveMessage('Profilo aggiornato con successo!');
+        showSaveMessage(saveMessage);
 
         // Pulisci il campo password dopo il salvataggio
         document.getElementById('profile-password').value = '';

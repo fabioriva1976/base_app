@@ -1,0 +1,197 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Sidebar from '../components/Sidebar.astro';
+
+const { user } = Astro.locals;
+---
+
+<BaseLayout title="Dashboard - AI Legal Assistant">
+  <Sidebar slot="sidebar" />
+
+  <div class="dashboard-container">
+    <div class="page-header">
+      <h1>Dashboard</h1>
+      <p class="subtitle">Benvenuto, {user?.email}</p>
+    </div>
+
+    <div class="dashboard-grid">
+      <div class="dashboard-card">
+        <div class="card-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+        </div>
+        <div class="card-content">
+          <h3>Utenti</h3>
+          <p>Gestisci gli utenti del sistema</p>
+          <a href="/anagrafica-utenti" class="card-link">Vai alla gestione</a>
+        </div>
+      </div>
+
+      <div class="dashboard-card">
+        <div class="card-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+        </div>
+        <div class="card-content">
+          <h3>Clienti</h3>
+          <p>Gestisci l'anagrafica clienti</p>
+          <a href="/anagrafica-clienti" class="card-link">Vai alla gestione</a>
+        </div>
+      </div>
+
+      <div class="dashboard-card">
+        <div class="card-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M12 1v6m0 6v6m5.2-13.2l-4.2 4.2m0 6l-4.2 4.2M23 12h-6m-6 0H1m18.2 5.2l-4.2-4.2m0-6l-4.2-4.2"></path>
+          </svg>
+        </div>
+        <div class="card-content">
+          <h3>Configurazioni</h3>
+          <p>Configura SMTP e AI</p>
+          <a href="/config-smtp" class="card-link">Vai alle configurazioni</a>
+        </div>
+      </div>
+
+      <div class="dashboard-card">
+        <div class="card-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+        </div>
+        <div class="card-content">
+          <h3>Profilo</h3>
+          <p>Gestisci il tuo profilo</p>
+          <a href="/profile" class="card-link">Vai al profilo</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .dashboard-container {
+    padding: 2rem;
+  }
+
+  .page-header {
+    margin-bottom: 2rem;
+  }
+
+  .page-header h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 0.5rem;
+  }
+
+  .dark-theme .page-header h1 {
+    color: #f1f5f9;
+  }
+
+  .page-header .subtitle {
+    color: #6b7280;
+    font-size: 1rem;
+  }
+
+  .dark-theme .page-header .subtitle {
+    color: #94a3b8;
+  }
+
+  .dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .dashboard-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+    transition: all 0.2s;
+    border: 1px solid #e5e7eb;
+  }
+
+  .dark-theme .dashboard-card {
+    background: #1e293b;
+    border-color: #334155;
+  }
+
+  .dashboard-card:hover {
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+    transform: translateY(-2px);
+  }
+
+  .card-icon {
+    width: 48px;
+    height: 48px;
+    background: #eff6ff;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+  }
+
+  .dark-theme .card-icon {
+    background: #1e40af;
+  }
+
+  .card-icon svg {
+    color: #3b82f6;
+  }
+
+  .dark-theme .card-icon svg {
+    color: #93c5fd;
+  }
+
+  .card-content h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 0.5rem;
+  }
+
+  .dark-theme .card-content h3 {
+    color: #f1f5f9;
+  }
+
+  .card-content p {
+    color: #6b7280;
+    font-size: 0.875rem;
+    margin-bottom: 1rem;
+  }
+
+  .dark-theme .card-content p {
+    color: #94a3b8;
+  }
+
+  .card-link {
+    display: inline-block;
+    color: #3b82f6;
+    font-weight: 500;
+    font-size: 0.875rem;
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .card-link:hover {
+    color: #2563eb;
+  }
+
+  .dark-theme .card-link {
+    color: #60a5fa;
+  }
+
+  .dark-theme .card-link:hover {
+    color: #93c5fd;
+  }
+</style>

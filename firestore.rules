@@ -6,24 +6,37 @@ service cloud.firestore {
     // FUNZIONI HELPER PER I RUOLI
     // ═══════════════════════════════════════════════════════════════════════
 
+    // Verifica se il documento utente esiste
+    function userDocExists() {
+      return exists(/databases/$(database)/documents/utenti/$(request.auth.uid));
+    }
+
     // Ottiene il ruolo dell'utente corrente dalla collezione utenti
+    // Restituisce un array vuoto se il documento non esiste
     function getUserRole() {
-      return get(/databases/$(database)/documents/utenti/$(request.auth.uid)).data.ruolo;
+      return userDocExists()
+        ? get(/databases/$(database)/documents/utenti/$(request.auth.uid)).data.ruolo
+        : [];
+    }
+
+    // Verifica se un ruolo è presente nell'array dei ruoli
+    function hasRole(role) {
+      return userDocExists() && getUserRole().hasAny([role]);
     }
 
     // Verifica se l'utente è superuser
     function isSuperUser() {
-      return request.auth != null && getUserRole() == 'superuser';
+      return request.auth != null && hasRole('superuser');
     }
 
     // Verifica se l'utente è admin o superuser
     function isAdmin() {
-      return request.auth != null && getUserRole() in ['admin', 'superuser'];
+      return request.auth != null && userDocExists() && getUserRole().hasAny(['admin', 'superuser']);
     }
 
     // Verifica se l'utente è operatore, admin o superuser (qualsiasi utente autenticato con ruolo)
     function isOperator() {
-      return request.auth != null && getUserRole() in ['operatore', 'admin', 'superuser'];
+      return request.auth != null && userDocExists() && getUserRole().hasAny(['operatore', 'admin', 'superuser']);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -32,10 +45,16 @@ service cloud.firestore {
     match /utenti/{userId} {
       // Chiunque sia autenticato può leggere il profilo di un altro utente (necessario per funzioni come getUserRole).
       allow get: if request.auth != null;
-      // Admin/Superuser possono leggere la lista completa, creare, aggiornare ed eliminare qualsiasi utente.
-      // Un utente normale può aggiornare solo il proprio profilo.
-      allow list, create: if isAdmin();
-      allow update: if isAdmin() || request.auth.uid == userId;
+
+      // Admin/Superuser possono leggere la lista completa
+      allow list: if isAdmin();
+
+      // Un utente può creare/aggiornare solo il proprio profilo
+      // Admin può creare/aggiornare qualsiasi profilo
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow update: if request.auth != null && (isAdmin() || request.auth.uid == userId);
+
+      // Solo admin può eliminare
       allow delete: if isAdmin();
     }
 

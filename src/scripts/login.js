@@ -1,7 +1,7 @@
 // js/login.js
 
 // 1. Importa 'auth' dalla tua configurazione
-import { auth } from './firebase-config.js';
+import { auth } from '../lib/firebase-client';
 
 // 2. IMPORTA LA FUNZIONE SPECIFICA v9+ dalla CDN
 import { signInWithEmailAndPassword } from "firebase/auth";
