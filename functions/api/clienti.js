@@ -105,7 +105,11 @@ exports.createClienteApi = onCall({
 
     try {
         const userId = request.auth.uid;
-        const data = request.data;
+        const data = request.data || {};
+        // Alias da client legacy
+        data.partita_iva = data.partita_iva || data.piva;
+        data.codice_fiscale = data.codice_fiscale || data.cf;
+        data.stato = data.stato !== undefined ? !!data.stato : true;
 
         // ✅ VALIDAZIONE
         const validationErrors = validateClienteData(data);
@@ -134,6 +138,7 @@ exports.createClienteApi = onCall({
             cap: data.cap ? sanitizeString(data.cap) : null,
             provincia: data.provincia ? sanitizeString(data.provincia) : null,
             note: data.note ? sanitizeString(data.note) : null,
+            stato: data.stato === true,
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
             createdBy: userId,
@@ -171,7 +176,10 @@ exports.updateClienteApi = onCall({
 
     try {
         const userId = request.auth.uid;
-        const { clienteId, ...updates } = request.data;
+        const { clienteId, ...updates } = request.data || {};
+        updates.partita_iva = updates.partita_iva || updates.piva;
+        updates.codice_fiscale = updates.codice_fiscale || updates.cf;
+        if (updates.stato !== undefined) updates.stato = !!updates.stato;
 
         if (!clienteId) {
             throw new HttpsError('invalid-argument', 'clienteId obbligatorio');
@@ -227,6 +235,7 @@ exports.updateClienteApi = onCall({
         if (updates.cap !== undefined) updateData.cap = updates.cap ? sanitizeString(updates.cap) : null;
         if (updates.provincia !== undefined) updateData.provincia = updates.provincia ? sanitizeString(updates.provincia) : null;
         if (updates.note !== undefined) updateData.note = updates.note ? sanitizeString(updates.note) : null;
+        if (updates.stato !== undefined) updateData.stato = !!updates.stato;
 
         await clienteRef.update(updateData);
 
@@ -298,5 +307,32 @@ exports.deleteClienteApi = onCall({
         console.error('Errore eliminazione cliente:', error);
         if (error instanceof HttpsError) throw error;
         throw new HttpsError('internal', `Errore: ${error.message}`);
+    }
+});
+
+/**
+ * Lista clienti (autenticato) - base per UI, senza pratiche
+ */
+exports.listClientiApi = onCall({
+    region: region,
+    cors: corsOrigins
+}, async (request) => {
+    await requireAuth(request);
+
+    try {
+        const snapshot = await db.collection('anagrafica_clienti')
+            .orderBy('ragione_sociale')
+            .limit(200)
+            .get();
+
+        const items = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+
+        return { items };
+    } catch (error) {
+        console.error('Errore lista clienti:', error);
+        throw new HttpsError('internal', 'Impossibile recuperare i clienti');
     }
 });

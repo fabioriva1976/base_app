@@ -1,8 +1,9 @@
-import { db, storage, auth, functions } from '../lib/firebase-client';
-import { collection, getDocs, doc, getDoc, setDoc, deleteDoc } from "firebase/firestore";
+import { storage, auth, functions } from '../lib/firebase-client';
+import { doc, getFirestore } from "firebase/firestore";
 import * as ui from './utils/uiUtils.js';
 import * as documentUtils from './utils/documentUtils.js';
 import * as actionUtils from './utils/actionUtils.js';
+import { httpsCallable } from "firebase/functions";
 
 let entities = [];
 let collection_name = 'anagrafica_clienti';
@@ -10,6 +11,7 @@ let currentEntityId = null;
 let dataTable = null;
 
 export function initPageAnagraficaClientiPage() {
+    const db = getFirestore();
     documentUtils.setup({ db, storage, auth, functions, entityCollection: collection_name });
     actionUtils.setup({ db, auth, functions, entityCollection: collection_name });
     setupEventListeners();
@@ -38,8 +40,9 @@ function setupEventListeners() {
 }
 
 async function loadEntities() {
-    const snapshot = await getDocs(collection(db, collection_name));
-    entities = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    const listApi = httpsCallable(functions, 'listClientiApi');
+    const result = await listApi();
+    entities = result.data?.items || [];
     renderTable();
 }
 
@@ -47,7 +50,7 @@ function renderTable() {
     const tableData = entities.map(e => [
         e.codice || 'N/D',
         e.ragione_sociale || 'N/D',
-        e.piva || 'N/D',
+        e.partita_iva || 'N/D',
         e.email || 'N/D',
         ui.formatTableActionElement(e.id)
     ]);
@@ -73,43 +76,60 @@ function renderTable() {
 
 async function saveEntity(e) {
     e.preventDefault();
-    const id = document.getElementById('entity-id').value || doc(collection(db, collection_name)).id;
     const isNew = !currentEntityId;
-    if (!document.getElementById('entity-id').value) document.getElementById('entity-id').value = id;
-    const now = new Date().toISOString();
-    const currentUser = auth.currentUser;
-    const data = {
+    const payload = {
         codice: document.getElementById('codice').value,
         ragione_sociale: document.getElementById('ragione_sociale').value,
-        piva: document.getElementById('piva').value,
-        cf: document.getElementById('cf').value,
+        partita_iva: document.getElementById('piva').value,
+        codice_fiscale: document.getElementById('cf').value,
         email: document.getElementById('email').value,
         telefono: document.getElementById('telefono').value,
         indirizzo: document.getElementById('indirizzo').value,
         citta: document.getElementById('citta').value,
         cap: document.getElementById('cap').value,
-        stato: document.getElementById('toggle-stato').checked,
-        changed: now,
-        lastModifiedBy: currentUser?.uid || null,
-        lastModifiedByEmail: currentUser?.email || null
+        stato: document.getElementById('toggle-stato').checked
     };
-    if (isNew) data.created = now;
-    await setDoc(doc(db, collection_name, id), data, { merge: true });
-    if (isNew) {
-        currentEntityId = id;
-        showTabsForExistingEntity();
-        documentUtils.listenForDocuments(id);
-        actionUtils.loadActions(id);
+
+    const saveBtn = document.querySelector('button[type=\"submit\"][form=\"entity-form\"]');
+    const originalText = saveBtn.textContent;
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<span class=\"btn-loader\"></span>Salvataggio...';
+
+    try {
+        if (isNew) {
+            const createApi = httpsCallable(functions, 'createClienteApi');
+            const result = await createApi(payload);
+            const id = result.data?.id;
+            if (id) {
+                currentEntityId = id;
+                document.getElementById('entity-id').value = id;
+                showTabsForExistingEntity();
+                documentUtils.listenForDocuments(id);
+                actionUtils.loadActions(id);
+            }
+        } else {
+            const updateApi = httpsCallable(functions, 'updateClienteApi');
+            await updateApi({ clienteId: currentEntityId, ...payload });
+        }
+
+        showSaveMessage('save-message');
+        await loadEntities();
+    } catch (error) {
+        console.error('Errore nel salvare il cliente:', error);
+        showSaveMessage('save-message', 'Errore: ' + (error.message || 'Impossibile salvare il cliente'), true);
+    } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = originalText;
     }
-    showSaveMessage('save-message');
-    loadEntities();
 }
 
-function showSaveMessage(elementId) {
+function showSaveMessage(elementId, message = 'Salvato con successo', isError = false) {
     const msg = document.getElementById(elementId);
-    msg.textContent = 'Salvato con successo';
+    if (!msg) return;
+    msg.textContent = message;
+    msg.style.color = isError ? '#ef4444' : '';
     msg.style.display = 'inline';
-    setTimeout(() => { msg.style.display = 'none'; }, 3000);
+    setTimeout(() => { msg.style.display = 'none'; }, 4000);
 }
 
 function resetToFirstTab(sidebarId) {
@@ -122,14 +142,15 @@ function resetToFirstTab(sidebarId) {
 
 const editEntity = async (id) => {
     currentEntityId = id;
-    const docSnap = await getDoc(doc(db, collection_name, id));
-    const data = docSnap.data();
+    const item = entities.find(e => e.id === id);
+    if (!item) return;
+    const data = item;
     document.getElementById('entity-form-title').textContent = data.ragione_sociale || 'Cliente';
     document.getElementById('entity-id').value = id;
     document.getElementById('codice').value = data.codice || '';
     document.getElementById('ragione_sociale').value = data.ragione_sociale || '';
-    document.getElementById('piva').value = data.piva || '';
-    document.getElementById('cf').value = data.cf || '';
+    document.getElementById('piva').value = data.partita_iva || '';
+    document.getElementById('cf').value = data.codice_fiscale || '';
     document.getElementById('email').value = data.email || '';
     document.getElementById('telefono').value = data.telefono || '';
     document.getElementById('indirizzo').value = data.indirizzo || '';
@@ -145,7 +166,8 @@ const editEntity = async (id) => {
 };
 
 async function deleteEntity(id) {
-    await deleteDoc(doc(db, collection_name, id));
+    const deleteApi = httpsCallable(functions, 'deleteClienteApi');
+    await deleteApi({ clienteId: id });
     loadEntities();
 }
 

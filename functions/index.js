@@ -68,7 +68,7 @@ exports.testSmtpApi = require("./api/testConfig-smtp").testSmtpApi;
 exports.testAiApi = require("./api/testConfig-ai").testAiApi;
 
 // === FUNZIONI API - PROFILO UTENTE ===
-const userManagement = require("./api/profile-utenti");
+const userManagement = require("./api/users");
 exports.userListApi = userManagement.userListApi;
 exports.userCreateApi = userManagement.userCreateApi;
 exports.userUpdateApi = userManagement.userUpdateApi;
@@ -92,6 +92,13 @@ exports.saveConfigSmtpApi = configSmtp.saveConfigSmtpApi;
 const configAi = require("./api/config-ai");
 exports.getConfigAiApi = configAi.getConfigAiApi;
 exports.saveConfigAiApi = configAi.saveConfigAiApi;
+
+// === FUNZIONI API - CLIENTI ===
+const clientiApi = require("./api/clienti");
+exports.createClienteApi = clientiApi.createClienteApi;
+exports.updateClienteApi = clientiApi.updateClienteApi;
+exports.deleteClienteApi = clientiApi.deleteClienteApi;
+exports.listClientiApi = clientiApi.listClientiApi;
 
 // Triggers Firestore
 exports.onUtentiChange = require("./triggers/onUtentiChange").onUtentiChange;
