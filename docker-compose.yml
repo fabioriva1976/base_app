@@ -1,0 +1,39 @@
+# docker-compose.yml
+services:
+  firebase-cli:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: "firebase_legal"
+    working_dir: /app
+    ports:
+      - "4000:4000"
+      - "3000:3000"
+      - "5001:5001"
+      - "8080:8080"
+      - "9099:9099"
+      - "9299:9299"
+      - "9150:9150"
+      - "9005:9005"
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+      - functions_node_modules:/app/functions/node_modules
+      - ./.firebase-credentials/config:/root/.config
+      - ./.firebase-credentials/cache:/root/.cache
+    command: >
+      bash -lc "
+        set -euo pipefail
+        firebase emulators:start --import=./emulator-data --export-on-exit=./emulator-data --project=legal-816fa &
+        npm run dev -- --host --port 3000
+       "
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+      - CHOKIDAR_INTERVAL=500
+      # Ruolo utente per testing in DEV (superuser, admin, operatore)
+      - DEV_USER_ROLE=superuser
+
+volumes:
+  node_modules:
+  functions_node_modules:

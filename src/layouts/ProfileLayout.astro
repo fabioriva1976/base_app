@@ -1,0 +1,74 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import SidebarProfile from '../components/SidebarProfile.astro';
+
+interface Props {
+  title?: string;
+}
+
+const { title } = Astro.props;
+const user = Astro.locals.user;
+---
+
+<BaseLayout title={title}>
+  <SidebarProfile slot="sidebar" />
+  <slot />
+</BaseLayout>
+
+<script>
+  // Inizializzazione Firebase client-side per features interattive
+  import { auth } from '../lib/firebase-client';
+  import { signOut } from 'firebase/auth';
+
+  // Gestione tema
+  const themeToggle = document.getElementById('theme-toggle');
+  const savedTheme = localStorage.getItem('theme') || 'light';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+
+  themeToggle?.addEventListener('click', () => {
+    const currentTheme = document.documentElement.getAttribute('data-theme');
+    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+  });
+
+  // Gestione sidebar mobile
+  const sidebarToggle = document.getElementById('toggle-sidebar-btn');
+  const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+  const sidebar = document.querySelector('.sidebar');
+  const appWrapper = document.querySelector('.app-wrapper');
+
+  sidebarToggle?.addEventListener('click', () => {
+    appWrapper?.classList.toggle('sidebar-collapsed');
+  });
+
+  mobileMenuBtn?.addEventListener('click', () => {
+    sidebar?.classList.toggle('mobile-open');
+  });
+
+  // Gestione logout
+  const logoutBtn = document.getElementById('logout-btn');
+  logoutBtn?.addEventListener('click', async (e) => {
+    e.preventDefault();
+    try {
+      await signOut(auth);
+      document.cookie = 'session=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+      window.location.href = '/login';
+    } catch (error) {
+      console.error('Logout error:', error);
+      alert('Errore durante il logout');
+    }
+  });
+
+  // Aggiorna avatar se Firebase fornisce un photoURL personalizzato
+  import { onAuthStateChanged } from 'firebase/auth';
+
+  onAuthStateChanged(auth, (user) => {
+    if (user && user.photoURL) {
+      const avatarIcon = document.getElementById('avatar-icon') as HTMLImageElement;
+      if (avatarIcon) {
+        avatarIcon.src = user.photoURL;
+      }
+    }
+  });
+</script>

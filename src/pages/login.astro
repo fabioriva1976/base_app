@@ -1,0 +1,260 @@
+---
+import LoginLayout from '../layouts/LoginLayout.astro';
+
+// Se l'utente è già autenticato, reindirizza alla home
+const sessionCookie = Astro.cookies.get('__session')?.value;
+if (sessionCookie) {
+  return Astro.redirect('/');
+}
+---
+
+<LoginLayout title="Accesso - AI Legal Assistant">
+  <style is:global>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 20px;
+    }
+    .dark-theme body {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    }
+    .login-container {
+      width: 100%;
+      max-width: 480px;
+    }
+    .login-box {
+      width: 100%;
+      padding: 48px;
+      background-color: white;
+      border-radius: 16px;
+      box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    }
+    .dark-theme .login-box {
+      background-color: #1e293b;
+      border: 1px solid #334155;
+      box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.3), 0 8px 10px -6px rgb(0 0 0 / 0.2);
+    }
+    .login-box h1 {
+      text-align: center;
+      margin-bottom: 8px;
+      color: #1f2937;
+      font-size: 28px;
+      font-weight: 700;
+    }
+    .dark-theme .login-box h1 {
+      color: #f1f5f9;
+    }
+    .login-box .subtitle {
+      text-align: center;
+      color: #6b7280;
+      margin-bottom: 32px;
+      font-size: 15px;
+    }
+    .dark-theme .login-box .subtitle {
+      color: #94a3b8;
+    }
+    .login-box .form-group {
+      margin-bottom: 20px;
+    }
+    .login-box .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      color: #374151;
+    }
+    .dark-theme .login-box .form-group label {
+      color: #e2e8f0;
+    }
+    .login-box .form-group input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 15px;
+      transition: all 0.2s;
+      background-color: white;
+      color: #1f2937;
+    }
+    .dark-theme .login-box .form-group input {
+      background-color: #0f172a;
+      border-color: #475569;
+      color: #f1f5f9;
+    }
+    .dark-theme .login-box .form-group input::placeholder {
+      color: #64748b;
+    }
+    .login-box .form-group input:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    .dark-theme .login-box .form-group input:focus {
+      border-color: #60a5fa;
+      box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.15);
+    }
+    .login-box .btn {
+      width: 100%;
+      padding: 14px;
+      margin-top: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      border-radius: 8px;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #error-message {
+      color: #EF4444;
+      text-align: center;
+      min-height: 20px;
+      margin-top: 16px;
+      font-weight: 500;
+      font-size: 14px;
+    }
+    .theme-toggle-login {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+    }
+    .theme-toggle-login button {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+    .theme-toggle-login button:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: scale(1.05);
+    }
+    .icon-sun, .icon-moon {
+      width: 20px;
+      height: 20px;
+    }
+    .dark-theme .icon-sun {
+      display: none;
+    }
+    .icon-moon {
+      display: none;
+    }
+    .dark-theme .icon-moon {
+      display: block;
+    }
+  </style>
+
+  <div class="theme-toggle-login">
+    <button id="theme-toggle" aria-label="Toggle theme">
+      <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="5"></circle>
+        <line x1="12" y1="1" x2="12" y2="3"></line>
+        <line x1="12" y1="21" x2="12" y2="23"></line>
+        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+        <line x1="1" y1="12" x2="3" y2="12"></line>
+        <line x1="21" y1="12" x2="23" y2="12"></line>
+        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+      </svg>
+      <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+      </svg>
+    </button>
+  </div>
+
+  <div class="login-container">
+    <div class="login-box">
+      <h1>AI Legal Assistant</h1>
+      <p class="subtitle">Accedi al tuo account</p>
+      <form id="login-form">
+        <div class="form-group">
+          <label for="email">Indirizzo Email</label>
+          <input type="email" id="email" placeholder="nome@esempio.com" required autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" placeholder="••••••••" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn" id="login-btn">Accedi</button>
+        <p id="error-message"></p>
+      </form>
+    </div>
+  </div>
+</LoginLayout>
+
+<script>
+  import { auth } from '../lib/firebase-client';
+  import { signInWithEmailAndPassword } from 'firebase/auth';
+
+  const loginForm = document.getElementById('login-form') as HTMLFormElement;
+  const emailInput = document.getElementById('email') as HTMLInputElement;
+  const passwordInput = document.getElementById('password') as HTMLInputElement;
+  const errorMessage = document.getElementById('error-message') as HTMLParagraphElement;
+  const loginBtn = document.getElementById('login-btn') as HTMLButtonElement;
+
+  loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    errorMessage.textContent = '';
+    loginBtn.disabled = true;
+    loginBtn.textContent = 'Accesso in corso...';
+
+    try {
+      const email = emailInput.value;
+      const password = passwordInput.value;
+
+      console.log('[DEBUG] Step 1: Inizio login con email:', email);
+
+      // Autentica con Firebase
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      console.log('[DEBUG] Step 2: Login Firebase riuscito, UID:', userCredential.user.uid);
+
+      const idToken = await userCredential.user.getIdToken();
+      console.log('[DEBUG] Step 3: Token ottenuto, lunghezza:', idToken.length);
+
+      // Invia il token al server per creare un session cookie
+      console.log('[DEBUG] Step 4: Invio token al server');
+      const response = await fetch('/api/auth/set-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken })
+      });
+
+      if (!response.ok) {
+        throw new Error('Errore durante la creazione della sessione');
+      }
+
+      console.log('[DEBUG] Step 5: Session cookie creato');
+
+      // Reindirizza alla home
+      console.log('[DEBUG] Step 6: Redirect a /');
+      window.location.href = '/';
+    } catch (error: any) {
+      console.error('[DEBUG] ERRORE CATTURATO:', error);
+
+      let message = 'Errore durante l\'accesso';
+      if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password') {
+        message = 'Email o password non corretti';
+      } else if (error.code === 'auth/user-not-found') {
+        message = 'Utente non trovato';
+      } else if (error.code === 'auth/too-many-requests') {
+        message = 'Troppi tentativi. Riprova più tardi';
+      } else if (error.message) {
+        message = error.message;
+      }
+
+      errorMessage.textContent = message;
+      loginBtn.disabled = false;
+      loginBtn.textContent = 'Accedi';
+    }
+  });
+</script>

@@ -1,0 +1,88 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import Sidebar from '../components/Sidebar.astro';
+
+interface Props {
+  title?: string;
+}
+
+const { title } = Astro.props;
+const user = Astro.locals.user;
+---
+
+<BaseLayout title={title}>
+  <Sidebar slot="sidebar" />
+  <slot />
+</BaseLayout>
+
+<script>
+  // Inizializzazione Firebase client-side per features interattive
+  import { auth } from '../lib/firebase-client';
+  import { onAuthStateChanged, signOut } from 'firebase/auth';
+
+  // Gestione tema
+  const themeToggle = document.getElementById('theme-toggle');
+  const savedTheme = localStorage.getItem('theme') || 'light';
+  
+  if (savedTheme === 'dark') {
+    document.documentElement.classList.add('dark-mode');
+  }
+
+  themeToggle?.addEventListener('click', () => {
+    const isDark = document.documentElement.classList.contains('dark-mode');
+    if (isDark) {
+      document.documentElement.classList.remove('dark-mode');
+      localStorage.setItem('theme', 'light');
+    } else {
+      document.documentElement.classList.add('dark-mode');
+      localStorage.setItem('theme', 'dark');
+    }
+  });
+
+  // Gestione sidebar mobile
+  const sidebarToggle = document.getElementById('toggle-sidebar-btn');
+  const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+  const sidebar = document.querySelector('.sidebar');
+  const appWrapper = document.querySelector('.app-wrapper');
+
+  sidebarToggle?.addEventListener('click', () => {
+    appWrapper?.classList.toggle('sidebar-collapsed');
+  });
+
+  mobileMenuBtn?.addEventListener('click', () => {
+    sidebar?.classList.toggle('mobile-open');
+  });
+
+  // Gestione click profilo
+  const profileBtn = document.getElementById('profile-toggle');
+  profileBtn?.addEventListener('click', () => {
+    window.location.href = '/profile';
+  });
+
+  // Gestione logout
+  const logoutBtn = document.getElementById('logout-btn');
+  logoutBtn?.addEventListener('click', async (e) => {
+    e.preventDefault();
+    try {
+      // Chiama l'API per cancellare il cookie di sessione SSR
+      await fetch('/api/auth/logout', { method: 'POST' });
+      // Poi fai il signOut client-side
+      await signOut(auth);
+      // Forza reload completo alla pagina login
+      window.location.replace('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+      window.location.replace('/login');
+    }
+  });
+
+  // Aggiorna avatar se Firebase fornisce un photoURL personalizzato
+  onAuthStateChanged(auth, (user) => {
+    if (user && user.photoURL) {
+      const avatarIcon = document.getElementById('avatar-icon') as HTMLImageElement;
+      if (avatarIcon) {
+        avatarIcon.src = user.photoURL;
+      }
+    }
+  });
+</script>

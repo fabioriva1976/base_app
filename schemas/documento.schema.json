@@ -1,0 +1,76 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Documento",
+  "description": "Schema per i documenti nella collezione 'documenti'",
+  "type": "object",
+  "required": ["titolo", "tipo", "storagePath", "createdAt"],
+  "properties": {
+    "titolo": {
+      "type": "string",
+      "description": "Titolo del documento (es: 'Contratto.pdf', 'Legge 123.txt')"
+    },
+    "tipo": {
+      "type": "string",
+      "description": "MIME type del file (es: 'application/pdf', 'text/plain')",
+      "examples": ["application/pdf", "text/plain", "application/msword"]
+    },
+    "storagePath": {
+      "type": "string",
+      "description": "Percorso del file in Firebase Storage (es: 'documenti/file.pdf', 'leggi/urn-nir-stato-legge-2024.txt')"
+    },
+    "entityType": {
+      "type": "string",
+      "description": "Tipo di entità a cui il documento è collegato",
+      "enum": ["pratiche", "clienti", "utenti", "leggi", "altro"],
+      "examples": ["leggi", "pratiche"]
+    },
+    "entityId": {
+      "type": "string",
+      "description": "ID dell'entità a cui il documento è collegato (opzionale)"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Data di creazione in formato ISO 8601"
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Data ultimo aggiornamento in formato ISO 8601"
+    },
+    "createdBy": {
+      "type": "string",
+      "description": "UID dell'utente che ha creato il documento"
+    },
+    "createdByEmail": {
+      "type": "string",
+      "format": "email",
+      "description": "Email dell'utente che ha creato il documento"
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Metadati aggiuntivi specifici per tipo di documento",
+      "properties": {
+        "codiceRedazionale": {
+          "type": "string",
+          "description": "Codice redazionale (solo per leggi)"
+        },
+        "fonte": {
+          "type": "string",
+          "description": "Fonte del documento (es: 'Normattiva', 'Upload Manuale')"
+        },
+        "dimensione": {
+          "type": "number",
+          "description": "Dimensione del file in bytes"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Tag per categorizzare il documento"
+        }
+      }
+    }
+  }
+}

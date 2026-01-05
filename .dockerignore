@@ -1,0 +1,8 @@
+node_modules
+functions/node_modules
+emulator-data
+npm-debug.log
+firebase-debug.log
+firestore-debug.log
+.git
+.DS_Store

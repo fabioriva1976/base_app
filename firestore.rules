@@ -1,0 +1,141 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // FUNZIONI HELPER PER I RUOLI
+    // ═══════════════════════════════════════════════════════════════════════
+
+    // Ottiene il ruolo dell'utente corrente dalla collezione utenti
+    function getUserRole() {
+      return get(/databases/$(database)/documents/utenti/$(request.auth.uid)).data.ruolo;
+    }
+
+    // Verifica se l'utente è superuser
+    function isSuperUser() {
+      return request.auth != null && getUserRole() == 'superuser';
+    }
+
+    // Verifica se l'utente è admin o superuser
+    function isAdmin() {
+      return request.auth != null && getUserRole() in ['admin', 'superuser'];
+    }
+
+    // Verifica se l'utente è operatore, admin o superuser (qualsiasi utente autenticato con ruolo)
+    function isOperator() {
+      return request.auth != null && getUserRole() in ['operatore', 'admin', 'superuser'];
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // COLLEZIONE UTENTI
+    // ═══════════════════════════════════════════════════════════════════════
+    match /utenti/{userId} {
+      // Chiunque sia autenticato può leggere il profilo di un altro utente (necessario per funzioni come getUserRole).
+      allow get: if request.auth != null;
+      // Admin/Superuser possono leggere la lista completa, creare, aggiornare ed eliminare qualsiasi utente.
+      // Un utente normale può aggiornare solo il proprio profilo.
+      allow list, create: if isAdmin();
+      allow update: if isAdmin() || request.auth.uid == userId;
+      allow delete: if isAdmin();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // COLLEZIONE CONFIGURAZIONI (SMTP, AI, ecc.)
+    // ═══════════════════════════════════════════════════════════════════════
+    // ⚠️ CONTIENE DATI SENSIBILI: API keys, password SMTP, secrets
+    match /configurazioni/{configId} {
+      // Lettura: SOLO superuser (non admin, non operatori)
+      // Le Cloud Functions hanno accesso admin e possono sempre leggere
+      allow read: if isSuperUser();
+
+      // Scrittura: SOLO superuser
+      allow write: if isSuperUser();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // COLLEZIONE PRATICHE
+    // ═══════════════════════════════════════════════════════════════════════
+    match /pratiche/{praticaId} {
+      // Lettura: tutti gli utenti autenticati
+      allow read: if request.auth != null;
+
+      // Creazione: tutti gli utenti autenticati
+      allow create: if request.auth != null;
+
+      // Aggiornamento: tutti gli utenti autenticati
+      allow update: if request.auth != null;
+
+      // Eliminazione: solo admin e superuser
+      allow delete: if isAdmin();
+
+      // Sotto-collezioni delle pratiche (documenti, commenti, ecc.)
+      match /{subcollection}/{doc} {
+        allow read: if request.auth != null;
+        allow write: if request.auth != null;
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // COLLEZIONE ANAGRAFICA CLIENTI
+    // ═══════════════════════════════════════════════════════════════════════
+    match /anagrafica_clienti/{clientId} {
+      // Lettura: tutti gli utenti autenticati
+      allow read: if request.auth != null;
+
+      // Creazione: tutti gli utenti autenticati
+      allow create: if request.auth != null;
+
+      // Aggiornamento: tutti gli utenti autenticati
+      allow update: if request.auth != null;
+
+      // Eliminazione: solo admin e superuser
+      allow delete: if isAdmin();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // COLLEZIONE DOCUMENTI
+    // ═══════════════════════════════════════════════════════════════════════
+    match /documenti/{documentId} {
+      // Lettura: tutti gli utenti autenticati
+      allow read: if request.auth != null;
+
+      // Creazione: tutti gli utenti autenticati
+      allow create: if request.auth != null;
+
+      // Aggiornamento: tutti gli utenti autenticati
+      allow update: if request.auth != null;
+
+      // Eliminazione: solo admin e superuser
+      allow delete: if isAdmin();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // COLLEZIONE AUDIT LOGS
+    // ═══════════════════════════════════════════════════════════════════════
+    match /auditLogs/{logId} {
+      // Lettura: solo admin e superuser
+      allow read: if isAdmin();
+
+      // Scrittura: NEGATA (i log vengono scritti solo server-side)
+      allow write: if false;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // COLLEZIONE LEGGI (Database normativa)
+    // ═══════════════════════════════════════════════════════════════════════
+    match /leggi/{leggeId} {
+      // Lettura: tutti gli utenti autenticati
+      allow read: if request.auth != null;
+
+      // Scrittura: NEGATA (viene gestita dal cron job server-side)
+      allow write: if false;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // REGOLA DI FALLBACK - NEGA TUTTO IL RESTO
+    // ═══════════════════════════════════════════════════════════════════════
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

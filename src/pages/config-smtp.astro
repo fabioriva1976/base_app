@@ -1,0 +1,145 @@
+---
+import ProfileLayout from '../layouts/ProfileLayout.astro';
+import { canAccessConfig } from '../lib/roles';
+
+const { user } = Astro.locals;
+
+// Solo superuser può accedere alle configurazioni (visualizzazione read-only per admin)
+// Se non è autenticato o non ha almeno ruolo admin, redirect
+if (!user || (!canAccessConfig(user) && user.ruolo !== 'admin')) {
+  return Astro.redirect('/access-denied');
+}
+
+const canModify = canAccessConfig(user);
+---
+
+<ProfileLayout title="Configurazione SMTP - AI Legal Assistant">
+  <div class="container parser-container">
+    <section>
+        <div class="header">
+            <h1>Configurazione SMTP</h1>
+        </div>
+        <p class="form-description">Imposta i parametri per l'invio delle email tramite server SMTP</p>
+    </section>
+
+    <div class="config-card">
+        <div class="config-section">
+            <h2>Parametri Server SMTP</h2>
+            <p class="description">Configura i dettagli del server SMTP per l'invio delle email di sistema.</p>
+
+            <form id="smtp-config-form" data-can-modify={canModify ? 'true' : 'false'}>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="smtp-host">Host SMTP *</label>
+                        <input type="text" id="smtp-host" name="host" class="form-control" placeholder="smtp.example.com" required>
+                        <small class="help-text">Indirizzo del server SMTP</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="smtp-port">Porta *</label>
+                        <input type="number" id="smtp-port" name="port" class="form-control" placeholder="587" required>
+                        <small class="help-text">Porta SMTP (587 per TLS, 465 per SSL, 25 non sicura)</small>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="smtp-user">Username *</label>
+                        <input type="text" id="smtp-user" name="user" class="form-control" placeholder="user@example.com" required>
+                        <small class="help-text">Nome utente per l'autenticazione SMTP</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="smtp-password">Password *</label>
+                        <input type="password" id="smtp-password" name="password" class="form-control" placeholder="••••••••" required>
+                        <small class="help-text">Password per l'autenticazione SMTP</small>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="smtp-from">Email Mittente *</label>
+                        <input type="email" id="smtp-from" name="from" class="form-control" placeholder="noreply@example.com" required>
+                        <small class="help-text">Indirizzo email che apparirà come mittente</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="smtp-from-name">Nome Mittente *</label>
+                        <input type="text" id="smtp-from-name" name="fromName" class="form-control" placeholder="Sistema Gestionale" required>
+                        <small class="help-text">Nome che apparirà come mittente</small>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="smtp-secure" name="secure">
+                        <span>Usa connessione sicura (TLS/SSL)</span>
+                    </label>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <span class="btn-text">Salva Configurazione</span>
+                    </button>
+                    <button type="button" id="test-smtp-btn" class="btn btn-secondary">
+                        Test Connessione
+                    </button>
+                    <span id="save-message" class="save-message"></span>
+                </div>
+
+                <div id="test-email-container" class="test-email-container" style="display: none;">
+                    <div class="test-email-card">
+                        <h3>Test Connessione SMTP</h3>
+                        <p>Inserisci l'indirizzo email a cui inviare il messaggio di test:</p>
+                        <div class="form-group">
+                            <input type="email" id="test-email-input" name="test-email" class="form-control" placeholder="esempio@email.com">
+                        </div>
+                        <div class="test-email-actions">
+                            <button type="button" id="send-test-email-btn" class="btn btn-primary">
+                                Invia Email di Test
+                            </button>
+                            <button type="button" id="cancel-test-btn" class="btn btn-secondary">
+                                Annulla
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="form-message" class="form-message" style="display: none;"></div>
+            </form>
+        </div>
+
+        <div class="config-section status-section">
+            <h2>Stato Configurazione</h2>
+            <div id="status-container">
+                <div class="status-item">
+                    <span class="status-label">Server SMTP:</span>
+                    <span id="status-host" class="status-value">Non configurato</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Porta:</span>
+                    <span id="status-port" class="status-value">-</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Email Mittente:</span>
+                    <span id="status-from" class="status-value">-</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Connessione Sicura:</span>
+                    <span id="status-secure" class="status-value">-</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Ultima modifica:</span>
+                    <span id="status-updatedAt" class="status-value">-</span>
+                </div>
+            </div>
+        </div>
+    </div>
+  </div>
+</ProfileLayout>
+
+<script>
+  import { initConfigSmtpPage } from '../scripts/config-smtp.js';
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initConfigSmtpPage);
+  } else {
+    initConfigSmtpPage();
+  }
+</script>
