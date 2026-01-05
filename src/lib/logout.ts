@@ -18,6 +18,10 @@ export async function handleLogout(): Promise<void> {
       credentials: 'include'
     });
 
+    // Pulizia cookie lato client (sia __session che eventuale fallback "session")
+    document.cookie = '__session=; path=/; max-age=0';
+    document.cookie = 'session=; path=/; max-age=0';
+
     // Redirect al login
     window.location.href = '/login';
   } catch (error) {
@@ -32,12 +36,20 @@ export async function handleLogout(): Promise<void> {
  * @param buttonId - ID del pulsante di logout
  */
 export function initLogoutButton(buttonId: string = 'logout-btn'): void {
-  const logoutBtn = document.getElementById(buttonId);
+  const bindHandler = () => {
+    const logoutBtn = document.getElementById(buttonId);
+    if (!logoutBtn) return;
 
-  if (logoutBtn) {
     logoutBtn.addEventListener('click', async (e) => {
       e.preventDefault();
       await handleLogout();
     });
+  };
+
+  // In Astro gli script sono spesso eseguiti prima del render: aggiungiamo un fallback DOMContentLoaded
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bindHandler, { once: true });
+  } else {
+    bindHandler();
   }
 }
