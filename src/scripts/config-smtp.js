@@ -62,8 +62,8 @@ function setupEventListeners() {
 
 async function loadCurrentConfig() {
     try {
-        const getConfig = httpsCallable(functions, 'getConfigApi');
-        const result = await getConfig({ type: 'smtp' });
+        const getConfig = httpsCallable(functions, 'getConfigSmtpApi');
+        const result = await getConfig();
 
         if (result.data?.exists) {
             const data = result.data.data || {};
@@ -116,8 +116,8 @@ async function handleSubmit(e) {
             secure: document.getElementById('smtp-secure').checked
         };
 
-        const saveConfig = httpsCallable(functions, 'saveConfigApi');
-        const result = await saveConfig({ type: 'smtp', data: configData });
+        const saveConfig = httpsCallable(functions, 'saveConfigSmtpApi');
+        const result = await saveConfig({ data: configData });
         if (!result.data?.success && result.data?.success !== undefined) {
             throw new Error('Salvataggio non riuscito');
         }

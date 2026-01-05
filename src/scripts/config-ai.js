@@ -53,8 +53,8 @@ function setupEventListeners() {
 
 async function loadCurrentConfig() {
     try {
-        const getConfig = httpsCallable(functions, 'getConfigApi');
-        const result = await getConfig({ type: 'ai' });
+        const getConfig = httpsCallable(functions, 'getConfigAiApi');
+        const result = await getConfig();
 
         if (result.data?.exists) {
             const data = result.data.data || {};
@@ -124,8 +124,8 @@ async function handleSubmit(e) {
 
         console.log('💾 Saving config data:', configData);
 
-        const saveConfig = httpsCallable(functions, 'saveConfigApi');
-        const result = await saveConfig({ type: 'ai', data: configData });
+        const saveConfig = httpsCallable(functions, 'saveConfigAiApi');
+        const result = await saveConfig({ data: configData });
         if (!result.data?.success && result.data?.success !== undefined) {
             throw new Error('Salvataggio non riuscito');
         }

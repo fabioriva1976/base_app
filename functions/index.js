@@ -85,9 +85,13 @@ exports.searchAuditLogsApi = auditLogs.searchAuditLogsApi;
 exports.createAuditLogApi = auditLogs.createAuditLogApi;
 
 // === FUNZIONI API - CONFIGURAZIONI (AI/SMTP) ===
-const configApi = require("./api/config");
-exports.getConfigApi = configApi.getConfigApi;
-exports.saveConfigApi = configApi.saveConfigApi;
+const configSmtp = require("./api/config-smtp");
+exports.getConfigSmtpApi = configSmtp.getConfigSmtpApi;
+exports.saveConfigSmtpApi = configSmtp.saveConfigSmtpApi;
+
+const configAi = require("./api/config-ai");
+exports.getConfigAiApi = configAi.getConfigAiApi;
+exports.saveConfigAiApi = configAi.saveConfigAiApi;
 
 // Triggers Firestore
 exports.onUtentiChange = require("./triggers/onUtentiChange").onUtentiChange;
