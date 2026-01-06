@@ -25,6 +25,14 @@ admin.initializeApp({
 exports.region = "europe-west1";
 exports.timezone = "Europe/Rome";
 
+// Configurazione risorse per ridurre l'utilizzo CPU e evitare quota exceeded
+exports.runtimeOpts = {
+    cpu: 1,              // Riduce da 2 CPU a 1 CPU
+    memory: "128MiB",    // Riduce la memoria allocata al minimo
+    minInstances: 0,     // Nessuna istanza sempre attiva
+    maxInstances: 10     // Limita il numero massimo di istanze
+};
+
 // Origini CORS consentite. In locale includiamo anche localhost per permettere le chiamate dagli emulatori/UI dev.
 const baseCorsOrigins = [
     `https://${projectId}.web.app`,

@@ -2,6 +2,7 @@
 
 const { onDocumentWritten } = require("firebase-functions/v2/firestore");
 const { logAudit, AuditAction } = require("../utils/auditLogger");
+const { runtimeOpts } = require("../index");
 
 /**
  * Trigger che si attiva quando un documento nella collezione 'utenti' viene creato, modificato o eliminato
@@ -9,7 +10,8 @@ const { logAudit, AuditAction } = require("../utils/auditLogger");
 exports.onUtentiChange = onDocumentWritten(
     {
         document: "utenti/{userId}",
-        region: "europe-west1"
+        region: "europe-west1",
+        ...runtimeOpts
     },
     async (event) => {
     const userId = event.params.userId;

@@ -1,6 +1,6 @@
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const admin = require("firebase-admin");
-const { region, corsOrigins } = require("../index");
+const { region, corsOrigins, runtimeOpts } = require("../index");
 
 if (admin.apps.length === 0) {
     admin.initializeApp();

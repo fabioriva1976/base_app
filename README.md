@@ -51,5 +51,17 @@ docker compose exec firebase-cli firebase functions:log --only astroSSR
 
 
 
+## Comandi da usare:
 
+Prima volta/dopo modifiche a package.json: 
+`docker compose build firebase-cli`
+
+Avvio completo (site + emulatori con import/export): 
+`docker compose up firebase-cli`
+
+Stop (se non voglio export del db): 
+`docker compose down`
+
+Stop (se voglio export del db): 
+`./stop-and-export.sh`
 

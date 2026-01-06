@@ -1,6 +1,6 @@
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const admin = require("firebase-admin");
-const { region, corsOrigins } = require("../index");
+const { region, corsOrigins, runtimeOpts } = require("../index");
 const {
   requireAdmin,
   canManageUser,
@@ -18,7 +18,7 @@ const auth = admin.auth();
 /**
  * Lista utenti (solo admin/superuser)
  */
-const userListApi = onCall({ region, cors: corsOrigins }, async (request) => {
+const userListApi = onCall({ region, cors: corsOrigins, ...runtimeOpts }, async (request) => {
   await requireAdmin(request);
 
   try {
@@ -41,7 +41,7 @@ const userListApi = onCall({ region, cors: corsOrigins }, async (request) => {
 /**
  * Crea o sincronizza un utente (solo admin/superuser)
  */
-const userCreateApi = onCall({ region, cors: corsOrigins }, async (request) => {
+const userCreateApi = onCall({ region, cors: corsOrigins, ...runtimeOpts }, async (request) => {
   const callerRole = await requireAdmin(request);
 
   try {
@@ -96,7 +96,7 @@ const userCreateApi = onCall({ region, cors: corsOrigins }, async (request) => {
 /**
  * Aggiorna un utente (solo admin/superuser)
  */
-const userUpdateApi = onCall({ region, cors: corsOrigins }, async (request) => {
+const userUpdateApi = onCall({ region, cors: corsOrigins, ...runtimeOpts }, async (request) => {
   const callerRole = await requireAdmin(request);
   const data = request.data || {};
   const { uid, ruolo: targetRole, ...updateData } = data;
@@ -142,7 +142,7 @@ const userUpdateApi = onCall({ region, cors: corsOrigins }, async (request) => {
 /**
  * Elimina un utente (solo admin/superuser)
  */
-const userDeleteApi = onCall({ region, cors: corsOrigins }, async (request) => {
+const userDeleteApi = onCall({ region, cors: corsOrigins, ...runtimeOpts }, async (request) => {
   const callerRole = await requireAdmin(request);
   const data = request.data || {};
 

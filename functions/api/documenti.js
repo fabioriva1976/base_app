@@ -1,6 +1,6 @@
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const admin = require("firebase-admin");
-const { region, corsOrigins } = require("../index");
+const { region, corsOrigins, runtimeOpts } = require("../index");
 const { requireAuth } = require("../utils/authHelpers");
 
 if (admin.apps.length === 0) {
@@ -30,7 +30,7 @@ function validateCreatePayload(data) {
 }
 
 exports.createDocumentoRecordApi = onCall(
-  { region, cors: corsOrigins },
+  { region, cors: corsOrigins, ...runtimeOpts },
   async (request) => {
     await requireAuth(request);
     const user = request.auth;
@@ -59,7 +59,7 @@ exports.createDocumentoRecordApi = onCall(
 );
 
 exports.deleteDocumentoApi = onCall(
-  { region, cors: corsOrigins },
+  { region, cors: corsOrigins, ...runtimeOpts },
   async (request) => {
     await requireAuth(request);
     const { docId, storagePath } = request.data || {};

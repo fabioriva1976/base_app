@@ -17,6 +17,11 @@ const TARGET_FILE = path.join(__dirname, '../functions/schemas/entityFactory.js'
 console.log('🔄 Sincronizzazione entityFactory.js...');
 
 try {
+  if (!fs.existsSync(SOURCE_FILE)) {
+    console.warn(`⚠️  File sorgente non trovato: ${SOURCE_FILE}. Salto la sincronizzazione.`);
+    process.exit(0);
+  }
+
   // Leggi il file sorgente (ES6)
   let content = fs.readFileSync(SOURCE_FILE, 'utf8');
 

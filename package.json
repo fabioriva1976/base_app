@@ -1,12 +1,12 @@
 {
-  "name": "legal-assistant",
+  "name": "base-app",
   "type": "module",
   "version": "1.0.0",
   "description": "Legal Assistant with Astro SSR",
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",
-    "build": "npm run sync-factories && astro build && node ./bundle-dependencies.js && cd functions && npm install",
+    "build": "npm run sync-factories && astro build && node bundle-dependencies.js && cd functions && npm install",
     "preview": "astro preview",
     "deploy": "npm run build && firebase deploy",
     "deploy:hosting": "npm run build && firebase deploy --only hosting,functions:astroSSR",

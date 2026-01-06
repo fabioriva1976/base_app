@@ -24,9 +24,12 @@ function getAstroHandler() {
 exports.astroSSR = onRequest(
   {
     region: "europe-west1",
-    memory: "512MiB",
+    cpu: 1,
+    memory: "256MiB",
     timeoutSeconds: 60,
     maxInstances: 10,
+    minInstances: 0,
+    invoker: "public"  // Permette accesso pubblico alla funzione
   },
   async (request, response) => {
     try {

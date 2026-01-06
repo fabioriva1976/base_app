@@ -2,7 +2,7 @@
 
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { getAuditLogs, getAuditLogsByUser, getAuditLogsWithFilters, logAudit, AuditAction } = require("../utils/auditLogger");
-const { region, corsOrigins } = require("../index");
+const { region, corsOrigins, runtimeOpts } = require("../index");
 const { requireAdmin, requireAuth } = require("../utils/authHelpers");
 
 /**

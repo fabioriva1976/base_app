@@ -1,4 +1,4 @@
-FROM node:22
+FROM node:20
 
 # Install Java (required by Firebase Emulator) and Firebase CLI
 RUN set -eux; \

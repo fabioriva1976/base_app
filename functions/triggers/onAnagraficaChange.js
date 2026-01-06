@@ -1,6 +1,6 @@
 const { onDocumentCreated, onDocumentUpdated, onDocumentDeleted } = require("firebase-functions/v2/firestore");
 const { logAudit, AuditAction } = require("../utils/auditLogger");
-const { region } = require("../index");
+const { region, runtimeOpts } = require("../index");
 
 /**
  * Controlla se ci sono effettivamente cambiamenti nei dati, escludendo campi di sistema
@@ -39,7 +39,7 @@ function hasActualChanges(beforeData, afterData) {
 // per evitare duplicati negli audit logs
 
 // Trigger per anagrafica_clienti
-exports.onAnagraficaClientiCreate = onDocumentCreated({ region: region, document: "anagrafica_clienti/{docId}" }, async (event) => {
+exports.onAnagraficaClientiCreate = onDocumentCreated({ region, document: "anagrafica_clienti/{docId}", ...runtimeOpts }, async (event) => {
     const afterData = event.data.data();
     await logAudit({
         entityType: 'anagrafica_clienti',
@@ -52,7 +52,7 @@ exports.onAnagraficaClientiCreate = onDocumentCreated({ region: region, document
     });
 });
 
-exports.onAnagraficaClientiUpdate = onDocumentUpdated({ region: region, document: "anagrafica_clienti/{docId}" }, async (event) => {
+exports.onAnagraficaClientiUpdate = onDocumentUpdated({ region, document: "anagrafica_clienti/{docId}", ...runtimeOpts }, async (event) => {
     const beforeData = event.data.before.data();
     const afterData = event.data.after.data();
 
@@ -74,7 +74,7 @@ exports.onAnagraficaClientiUpdate = onDocumentUpdated({ region: region, document
     });
 });
 
-exports.onAnagraficaClientiDelete = onDocumentDeleted({ region: region, document: "anagrafica_clienti/{docId}" }, async (event) => {
+exports.onAnagraficaClientiDelete = onDocumentDeleted({ region, document: "anagrafica_clienti/{docId}", ...runtimeOpts }, async (event) => {
     const beforeData = event.data.data();
     await logAudit({
         entityType: 'anagrafica_clienti',
@@ -88,7 +88,7 @@ exports.onAnagraficaClientiDelete = onDocumentDeleted({ region: region, document
 });
 
 // Trigger per documenti
-exports.onDocumentiCreate = onDocumentCreated({ region: region, document: "documenti/{docId}" }, async (event) => {
+exports.onDocumentiCreate = onDocumentCreated({ region, document: "documenti/{docId}", ...runtimeOpts }, async (event) => {
     const afterData = event.data.data();
     await logAudit({
         entityType: 'documenti',
@@ -101,7 +101,7 @@ exports.onDocumentiCreate = onDocumentCreated({ region: region, document: "docum
     });
 });
 
-exports.onDocumentiUpdate = onDocumentUpdated({ region: region, document: "documenti/{docId}" }, async (event) => {
+exports.onDocumentiUpdate = onDocumentUpdated({ region, document: "documenti/{docId}", ...runtimeOpts }, async (event) => {
     const beforeData = event.data.before.data();
     const afterData = event.data.after.data();
 
@@ -123,7 +123,7 @@ exports.onDocumentiUpdate = onDocumentUpdated({ region: region, document: "docum
     });
 });
 
-exports.onDocumentiDelete = onDocumentDeleted({ region: region, document: "documenti/{docId}" }, async (event) => {
+exports.onDocumentiDelete = onDocumentDeleted({ region, document: "documenti/{docId}", ...runtimeOpts }, async (event) => {
     const beforeData = event.data.data();
     await logAudit({
         entityType: 'documenti',
