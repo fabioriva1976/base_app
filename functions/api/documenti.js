@@ -1,5 +1,6 @@
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const admin = require("firebase-admin");
+const { FieldValue } = require("firebase-admin/firestore");
 const { region, corsOrigins, runtimeOpts } = require("../index");
 const { requireAuth } = require("../utils/authHelpers");
 
@@ -36,7 +37,7 @@ exports.createDocumentoRecordApi = onCall(
     const user = request.auth;
 
     const payload = validateCreatePayload(request.data || {});
-    const now = new Date().toISOString();
+    const userName = user.token.name || user.token.email || user.uid;
 
     const docData = {
       entityId: payload.entityId,
@@ -47,10 +48,11 @@ exports.createDocumentoRecordApi = onCall(
       size: payload.size,
       type: payload.type,
       description: payload.description,
-      createdAt: now,
-      updatedAt: now,
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
       userId: user.uid,
-      userEmail: user.token.email || null
+      userEmail: user.token.email || null,
+      userName
     };
 
     const docRef = await db.collection("documenti").add(docData);

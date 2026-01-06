@@ -164,9 +164,21 @@ export class ActionManager {
             return details;
         }
 
-        // Mostra i metadati se presenti, escludendo campi tecnici
+        // Mostra i metadati se presenti, escludendo campi tecnici o di sistema
         if (action.metadata && Object.keys(action.metadata).length > 0) {
-            const excludedKeys = ['trigger', 'collection', 'source', 'actionType'];
+            const excludedKeys = [
+                'trigger',
+                'collection',
+                'source',
+                'actionType',
+                'createdAt',
+                'updatedAt',
+                'createdBy',
+                'createdByEmail',
+                'lastModifiedBy',
+                'lastModifiedByEmail',
+                'updatedBy'
+            ];
             const filteredMetadata = Object.entries(action.metadata)
                 .filter(([key, value]) => !excludedKeys.includes(key) && value && typeof value !== 'object');
 
@@ -215,7 +227,18 @@ export class ActionManager {
         const allKeys = new Set([...Object.keys(oldData || {}), ...Object.keys(newData || {})]);
 
         // Campi di sistema da ignorare
-        const systemFields = ['created', 'changed', 'timestamp', 'lastModifiedBy', 'lastModifiedByEmail'];
+        const systemFields = [
+            'created',
+            'changed',
+            'timestamp',
+            'lastModifiedBy',
+            'lastModifiedByEmail',
+            'createdAt',
+            'updatedAt',
+            'createdBy',
+            'createdByEmail',
+            'updatedBy'
+        ];
 
         for (const key of allKeys) {
             // Ignora campi di sistema
@@ -248,7 +271,18 @@ export class ActionManager {
         let summary = '<div class="data-summary">';
 
         // Campi di sistema da ignorare
-        const systemFields = ['created', 'changed', 'timestamp', 'lastModifiedBy', 'lastModifiedByEmail'];
+        const systemFields = [
+            'created',
+            'changed',
+            'timestamp',
+            'lastModifiedBy',
+            'lastModifiedByEmail',
+            'createdAt',
+            'updatedAt',
+            'createdBy',
+            'createdByEmail',
+            'updatedBy'
+        ];
 
         for (const [key, value] of Object.entries(data)) {
             // Ignora campi di sistema

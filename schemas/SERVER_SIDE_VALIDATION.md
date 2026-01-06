@@ -1,4 +1,4 @@
-# Server-Side Validation per Pratiche
+# Server-Side Validation per Record
 
 ## Problema Risolto
 
@@ -10,20 +10,20 @@ Prima la logica business era **solo client-side**:
 
 **Esempio vulnerabilità (prima):**
 ```javascript
-// CLIENT: src/scripts/page-pratiche.js
+// CLIENT: src/scripts/page-record.js
 if (!clientName) {
     alert('Campo obbligatorio'); // ⚠️ Bypassabile
     return;
 }
 
 // Salva direttamente in Firestore (nessuna validazione server!)
-await addDoc(collection(db, 'pratiche'), praticaData);
+await addDoc(collection(db, 'record'), recordData);
 ```
 
 **Attacco possibile:**
 ```javascript
 // Console browser - bypass completo
-await addDoc(collection(db, 'pratiche'), {
+await addDoc(collection(db, 'record'), {
     clientName: '',  // ❌ Vuoto
     caseId: "<script>alert('XSS')</script>",  // ❌ XSS
     assegnataA: 'altro-utente-id'  // ❌ Assegna ad altri
@@ -38,7 +38,7 @@ await addDoc(collection(db, 'pratiche'), {
 ### Layer 1: Firestore Security Rules (Base)
 ```javascript
 // firestore.rules
-match /pratiche/{praticaId} {
+match /record/{recordId} {
     allow create: if request.auth != null;
     allow update, delete: if request.auth != null
                           && resource.data.userId == request.auth.uid;
@@ -47,8 +47,8 @@ match /pratiche/{praticaId} {
 
 ### Layer 2: Cloud Functions (Validazione Completa) ✅ NUOVO
 ```javascript
-// functions/api/pratiche.js
-exports.createPraticaApi = onCall(async (request) => {
+// functions/api/record.js
+exports.createRecordApi = onCall(async (request) => {
     // ✅ Autenticazione
     if (!request.auth) throw new HttpsError(...);
 
@@ -62,32 +62,32 @@ exports.createPraticaApi = onCall(async (request) => {
     const sanitized = sanitizeString(data.clientName);
 
     // ✅ Salvataggio
-    await db.collection('pratiche').add(sanitizedData);
+    await db.collection('record').add(sanitizedData);
 });
 ```
 
 ### Layer 3: Client-Side (UX)
 ```javascript
-// src/scripts/page-pratiche.js
+// src/scripts/page-record.js
 if (!clientName) {
     alert('Campo obbligatorio'); // Solo per UX rapida
     return;
 }
 
 // ✅ Chiama Cloud Function (validazione vera)
-const createPratica = httpsCallable(functions, 'createPraticaApi');
-await createPratica(praticaData);
+const createRecord = httpsCallable(functions, 'createRecordApi');
+await createRecord(recordData);
 ```
 
 ## File Creati/Modificati
 
 ### ✅ Creato
 
-**[functions/api/pratiche.js](../functions/api/pratiche.js)** (400+ lines)
+**[functions/api/record.js](../functions/api/record.js)** (400+ lines)
 
 Tre Cloud Functions con validazione completa:
 
-#### 1. `createPraticaApi` - Creazione Pratica
+#### 1. `createRecordApi` - Creazione Record
 
 **Security:**
 - ✅ Autenticazione richiesta
@@ -123,11 +123,11 @@ Tre Cloud Functions con validazione completa:
 - Se presente, deve esistere in anagrafica_clienti
 ```
 
-#### 2. `updatePraticaApi` - Modifica Pratica
+#### 2. `updateRecordApi` - Modifica Record
 
 **Security:**
 - ✅ Autenticazione richiesta
-- ✅ Verifica esistenza pratica
+- ✅ Verifica esistenza record
 - ✅ Autorizzazione: solo creatore, assegnato, o admin
 - ✅ Validazione campi modificati
 - ✅ Controllo permessi per riassegnazione
@@ -145,11 +145,11 @@ Tre Cloud Functions con validazione completa:
 - Solo admin/superuser
 ```
 
-#### 3. `deletePraticaApi` - Eliminazione Pratica
+#### 3. `deleteRecordApi` - Eliminazione Record
 
 **Security:**
 - ✅ Autenticazione richiesta
-- ✅ Verifica esistenza pratica
+- ✅ Verifica esistenza record
 - ✅ Autorizzazione: solo creatore o admin
 - ✅ Hard delete (potrebbe essere soft delete futuro)
 
@@ -165,24 +165,24 @@ Tre Cloud Functions con validazione completa:
 **[functions/index.js](../functions/index.js)**
 - Registrate 3 nuove Cloud Functions
 
-**[src/scripts/page-pratiche.js](../src/scripts/page-pratiche.js)**
+**[src/scripts/page-record.js](../src/scripts/page-record.js)**
 - Import `httpsCallable` da Firebase Functions
-- `savePratica()` usa `createPraticaApi` / `updatePraticaApi`
-- `deleteChat()` usa `deletePraticaApi`
+- `saveRecord()` usa `createRecordApi` / `updateRecordApi`
+- `deleteChat()` usa `deleteRecordApi`
 - Rimossi import non più usati (`addDoc`, `updateDoc`, `deleteDoc`, `serverTimestamp`)
 
 ## Come Funziona
 
-### Scenario 1: Creazione Pratica Normale
+### Scenario 1: Creazione Record Normale
 
 ```
-1. User compila form pratica
+1. User compila form record
 
 2. Client esegue validazione UX rapida
    if (!clientName) alert('Obbligatorio');
 
 3. Client chiama Cloud Function
-   const result = await createPraticaApi({
+   const result = await createRecordApi({
        clientName: "Mario Rossi",
        caseId: "PR-2024-001",
        assegnataA: currentUserId
@@ -206,7 +206,7 @@ Tre Cloud Functions con validazione completa:
        createdByEmail: "user@example.com"
    }
 
-6. Client riceve ID pratica creata
+6. Client riceve ID record creata
    result.data.id = "abc123"
 ```
 
@@ -216,8 +216,8 @@ Tre Cloud Functions con validazione completa:
 1. Attaccante apre console browser
 
 2. Tenta bypass validazione client
-   const createPratica = httpsCallable(functions, 'createPraticaApi');
-   await createPratica({
+   const createRecord = httpsCallable(functions, 'createRecordApi');
+   await createRecord({
        clientName: '',  // ❌ Vuoto
        caseId: "<script>alert('XSS')</script>",
        assegnataA: 'altro-utente-id'  // ❌ Non ha permessi
@@ -229,13 +229,13 @@ Tre Cloud Functions con validazione completa:
 4. Attaccante non può salvare dati invalidi ✅
 ```
 
-### Scenario 3: Admin Assegna Pratica
+### Scenario 3: Admin Assegna Record
 
 ```
-1. Admin crea pratica per operatore
+1. Admin crea record per operatore
 
 2. Client chiama Cloud Function
-   await createPraticaApi({
+   await createRecordApi({
        clientName: "Cliente ABC",
        caseId: "PR-001",
        assegnataA: operatoreUserId  // ≠ adminUserId
@@ -261,7 +261,7 @@ Tre Cloud Functions con validazione completa:
 1. Operatore normale tenta auto-promozione
 
 2. Tenta assegnare ad altro operatore
-   await createPraticaApi({
+   await createRecordApi({
        clientName: "Test",
        caseId: "PR-001",
        assegnataA: altroOperatoreId  // ❌ Non ha permessi
@@ -270,7 +270,7 @@ Tre Cloud Functions con validazione completa:
 3. Server blocca
    ✅ getUserRole(operatoreId) = 'operatore'
    ✅ canAssignToOthers = false
-   ❌ HttpsError: 'permission-denied: Non hai i permessi per assegnare pratiche ad altri utenti'
+   ❌ HttpsError: 'permission-denied: Non hai i permessi per assegnare record ad altri utenti'
 
 4. Operatore può solo auto-assegnare ✅
 ```
@@ -305,17 +305,17 @@ function sanitizeString(str) {
 
 | Azione | Utente | Permesso |
 |--------|--------|----------|
-| Creare pratica (auto-assegnata) | Qualsiasi autenticato | ✅ |
-| Creare pratica (assegnata ad altro) | Admin/Superuser | ✅ |
-| Creare pratica (assegnata ad altro) | Operatore | ❌ |
-| Modificare propria pratica | Creatore/Assegnato | ✅ |
-| Modificare pratica altrui | Admin/Superuser | ✅ |
-| Modificare pratica altrui | Operatore | ❌ |
-| Riassegnare pratica | Admin/Superuser | ✅ |
-| Riassegnare pratica | Operatore | ❌ |
-| Eliminare propria pratica | Creatore | ✅ |
-| Eliminare pratica altrui | Admin/Superuser | ✅ |
-| Eliminare pratica altrui | Operatore | ❌ |
+| Creare record (auto-assegnata) | Qualsiasi autenticato | ✅ |
+| Creare record (assegnata ad altro) | Admin/Superuser | ✅ |
+| Creare record (assegnata ad altro) | Operatore | ❌ |
+| Modificare propria record | Creatore/Assegnato | ✅ |
+| Modificare record altrui | Admin/Superuser | ✅ |
+| Modificare record altrui | Operatore | ❌ |
+| Riassegnare record | Admin/Superuser | ✅ |
+| Riassegnare record | Operatore | ❌ |
+| Eliminare propria record | Creatore | ✅ |
+| Eliminare record altrui | Admin/Superuser | ✅ |
+| Eliminare record altrui | Operatore | ❌ |
 
 ## Error Handling
 
@@ -331,26 +331,26 @@ Le Cloud Functions ritornano errori strutturati:
 // Errore di permessi
 {
     code: 'permission-denied',
-    message: 'Non hai i permessi per assegnare pratiche ad altri utenti'
+    message: 'Non hai i permessi per assegnare record ad altri utenti'
 }
 
 // Errore di autenticazione
 {
     code: 'unauthenticated',
-    message: 'Devi essere autenticato per creare una pratica'
+    message: 'Devi essere autenticato per creare una record'
 }
 
 // Errore interno
 {
     code: 'internal',
-    message: 'Errore nella creazione della pratica: ...'
+    message: 'Errore nella creazione della record: ...'
 }
 ```
 
 Client gestisce gli errori:
 ```javascript
 try {
-    await createPraticaApi(data);
+    await createRecordApi(data);
 } catch (error) {
     if (error.code === 'permission-denied') {
         alert('Non hai i permessi necessari');
@@ -368,7 +368,7 @@ try {
 
 1. **Creazione valida:**
 ```javascript
-await createPraticaApi({
+await createRecordApi({
     clientName: "Test Cliente",
     caseId: "PR-001",
     isOpen: true,
@@ -380,7 +380,7 @@ await createPraticaApi({
 
 2. **Validazione campi vuoti:**
 ```javascript
-await createPraticaApi({
+await createRecordApi({
     clientName: "",  // ❌
     caseId: "PR-001",
     ...
@@ -390,7 +390,7 @@ await createPraticaApi({
 
 3. **Validazione lunghezza:**
 ```javascript
-await createPraticaApi({
+await createRecordApi({
     clientName: "A".repeat(300),  // ❌ > 200
     ...
 });
@@ -400,7 +400,7 @@ await createPraticaApi({
 4. **Escalation permessi (operatore):**
 ```javascript
 // Login come operatore
-await createPraticaApi({
+await createRecordApi({
     assegnataA: altroUserId  // ❌ Non admin
 });
 // ❌ HttpsError: permission-denied
@@ -409,7 +409,7 @@ await createPraticaApi({
 5. **Escalation permessi (admin):**
 ```javascript
 // Login come admin
-await createPraticaApi({
+await createRecordApi({
     assegnataA: altroUserId  // ✅ Admin può
 });
 // ✅ Dovrebbe funzionare
@@ -446,7 +446,7 @@ await createPraticaApi({
 6. **Batch Operations**: API per operazioni multiple
 
 ### Bassa Priorità
-7. **Webhook**: Notifiche su eventi (pratica assegnata)
+7. **Webhook**: Notifiche su eventi (record assegnata)
 8. **Advanced Audit**: Log dettagliato modifiche campi
 9. **Data Migration**: Script per validare dati esistenti
 

@@ -4,6 +4,7 @@ import * as ui from './utils/uiUtils.js';
 import * as documentUtils from './utils/documentUtils.js';
 import * as actionUtils from './utils/actionUtils.js';
 import { httpsCallable } from "firebase/functions";
+import { createCliente } from './schemas/entityFactory.js';
 
 let entities = [];
 let collection_name = 'anagrafica_clienti';
@@ -89,6 +90,24 @@ async function saveEntity(e) {
         cap: document.getElementById('cap').value,
         stato: document.getElementById('toggle-stato').checked
     };
+    let normalized;
+    try {
+        normalized = createCliente({
+            ...payload,
+            codice: payload.codice || null,
+            partita_iva: payload.partita_iva || null,
+            codice_fiscale: payload.codice_fiscale || null,
+            email: payload.email || null,
+            telefono: payload.telefono || null,
+            indirizzo: payload.indirizzo || null,
+            citta: payload.citta || null,
+            cap: payload.cap || null
+        });
+    } catch (err) {
+        showSaveMessage('save-message', err.message || 'Dati non validi', true);
+        return;
+    }
+    const { createdAt, updatedAt, createdBy, createdByEmail, ...payloadToSend } = normalized;
 
     const saveBtn = document.querySelector('button[type=\"submit\"][form=\"entity-form\"]');
     const originalText = saveBtn.textContent;
@@ -98,7 +117,7 @@ async function saveEntity(e) {
     try {
         if (isNew) {
             const createApi = httpsCallable(functions, 'createClienteApi');
-            const result = await createApi(payload);
+            const result = await createApi(payloadToSend);
             const id = result.data?.id;
             if (id) {
                 currentEntityId = id;
@@ -109,7 +128,7 @@ async function saveEntity(e) {
             }
         } else {
             const updateApi = httpsCallable(functions, 'updateClienteApi');
-            await updateApi({ clienteId: currentEntityId, ...payload });
+            await updateApi({ clienteId: currentEntityId, ...payloadToSend });
         }
 
         showSaveMessage('save-message');

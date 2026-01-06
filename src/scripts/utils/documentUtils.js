@@ -209,12 +209,21 @@ export class DocumentManager {
         if (!this.previewListEl) return;
         const item = document.createElement('div');
         item.className = 'file-preview-item existing-file';
-        const date = data.createdAt ? data.createdAt.toDate() : new Date();
+        const date = this.parseDate(data.createdAt);
         const formattedDate = date.toLocaleString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' });
-        const formattedSize = data.size > 1024 * 1024 ? `${(data.size / (1024 * 1024)).toFixed(2)} MB` : `${(data.size / 1024).toFixed(2)} KB`;
+        const size = Number(data.size) || 0;
+        const formattedSize = size > 1024 * 1024 ? `${(size / (1024 * 1024)).toFixed(2)} MB` : `${(size / 1024).toFixed(2)} KB`;
         const descriptionHtml = data.description ? `<p class="file-description-display">${data.description}</p>` : '';
         item.innerHTML = `<div class="file-icon-wrapper"><svg class="file-icon" viewBox="0 0 24 24"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg></div><div class="file-details"><a href="${data.url}" target="_blank" class="file-name-link">${data.name}</a>${descriptionHtml}<span class="file-meta">Caricato da: ${data.userName || 'N/D'} il ${formattedDate} (${formattedSize})</span></div><div class="file-actions"><button type="button" class="remove-file-btn" data-doc-id="${docId}" data-storage-path="${data.path}" data-file-name="${data.name}" data-description="${data.description || ''}">&times;</button></div>`;
         this.previewListEl.prepend(item);
+    }
+
+    parseDate(value) {
+        if (!value) return new Date();
+        if (value.toDate && typeof value.toDate === 'function') return value.toDate();
+        if (value._seconds) return new Date(value._seconds * 1000);
+        if (typeof value === 'string' || typeof value === 'number') return new Date(value);
+        return new Date();
     }
     
     showEmptyState(message) {

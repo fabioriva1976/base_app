@@ -20,14 +20,13 @@ Tutti i documenti (sia caricati manualmente che scaricati automaticamente) seguo
   "createdBy": "string|null - UID utente creatore",
   "createdByEmail": "string|null - Email utente creatore",
   "metadata": {
-    "fonte": "string - Fonte del documento (es: 'Normattiva', 'Upload Manuale')",
+    "fonte": "string - Fonte del documento (es: 'Upload Manuale')",
     "dimensione": "number - Dimensione file in bytes",
     "tags": "array - Tag per categorizzazione",
     "titolo": "string - Titolo del documento",
     "descrizione": "string - Descrizione del documento",
     "tipologia": "string - Tipologia del documento",
-    "stato": "boolean - Stato attivo/inattivo",
-    "codiceRedazionale": "string - Codice redazionale (se usi sorgenti esterne, opzionale)"
+    "stato": "boolean - Stato attivo/inattivo"
   }
 }
 ```

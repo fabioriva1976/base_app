@@ -10,9 +10,9 @@ Prima ogni volta che un utente navigava o ricaricava una pagina, venivano rifatt
 
 **Esempio senza cache:**
 ```
-User apre /page-pratiche → getDocs('pratiche') = 50 reads
-User torna indietro e riapre → getDocs('pratiche') = 50 reads (di nuovo!)
-User ricarica pagina → getDocs('pratiche') = 50 reads (di nuovo!)
+User apre /page-record → getDocs('record') = 50 reads
+User torna indietro e riapre → getDocs('record') = 50 reads (di nuovo!)
+User ricarica pagina → getDocs('record') = 50 reads (di nuovo!)
 
 TOTALE: 150 reads per gli stessi dati
 ```
@@ -27,7 +27,7 @@ Sistema di **cache in-memory con invalidazione automatica**:
 
 **Con cache:**
 ```
-User apre /page-pratiche → getDocs('pratiche') = 50 reads ⚠️ + cache
+User apre /page-record → getDocs('record') = 50 reads ⚠️ + cache
 User torna indietro e riapre → cache HIT = 0 reads ✅
 User ricarica pagina → cache HIT = 0 reads ✅
 ...dopo 2 minuti...
@@ -49,11 +49,11 @@ TOTALE: 50-100 reads invece di 150+ (risparmio 33-66%)
 
 ### Aggiornato
 
-**[/src/scripts/page-pratiche.js](../src/scripts/page-pratiche.js)**
+**[/src/scripts/page-record.js](../src/scripts/page-record.js)**
 - Importa utilities cache
 - `loadChats()` usa cache con TTL 2 minuti
 - `loadClienti()` usa cache con TTL 30 minuti
-- `savePratica()` invalida cache dopo create/update
+- `saveRecord()` invalida cache dopo create/update
 - `deleteChat()` invalida cache dopo delete
 
 ## Come Usare
@@ -148,7 +148,7 @@ Scegli il TTL in base alla frequenza di modifica:
 | **Anagrafica clienti** | Rara (1-2 volte/giorno) | 30 minuti |
 | **Lista utenti** | Molto rara (nuovi utenti) | 60 minuti |
 | **Configurazioni** | Rarissima (admin only) | 60 minuti |
-| **Pratiche/Task** | Frequente (ogni ora) | 2-5 minuti |
+| **Record/Task** | Frequente (ogni ora) | 2-5 minuti |
 | **Messaggi chat** | Molto frequente | NO CACHE (usa real-time) |
 | **Documenti** | Media (giornaliera) | 10 minuti |
 
@@ -161,16 +161,16 @@ Usa pattern consistente per facile invalidazione:
 'collection:anagrafica_clienti'
 
 // Collection con filtro utente
-'collection:pratiche:user:${userId}'
+'collection:record:user:${userId}'
 
 // Collection con parametri query
-'collection:documenti:entityType:pratica:entityId:${praticaId}'
+'collection:documenti:entityType:record:entityId:${recordId}'
 
 // Documento singolo
-'document:pratiche:${praticaId}'
+'document:record:${recordId}'
 
 // Query custom
-'query:pratiche:aperte:user:${userId}'
+'query:record:aperte:user:${userId}'
 ```
 
 ## Esempi Completi
@@ -235,8 +235,8 @@ async function setupAutocomplete() {
 ### Esempio 3: Invalidazione Pattern
 
 ```javascript
-// Invalida tutte le cache pratiche per tutti gli utenti
-invalidateCachePattern(/^collection:pratiche:/);
+// Invalida tutte le cache record per tutti gli utenti
+invalidateCachePattern(/^collection:record:/);
 
 // Invalida tutte le cache documenti
 invalidateCachePattern(/^collection:documenti:/);
@@ -257,9 +257,9 @@ window.firestoreCacheStats()
 //   totalKeys: 3,
 //   totalSizeKB: 45.2,
 //   keys: [
-//     { key: 'collection:pratiche:user:abc123', age: 45, sizeKB: 23.4 },
+//     { key: 'collection:record:user:abc123', age: 45, sizeKB: 23.4 },
 //     { key: 'collection:anagrafica_clienti', age: 120, sizeKB: 18.7 },
-//     { key: 'collection:documenti:pratica:xyz', age: 30, sizeKB: 3.1 }
+//     { key: 'collection:documenti:record:xyz', age: 30, sizeKB: 3.1 }
 //   ]
 // }
 
@@ -273,8 +273,8 @@ Il sistema logga automaticamente:
 
 ```
 ✅ Cache HIT: collection:anagrafica_clienti (età: 45s)
-⚠️ Cache MISS: collection:pratiche:user:abc123
-🗑️ Cache invalidata: collection:pratiche:user:abc123
+⚠️ Cache MISS: collection:record:user:abc123
+🗑️ Cache invalidata: collection:record:user:abc123
 ```
 
 Questo ti aiuta a:
@@ -287,7 +287,7 @@ Questo ti aiuta a:
 ### Metriche Attese
 
 **Prima (no cache):**
-- Caricamento lista pratiche: 200-400ms
+- Caricamento lista record: 200-400ms
 - Ogni reload: 200-400ms
 - 10 reload/sessione = 2000-4000ms totali
 - Firestore reads: 50 × 10 = 500 reads
@@ -373,10 +373,10 @@ setInterval(() => {
 2. Usa Real-Time Listeners invece di cache per dati critici
 3. Polling periodico:
 ```javascript
-// Ogni 5 minuti ricarica pratiche
+// Ogni 5 minuti ricarica record
 setInterval(() => {
-    invalidateCache('collection:pratiche:...');
-    loadPratiche();
+    invalidateCache('collection:record:...');
+    loadRecord();
 }, 5 * 60 * 1000);
 ```
 
@@ -415,7 +415,7 @@ Per applicare il caching ad altri file:
 
 ### Media Priorità
 - [ ] `/src/scripts/anagrafica-utenti.js` - Cache utenti (TTL 30 min)
-- [ ] `/src/scripts/page-pratica.js` - Cache singola pratica (TTL 5 min)
+- [ ] `/src/scripts/page-record.js` - Cache singola record (TTL 5 min)
 
 ### Bassa Priorità
 - [ ] Configurazioni (già caricano raramente)

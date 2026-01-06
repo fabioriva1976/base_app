@@ -19,14 +19,14 @@
 **Fix necessari:**
 ```javascript
 // Storage rules - esempio corretto
-match /pratiche/{praticaId}/{allPaths=**} {
+match /record/{recordId}/{allPaths=**} {
   allow read: if request.auth != null &&
     (resource.data.private == false ||
      resource.data.assegnataA == request.auth.uid);
   allow write: if request.auth != null;
 }
 
-match /leggi/{allPaths=**} {
+match /documenti/{allPaths=**} {
   allow read: if request.auth != null;
   allow write: if false; // Solo cron
 }
@@ -113,7 +113,7 @@ let lastDoc = null;
 
 async function loadPage() {
   let q = query(
-    collection(db, 'pratiche'),
+    collection(db, 'record'),
     orderBy('updatedAt', 'desc'),
     limit(pageSize)
   );
@@ -141,7 +141,7 @@ async function searchClienti(term) {
 ```
 
 **File da modificare:**
-- `src/scripts/page-pratiche.js`
+- `src/scripts/page-record.js`
 - `src/scripts/page-documenti.js`
 - `src/scripts/anagrafica-clienti.js`
 - `src/scripts/anagrafica-utenti.js`
@@ -198,7 +198,7 @@ const auth = await getFirebaseAuth();
 
 **Fix chunked upload:**
 ```javascript
-async function uploadLargeFile(file, praticaId) {
+async function uploadLargeFile(file, recordId) {
   const chunkSize = 1024 * 1024; // 1MB chunks
   const chunks = Math.ceil(file.size / chunkSize);
 
@@ -207,7 +207,7 @@ async function uploadLargeFile(file, praticaId) {
     const end = Math.min(start + chunkSize, file.size);
     const chunk = file.slice(start, end);
 
-    await uploadChunk(chunk, i, praticaId);
+    await uploadChunk(chunk, i, recordId);
     updateProgress((i + 1) / chunks * 100);
   }
 }
@@ -227,11 +227,11 @@ async function uploadLargeFile(file, praticaId) {
 
 **Fix consigliato - API Layer:**
 ```javascript
-// functions/api/pratiche.js
+// functions/api/record.js
 const express = require('express');
 const router = express.Router();
 
-// POST /api/pratiche
+// POST /api/record
 router.post('/', async (req, res) => {
   // Validazione con Zod
   const schema = z.object({
@@ -248,21 +248,21 @@ router.post('/', async (req, res) => {
   }
 
   // Business logic
-  const pratica = await createPratica(data);
+  const record = await createRecord(data);
 
-  res.json(pratica);
+  res.json(record);
 });
 
-// GET /api/pratiche
+// GET /api/record
 router.get('/', async (req, res) => {
   const { page = 1, limit = 20 } = req.query;
-  const pratiche = await getPratiche(req.user, page, limit);
-  res.json(pratiche);
+  const record = await getRecord(req.user, page, limit);
+  res.json(record);
 });
 ```
 
 **File da creare:**
-- `functions/api/routes/pratiche.js`
+- `functions/api/routes/record.js`
 - `functions/api/routes/documenti.js`
 - `functions/api/routes/clienti.js`
 - `functions/api/middleware/auth.js`
@@ -280,32 +280,32 @@ router.get('/', async (req, res) => {
 
 **Fix con Zustand (leggero):**
 ```javascript
-// src/scripts/stores/praticheStore.js
+// src/scripts/stores/recordStore.js
 import create from 'zustand';
 import { onSnapshot, collection, query } from 'firebase/firestore';
 
-export const usePraticheStore = create((set, get) => ({
-  pratiche: [],
+export const useRecordStore = create((set, get) => ({
+  record: [],
   loading: false,
   error: null,
   unsubscribe: null,
 
-  // Carica pratiche con real-time
+  // Carica record con real-time
   subscribe: (db, userId) => {
     set({ loading: true });
 
     const q = query(
-      collection(db, 'pratiche'),
+      collection(db, 'record'),
       where('userId', '==', userId)
     );
 
     const unsubscribe = onSnapshot(q,
       (snapshot) => {
-        const pratiche = snapshot.docs.map(doc => ({
+        const record = snapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         }));
-        set({ pratiche, loading: false, error: null });
+        set({ record, loading: false, error: null });
       },
       (error) => {
         set({ error: error.message, loading: false });
@@ -359,14 +359,14 @@ describe('createDocumento', () => {
 
 **2. E2E tests con Cypress:**
 ```javascript
-// cypress/e2e/pratiche.cy.js
-describe('Pratiche Management', () => {
+// cypress/e2e/record.cy.js
+describe('Record Management', () => {
   beforeEach(() => {
     cy.login('admin@test.com', 'password');
   });
 
-  it('should create new pratica', () => {
-    cy.visit('/page-pratiche');
+  it('should create new record', () => {
+    cy.visit('/page-record');
     cy.get('#add-btn').click();
     cy.get('#clientName').type('Cliente Test');
     cy.get('#caseId').type('CASE001');
@@ -422,7 +422,7 @@ jobs:
 - ❌ Nessun error tracking (Sentry/Rollbar)
 - ❌ Nessun performance monitoring
 - ❌ Log non strutturati (difficili da query)
-- ❌ Nessuna metrica di business (pratiche create/giorno, upload falliti, etc.)
+- ❌ Nessuna metrica di business (record create/giorno, upload falliti, etc.)
 
 **Setup Sentry:**
 ```javascript
@@ -496,16 +496,16 @@ module.exports = logger;
 
 **2. Ottimistic update:**
 ```javascript
-async function deletePratica(id) {
+async function deleteRecord(id) {
   // Rimuovi subito dall'UI
-  const backup = pratiche.find(p => p.id === id);
-  setPratiche(pratiche.filter(p => p.id !== id));
+  const backup = record.find(p => p.id === id);
+  setRecord(record.filter(p => p.id !== id));
 
   try {
-    await deleteDoc(doc(db, 'pratiche', id));
+    await deleteDoc(doc(db, 'record', id));
   } catch (error) {
     // Ripristina in caso di errore
-    setPratiche([...pratiche, backup]);
+    setRecord([...record, backup]);
     showError('Errore nell\'eliminazione');
   }
 }
@@ -537,7 +537,7 @@ async function uploadWithProgress(file, onProgress) {
 ```javascript
 // Debounced autosave
 const autosave = debounce(async (formData) => {
-  const draftKey = `draft_pratica_${praticaId}`;
+  const draftKey = `draft_record_${recordId}`;
   localStorage.setItem(draftKey, JSON.stringify(formData));
 }, 1000);
 
@@ -554,7 +554,7 @@ if (draftData) {
 
 **Rischi futuri identificati:**
 - ⚠️ Audit logs cresceranno indefinitamente (nessun TTL)
-- ⚠️ Query `pratiche` diventeranno lente con >10k documenti
+- ⚠️ Query `record` diventeranno lente con >10k documenti
 - ⚠️ Nessuna strategia di archiving per dati vecchi
 - ⚠️ File in Storage senza lifecycle policy (costi crescenti)
 
@@ -564,7 +564,7 @@ if (draftData) {
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 
-exports.archiveOldPratiche = functions
+exports.archiveOldRecord = functions
   .region('europe-west1')
   .pubsub.schedule('0 0 1 * *') // Primo giorno del mese
   .timeZone('Europe/Rome')
@@ -575,35 +575,35 @@ exports.archiveOldPratiche = functions
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
-    // Trova pratiche chiuse da >6 mesi
-    const oldPratiche = await db
-      .collection('pratiche')
+    // Trova record chiuse da >6 mesi
+    const oldRecord = await db
+      .collection('record')
       .where('isOpen', '==', false)
       .where('updatedAt', '<', sixMonthsAgo)
       .get();
 
-    console.log(`Found ${oldPratiche.size} pratiche to archive`);
+    console.log(`Found ${oldRecord.size} record to archive`);
 
     // Archivio in Cloud Storage come JSON
-    const archiveData = oldPratiche.docs.map(doc => ({
+    const archiveData = oldRecord.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     }));
 
     const archiveFile = storage
       .bucket()
-      .file(`archives/pratiche_${new Date().toISOString()}.json`);
+      .file(`archives/record_${new Date().toISOString()}.json`);
 
     await archiveFile.save(JSON.stringify(archiveData, null, 2));
 
     // Elimina da Firestore
     const batch = db.batch();
-    oldPratiche.docs.forEach(doc => {
+    oldRecord.docs.forEach(doc => {
       batch.delete(doc.ref);
     });
     await batch.commit();
 
-    console.log(`Archived ${oldPratiche.size} pratiche`);
+    console.log(`Archived ${oldRecord.size} record`);
   });
 ```
 
@@ -629,7 +629,7 @@ exports.archiveOldPratiche = functions
         },
         "condition": {
           "age": 90,
-          "matchesPrefix": ["documenti/", "pratiche/"]
+          "matchesPrefix": ["documenti/", "record/"]
         }
       }
     ]
@@ -728,7 +728,7 @@ exports.archiveOldPratiche = functions
 ## 📈 METRICHE DI SUCCESSO
 
 ### Performance
-- [ ] Tempo caricamento pagina pratiche < 2s (attualmente ~5s)
+- [ ] Tempo caricamento pagina record < 2s (attualmente ~5s)
 - [ ] Bundle size < 200KB (attualmente ~500KB)
 - [ ] Query Firestore < 100ms p95 (attualmente ~500ms)
 

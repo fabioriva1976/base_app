@@ -4,8 +4,8 @@
 
 Prima avevamo **funzioni di utility duplicate** sparse in più file:
 - [/src/scripts/page-documenti.js](../src/scripts/page-documenti.js) - `formatFileSize()`, `formatDate()`, `formatTags()`
-- [/src/scripts/page-pratica.js](../src/scripts/page-pratica.js) - `formatFileSize()`, `formatDate()`
-- [/src/scripts/page-pratiche.js](../src/scripts/page-pratiche.js) - `formatDate()`
+- [/src/scripts/page-record.js](../src/scripts/page-record.js) - `formatFileSize()`, `formatDate()`
+- [/src/scripts/page-record.js](../src/scripts/page-record.js) - `formatDate()`
 
 Questo causava:
 - ❌ Duplicazione del codice (DRY violation)
@@ -17,12 +17,12 @@ Questo causava:
 
 **`formatFileSize()`:**
 - `page-documenti.js`: Usava logica if/else per calcolare i tagli
-- `page-pratica.js`: Usava logaritmi (più efficiente e preciso)
+- `page-record.js`: Usava logaritmi (più efficiente e preciso)
 
 **`formatDate()`:**
 - `page-documenti.js`: Formato semplice solo data (gg/mm/aaaa)
-- `page-pratica.js`: Formato con ora quando include tempo
-- `page-pratiche.js`: Formato relativo (Oggi, Ieri, X giorni fa)
+- `page-record.js`: Formato con ora quando include tempo
+- `page-record.js`: Formato relativo (Oggi, Ieri, X giorni fa)
 
 ## Soluzione Implementata
 
@@ -33,7 +33,7 @@ src/scripts/utils/formatters.js  ← UNICA FONTE DI VERITÀ
            ↓
     [import da ogni file]
            ↓
-page-documenti.js, page-pratica.js, page-pratiche.js
+page-documenti.js, page-record.js, page-record.js
 ```
 
 ### File Coinvolto
@@ -144,7 +144,7 @@ import { formatFileSize, formatDate, formatTags } from './utils/formatters.js';
 <div>${formatTags(doc.metadata.tags)}</div>
 ```
 
-**page-pratica.js:**
+**page-record.js:**
 ```javascript
 import { formatFileSize, formatDate } from './utils/formatters.js';
 
@@ -152,7 +152,7 @@ import { formatFileSize, formatDate } from './utils/formatters.js';
 formatDate(attachment.uploadedAt, { emptyText: '', includeTime: true })
 ```
 
-**page-pratiche.js:**
+**page-record.js:**
 ```javascript
 import { formatDate } from './utils/formatters.js';
 
@@ -170,12 +170,12 @@ formatDate(chat.updatedAt, { relative: true })
   - Aggiunto: `import { formatFileSize, formatDate, formatTags }`
   - Rimosso: 3 funzioni duplicate (~30 lines)
 
-- [/src/scripts/page-pratica.js](../src/scripts/page-pratica.js)
+- [/src/scripts/page-record.js](../src/scripts/page-record.js)
   - Aggiunto: `import { formatFileSize, formatDate }`
   - Rimosso: 2 funzioni duplicate (~20 lines)
   - Aggiornato: Usaggi con parametro `options`
 
-- [/src/scripts/page-pratiche.js](../src/scripts/page-pratiche.js)
+- [/src/scripts/page-record.js](../src/scripts/page-record.js)
   - Aggiunto: `import { formatDate }`
   - Rimosso: 1 funzione duplicata (~20 lines)
   - Aggiornato: Usaggio con `{ relative: true }`
@@ -201,7 +201,7 @@ function formatFileSize(bytes) {
     // ... logica con if/else ...
 }
 
-// page-pratica.js (4 lines) - IMPLEMENTAZIONE DIVERSA!
+// page-record.js (4 lines) - IMPLEMENTAZIONE DIVERSA!
 function formatFileSize(bytes) {
     if (!bytes || bytes === 0) return '0 B';
     // ... logica con logaritmi ...
@@ -225,7 +225,7 @@ export function formatFileSize(bytes) {
 // page-documenti.js
 import { formatFileSize } from './utils/formatters.js';
 
-// page-pratica.js
+// page-record.js
 import { formatFileSize } from './utils/formatters.js';
 ```
 
@@ -293,8 +293,8 @@ npm run dev
 
 # Testa le pagine:
 # - /page-documenti - Verifica formatFileSize, formatDate, formatTags
-# - /page-pratica - Verifica formatFileSize, formatDate con includeTime
-# - /page-pratiche - Verifica formatDate con relative
+# - /page-record - Verifica formatFileSize, formatDate con includeTime
+# - /page-record - Verifica formatDate con relative
 ```
 
 ## Troubleshooting
@@ -345,8 +345,8 @@ import { formatDate } from '../utils/formatters.js'; // Path errato
 | File | Lines Rimossi | Funzioni Rimosse |
 |------|---------------|------------------|
 | page-documenti.js | ~30 | formatFileSize, formatDate, formatTags |
-| page-pratica.js | ~20 | formatFileSize, formatDate |
-| page-pratiche.js | ~20 | formatDate |
+| page-record.js | ~20 | formatFileSize, formatDate |
+| page-record.js | ~20 | formatDate |
 | **TOTALE** | **~70** | **6 duplicati** |
 
 ## Conclusione

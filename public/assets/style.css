@@ -1030,53 +1030,6 @@ tbody tr:hover td:last-child { border-top-right-radius: var(--border-radius); bo
     display: block; 
 }
 
-/* Stile per l'intestazione contestuale del Passo 3 */
-#current-pratica-info {
-    font-size: 1.15rem;
-    font-weight: 600;
-    color: var(--primary-color);
-    padding-bottom: 0.5rem;
-    margin-bottom: 1.5rem !important;
-    border-bottom: 2px solid var(--border-color);
-}
-.dark-mode #current-pratica-info {
-    color: var(--primary-color);
-    border-bottom-color: var(--border-color);
-}
-
-/* Base per i Box di Pratiche e Linee (Passo 2 e 3) */
-#pratiche-overview-container > div,
-#linee-list-container > div {
-    padding: 1rem;
-    border-radius: var(--border-radius);
-    margin-bottom: 1rem;
-    box-shadow: var(--shadow-sm); 
-    border: 1px solid var(--border-color);
-    background-color: var(--container-bg);
-    transition: all 0.2s ease;
-}
-
-/* Effetto al passaggio del mouse sui box */
-#pratiche-overview-container > div:hover,
-#linee-list-container > div:hover {
-    box-shadow: var(--shadow); 
-    transform: translateY(-1px);
-}
-
-/* Bordo colorato a sinistra per i box delle Pratiche */
-#pratiche-overview-container > div {
-    border-left-width: 5px;
-    border-left-style: solid;
-    border-left-color: var(--primary-color);
-}
-
-/* Bordo colorato a sinistra per i box delle Linee */
-#linee-list-container > div {
-    border-left-width: 5px;
-    border-left-style: solid;
-    border-left-color: var(--success-color); 
-}
-
 /* --- 3. STEPPER VISIVO (NAVIGAZIONE A PALLINI) --- */
 
 #wizard-container {
@@ -1177,17 +1130,7 @@ tbody tr:hover td:last-child { border-top-right-radius: var(--border-radius); bo
 /* --- 4. FIX e Stili Form nel Drawer (per visibilità) --- */
 
 /* Assicura che i form nel drawer siano inizialmente nascosti */
-#pratica-form-container, #linea-form-container {
-    /* Il contenuto sarà gestito dal JS che aggiunge/rimuove la classe .hidden */
-    padding: 1.5rem; /* Aggiunge padding per i form all'interno del drawer */
-}
-#linea-form-container.hidden, #pratica-form-container.hidden {
-    display: none;
-}
-
-#open-pratica-drawer-btn, #open-linea-drawer-btn {
-    width: fit-content;
-}
+/* --- 3. STEPPER VISIVO (NAVIGAZIONE A PALLINI) --- */
 /* --- NOTIFICATIONS DROPDOWN --- */
 .notifications-wrapper {
     position: relative;

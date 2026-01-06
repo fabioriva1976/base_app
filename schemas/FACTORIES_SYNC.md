@@ -17,7 +17,7 @@ Questo causava:
 ### Architettura
 
 ```
-src/scripts/schemas/entityFactory.js  ← UNICA FONTE DI VERITÀ (ES6)
+shared/schemas/entityFactory.js  ← UNICA FONTE DI VERITÀ (ES6)
            ↓
     [sync script]
            ↓
@@ -26,7 +26,7 @@ functions/schemas/entityFactory.js    ← AUTO-GENERATO (CommonJS)
 
 ### File Coinvolti
 
-1. **Sorgente**: [/src/scripts/schemas/entityFactory.js](../src/scripts/schemas/entityFactory.js)
+1. **Sorgente**: [/shared/schemas/entityFactory.js](../shared/schemas/entityFactory.js)
    - File principale con la logica
    - Usa ES6 modules (`export function`)
    - Modifiche vanno fatte QUI
@@ -50,7 +50,7 @@ Quando modifichi le factory functions:
 1. **Modifica SOLO** il file frontend:
    ```bash
    # Apri e modifica
-   vim src/scripts/schemas/entityFactory.js
+   vim shared/schemas/entityFactory.js
    ```
 
 2. **Sincronizza** con il backend:
@@ -117,11 +117,9 @@ const { createDocumento } = require('./schemas/entityFactory');
 const doc = createDocumento({ titolo: 'File.pdf', tipo: 'application/pdf', ... });
 ```
 
-### `createLegge(params)`
-Crea una legge con struttura standard.
-
-### `createLeggeMetadata(params)`
-Crea metadati per documento di tipo legge.
+### Funzioni attive
+- `createDocumento(params)`
+- `createDocumentoMetadata(params)`
 
 ### `createDocumentoMetadata(params)`
 Crea metadati per documento generico.

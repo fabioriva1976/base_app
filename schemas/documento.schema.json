@@ -7,7 +7,7 @@
   "properties": {
     "titolo": {
       "type": "string",
-      "description": "Titolo del documento (es: 'Contratto.pdf', 'Legge 123.txt')"
+      "description": "Titolo del documento (es: 'Contratto.pdf')"
     },
     "tipo": {
       "type": "string",
@@ -16,13 +16,13 @@
     },
     "storagePath": {
       "type": "string",
-      "description": "Percorso del file in Firebase Storage (es: 'documenti/file.pdf', 'leggi/urn-nir-stato-legge-2024.txt')"
+      "description": "Percorso del file in Firebase Storage (es: 'documenti/file.pdf')"
     },
     "entityType": {
       "type": "string",
       "description": "Tipo di entità a cui il documento è collegato",
-      "enum": ["pratiche", "clienti", "utenti", "leggi", "altro"],
-      "examples": ["leggi", "pratiche"]
+      "enum": ["clienti", "utenti", "altro"],
+      "examples": ["clienti", "altro"]
     },
     "entityId": {
       "type": "string",
@@ -51,10 +51,6 @@
       "type": "object",
       "description": "Metadati aggiuntivi specifici per tipo di documento",
       "properties": {
-        "codiceRedazionale": {
-          "type": "string",
-          "description": "Codice redazionale (solo per leggi)"
-        },
         "fonte": {
           "type": "string",
           "description": "Fonte del documento (es: 'Normattiva', 'Upload Manuale')"

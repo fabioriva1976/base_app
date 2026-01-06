@@ -11,7 +11,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const SOURCE_FILE = path.join(__dirname, '../src/scripts/schemas/entityFactory.js');
+const SOURCE_FILE = path.join(__dirname, '../shared/schemas/entityFactory.js');
 const TARGET_FILE = path.join(__dirname, '../functions/schemas/entityFactory.js');
 
 console.log('🔄 Sincronizzazione entityFactory.js...');

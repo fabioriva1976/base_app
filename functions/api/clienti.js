@@ -1,7 +1,9 @@
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const admin = require("firebase-admin");
+const { FieldValue } = require("firebase-admin/firestore");
 const { region, corsOrigins, runtimeOpts } = require("../index");
 const { requireAuth } = require("../utils/authHelpers");
+const { createCliente } = require("../schemas/entityFactory");
 
 if (admin.apps.length === 0) {
     admin.initializeApp();
@@ -125,8 +127,9 @@ exports.createClienteApi = onCall({
             }
         }
 
-        // ✅ SANITIZZAZIONE
-        const clienteData = {
+        // ✅ NORMALIZZAZIONE CON FACTORY CONDIVISA
+        const baseCliente = createCliente({
+            ...data,
             ragione_sociale: sanitizeString(data.ragione_sociale),
             email: data.email ? sanitizeString(data.email.toLowerCase()) : null,
             telefono: data.telefono ? sanitizeString(data.telefono) : null,
@@ -139,10 +142,17 @@ exports.createClienteApi = onCall({
             provincia: data.provincia ? sanitizeString(data.provincia) : null,
             note: data.note ? sanitizeString(data.note) : null,
             stato: data.stato === true,
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
-            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
             createdBy: userId,
             createdByEmail: request.auth.token.email || null
+        });
+
+        // Timestamp server-side
+        const clienteData = {
+            ...baseCliente,
+            createdAt: FieldValue.serverTimestamp(),
+            updatedAt: FieldValue.serverTimestamp(),
+            lastModifiedBy: userId,
+            lastModifiedByEmail: request.auth.token.email || null
         };
 
         // ✅ SALVATAGGIO
@@ -220,8 +230,10 @@ exports.updateClienteApi = onCall({
 
         // ✅ SANITIZZAZIONE
         const updateData = {
-            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-            updatedBy: userId
+            updatedAt: FieldValue.serverTimestamp(),
+            updatedBy: userId,
+            lastModifiedBy: userId,
+            lastModifiedByEmail: request.auth.token.email || null
         };
 
         if (updates.ragione_sociale) updateData.ragione_sociale = sanitizeString(updates.ragione_sociale);
@@ -280,19 +292,6 @@ exports.deleteClienteApi = onCall({
             throw new HttpsError('not-found', 'Cliente non trovato');
         }
 
-        // ✅ VERIFICA PRATICHE COLLEGATE
-        const praticheQuery = await db.collection('pratiche')
-            .where('clientId', '==', clienteId)
-            .limit(1)
-            .get();
-
-        if (!praticheQuery.empty) {
-            throw new HttpsError(
-                'failed-precondition',
-                'Impossibile eliminare: cliente ha pratiche collegate'
-            );
-        }
-
         // ✅ ELIMINAZIONE
         await clienteRef.delete();
 
@@ -311,7 +310,7 @@ exports.deleteClienteApi = onCall({
 });
 
 /**
- * Lista clienti (autenticato) - base per UI, senza pratiche
+ * Lista clienti (autenticato)
  */
 exports.listClientiApi = onCall({
     region: region,
