@@ -20,39 +20,6 @@ const user = Astro.locals.user;
   import { auth } from '../lib/firebase-client';
   import { onAuthStateChanged } from 'firebase/auth';
 
-  // Gestione tema
-  const themeToggle = document.getElementById('theme-toggle');
-  const savedTheme = localStorage.getItem('theme') || 'light';
-
-  if (savedTheme === 'dark') {
-    document.documentElement.classList.add('dark-mode');
-  }
-
-  themeToggle?.addEventListener('click', () => {
-    const isDark = document.documentElement.classList.contains('dark-mode');
-    if (isDark) {
-      document.documentElement.classList.remove('dark-mode');
-      localStorage.setItem('theme', 'light');
-    } else {
-      document.documentElement.classList.add('dark-mode');
-      localStorage.setItem('theme', 'dark');
-    }
-  });
-
-  // Gestione sidebar mobile
-  const sidebarToggle = document.getElementById('toggle-sidebar-btn');
-  const mobileMenuBtn = document.getElementById('mobile-menu-btn');
-  const sidebar = document.querySelector('.sidebar');
-  const appWrapper = document.querySelector('.app-wrapper');
-
-  sidebarToggle?.addEventListener('click', () => {
-    appWrapper?.classList.toggle('sidebar-collapsed');
-  });
-
-  mobileMenuBtn?.addEventListener('click', () => {
-    sidebar?.classList.toggle('mobile-open');
-  });
-
   // Aggiorna avatar se Firebase fornisce un photoURL personalizzato
   onAuthStateChanged(auth, (user) => {
     if (user && user.photoURL) {

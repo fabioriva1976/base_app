@@ -21,6 +21,13 @@ const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(display
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css" rel="stylesheet" type="text/css">
     <link rel="stylesheet" href="/assets/style.css">
+    <script is:inline>
+      // Applica il tema salvato prima del render per evitare flash
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme === 'dark') {
+        document.documentElement.classList.add('dark-mode');
+      }
+    </script>
 </head>
 <body>
     <div class="app-wrapper">
@@ -125,4 +132,37 @@ const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(display
       window.location.href = '/profile';
     });
   }
+
+  // Gestione tema centralizzata
+  const themeToggle = document.getElementById('theme-toggle');
+  const applyTheme = (theme: 'light' | 'dark') => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark-mode');
+    } else {
+      document.documentElement.classList.remove('dark-mode');
+    }
+    localStorage.setItem('theme', theme);
+  };
+
+  const storedTheme = (localStorage.getItem('theme') as 'light' | 'dark' | null) || 'light';
+  applyTheme(storedTheme);
+
+  themeToggle?.addEventListener('click', () => {
+    const isDark = document.documentElement.classList.contains('dark-mode');
+    applyTheme(isDark ? 'light' : 'dark');
+  });
+
+  // Gestione sidebar (desktop collapse + mobile open) centralizzata
+  const appWrapper = document.querySelector('.app-wrapper');
+  const sidebar = document.querySelector('.sidebar');
+  const sidebarToggle = document.getElementById('toggle-sidebar-btn');
+  const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+
+  sidebarToggle?.addEventListener('click', () => {
+    appWrapper?.classList.toggle('sidebar-collapsed');
+  });
+
+  mobileMenuBtn?.addEventListener('click', () => {
+    sidebar?.classList.toggle('mobile-open');
+  });
 </script>

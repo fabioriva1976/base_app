@@ -19,32 +19,6 @@ const user = Astro.locals.user;
   // Inizializzazione Firebase client-side per features interattive
   import { auth } from '../lib/firebase-client';
 
-  // Gestione tema
-  const themeToggle = document.getElementById('theme-toggle');
-  const savedTheme = localStorage.getItem('theme') || 'light';
-  document.documentElement.setAttribute('data-theme', savedTheme);
-
-  themeToggle?.addEventListener('click', () => {
-    const currentTheme = document.documentElement.getAttribute('data-theme');
-    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-    document.documentElement.setAttribute('data-theme', newTheme);
-    localStorage.setItem('theme', newTheme);
-  });
-
-  // Gestione sidebar mobile
-  const sidebarToggle = document.getElementById('toggle-sidebar-btn');
-  const mobileMenuBtn = document.getElementById('mobile-menu-btn');
-  const sidebar = document.querySelector('.sidebar');
-  const appWrapper = document.querySelector('.app-wrapper');
-
-  sidebarToggle?.addEventListener('click', () => {
-    appWrapper?.classList.toggle('sidebar-collapsed');
-  });
-
-  mobileMenuBtn?.addEventListener('click', () => {
-    sidebar?.classList.toggle('mobile-open');
-  });
-
   // Aggiorna avatar se Firebase fornisce un photoURL personalizzato
   import { onAuthStateChanged } from 'firebase/auth';
 
