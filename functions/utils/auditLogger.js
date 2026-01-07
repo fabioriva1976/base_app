@@ -1,6 +1,6 @@
 // functions/utils/auditLogger.js
 
-const admin = require("firebase-admin");
+import admin from "firebase-admin";
 
 // Non inizializzare qui - usa l'istanza già inizializzata
 const db = admin.firestore();
@@ -8,7 +8,7 @@ const db = admin.firestore();
 /**
  * Enum per i tipi di azioni
  */
-const AuditAction = {
+export const AuditAction = {
     CREATE: "create",
     UPDATE: "update",
     DELETE: "delete",
@@ -31,7 +31,7 @@ const AuditAction = {
  *
  * @returns {Promise<string>} ID del documento di audit creato
  */
-async function logAudit({
+export async function logAudit({
     entityType,
     entityId,
     action,
@@ -141,7 +141,7 @@ function sanitizeData(data) {
  * @param {number} limit - Numero massimo di risultati (default: 50)
  * @returns {Promise<Array>} Array di log di audit
  */
-async function getAuditLogs(entityType, entityId, limit = 50) {
+export async function getAuditLogs(entityType, entityId, limit = 50) {
     try {
         const snapshot = await db.collection("audit_logs")
             .where("entityType", "==", entityType)
@@ -172,7 +172,7 @@ async function getAuditLogs(entityType, entityId, limit = 50) {
  * @param {number} limit - Numero massimo di risultati (default: 50)
  * @returns {Promise<Array>} Array di log di audit
  */
-async function getAuditLogsByUser(userId, limit = 50) {
+export async function getAuditLogsByUser(userId, limit = 50) {
     try {
         const snapshot = await db.collection("audit_logs")
             .where("userId", "==", userId)
@@ -207,7 +207,7 @@ async function getAuditLogsByUser(userId, limit = 50) {
  * @param {number} filters.limit - Numero massimo di risultati (default: 100)
  * @returns {Promise<Array>} Array di log di audit
  */
-async function getAuditLogsWithFilters(filters = {}) {
+export async function getAuditLogsWithFilters(filters = {}) {
     try {
         let query = db.collection("audit_logs");
 
@@ -258,7 +258,7 @@ async function getAuditLogsWithFilters(filters = {}) {
  * @param {number} daysToKeep - Numero di giorni di log da mantenere
  * @returns {Promise<number>} Numero di log eliminati
  */
-async function cleanOldAuditLogs(daysToKeep = 90) {
+export async function cleanOldAuditLogs(daysToKeep = 90) {
     try {
         const cutoffDate = new Date();
         cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
@@ -287,12 +287,3 @@ async function cleanOldAuditLogs(daysToKeep = 90) {
         throw error;
     }
 }
-
-module.exports = {
-    logAudit,
-    getAuditLogs,
-    getAuditLogsByUser,
-    getAuditLogsWithFilters,
-    cleanOldAuditLogs,
-    AuditAction,
-};

@@ -1,13 +1,12 @@
-const { onCall, HttpsError } = require("firebase-functions/v2/https");
-const admin = require("firebase-admin");
-const { region, corsOrigins, runtimeOpts } = require("../index");
-const {
+import { onCall, HttpsError } from "firebase-functions/v2/https";
+import admin from "firebase-admin";
+import { region, corsOrigins, runtimeOpts } from "../config.js";
+import {
   requireAdmin,
   canManageUser,
-  canCreateUserWithRole,
   getUserRole,
   isSuperUser
-} = require("../utils/authHelpers");
+} from "../utils/authHelpers.js";
 
 if (admin.apps.length === 0) {
   admin.initializeApp();
@@ -18,7 +17,7 @@ const auth = admin.auth();
 /**
  * Lista utenti (solo admin/superuser)
  */
-const userListApi = onCall({ region, cors: corsOrigins, ...runtimeOpts }, async (request) => {
+export const userListApi = onCall({ region, cors: corsOrigins, ...runtimeOpts }, async (request) => {
   await requireAdmin(request);
 
   try {
@@ -41,14 +40,14 @@ const userListApi = onCall({ region, cors: corsOrigins, ...runtimeOpts }, async 
 /**
  * Crea o sincronizza un utente (solo admin/superuser)
  */
-const userCreateApi = onCall({ region, cors: corsOrigins, ...runtimeOpts }, async (request) => {
+export const userCreateApi = onCall({ region, cors: corsOrigins, ...runtimeOpts }, async (request) => {
   const callerRole = await requireAdmin(request);
 
   try {
     const data = request.data || {};
     const targetRole = data.ruolo;
 
-    if (!canCreateUserWithRole(callerRole, targetRole)) {
+    if (!canManageUser(callerRole, targetRole)) {
       throw new HttpsError(
         "permission-denied",
         `Non puoi creare un utente con ruolo '${targetRole}'.`
@@ -96,7 +95,7 @@ const userCreateApi = onCall({ region, cors: corsOrigins, ...runtimeOpts }, asyn
 /**
  * Aggiorna un utente (solo admin/superuser)
  */
-const userUpdateApi = onCall({ region, cors: corsOrigins, ...runtimeOpts }, async (request) => {
+export const userUpdateApi = onCall({ region, cors: corsOrigins, ...runtimeOpts }, async (request) => {
   const callerRole = await requireAdmin(request);
   const data = request.data || {};
   const { uid, ruolo: targetRole, ...updateData } = data;
@@ -121,7 +120,7 @@ const userUpdateApi = onCall({ region, cors: corsOrigins, ...runtimeOpts }, asyn
     }
 
     if (targetRole && targetRole !== currentTargetRole) {
-      if (!canCreateUserWithRole(callerRole, targetRole)) {
+      if (!canManageUser(callerRole, targetRole)) {
         throw new HttpsError(
           "permission-denied",
           `Non puoi assegnare il ruolo '${targetRole}'.`
@@ -142,7 +141,7 @@ const userUpdateApi = onCall({ region, cors: corsOrigins, ...runtimeOpts }, asyn
 /**
  * Elimina un utente (solo admin/superuser)
  */
-const userDeleteApi = onCall({ region, cors: corsOrigins, ...runtimeOpts }, async (request) => {
+export const userDeleteApi = onCall({ region, cors: corsOrigins, ...runtimeOpts }, async (request) => {
   const callerRole = await requireAdmin(request);
   const data = request.data || {};
 
@@ -194,10 +193,3 @@ const userDeleteApi = onCall({ region, cors: corsOrigins, ...runtimeOpts }, asyn
     throw new HttpsError("internal", error.message);
   }
 });
-
-module.exports = {
-  userListApi,
-  userCreateApi,
-  userUpdateApi,
-  userDeleteApi
-};

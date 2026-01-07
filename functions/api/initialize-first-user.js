@@ -1,6 +1,6 @@
-const { onCall, HttpsError } = require("firebase-functions/v2/https");
-const admin = require("firebase-admin");
-const { region, corsOrigins, runtimeOpts } = require("../index");
+import { onCall, HttpsError } from "firebase-functions/v2/https";
+import admin from "firebase-admin";
+import { region, corsOrigins } from "../config.js";
 
 if (admin.apps.length === 0) {
     admin.initializeApp();
@@ -9,7 +9,7 @@ if (admin.apps.length === 0) {
 // Inizializza il primo utente del sistema:
 // - Bypassa i permessi quando la collezione 'utenti' è vuota
 // - Imposta il ruolo superuser su Auth (custom claims) e su Firestore
-const initializeFirstUserApi = onCall({
+export const initializeFirstUserApi = onCall({
     region,
     cors: corsOrigins
 }, async (request) => {
@@ -50,5 +50,3 @@ const initializeFirstUserApi = onCall({
 
     return { success: true, ruolo: 'superuser' };
 });
-
-module.exports = { initializeFirstUserApi };

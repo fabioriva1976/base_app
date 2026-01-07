@@ -1,13 +1,13 @@
 // functions/triggers/onUtentiChange.js
 
-const { onDocumentWritten } = require("firebase-functions/v2/firestore");
-const { logAudit, AuditAction } = require("../utils/auditLogger");
-const { runtimeOpts } = require("../index");
+import { onDocumentWritten } from "firebase-functions/v2/firestore";
+import { logAudit, AuditAction } from "../utils/auditLogger.js";
+import { runtimeOpts, region } from "../config.js";
 
 /**
  * Trigger che si attiva quando un documento nella collezione 'utenti' viene creato, modificato o eliminato
  */
-exports.onUtentiChange = onDocumentWritten(
+export const onUtentiChange = onDocumentWritten(
     {
         document: "utenti/{userId}",
         region: "europe-west1",

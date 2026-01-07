@@ -1,12 +1,12 @@
 /**
  * Firebase Cloud Function per servire l'applicazione Astro SSR
  */
-const { onRequest } = require("firebase-functions/v2/https");
+import { onRequest } from "firebase-functions/v2/https";
 
 let handler;
 
 // Lazy load del server Astro
-function getAstroHandler() {
+async function getAstroHandler() {
   if (!handler) {
     const { handler: astroHandler } = require("./dist/server/entry.mjs");
     handler = astroHandler;
@@ -21,7 +21,7 @@ function getAstroHandler() {
  * - npm run build (genera dist in functions/dist)
  * - firebase deploy --only hosting,functions:astroSSR
  */
-exports.astroSSR = onRequest(
+export const astroSSR = onRequest(
   {
     region: "europe-west1",
     cpu: 1,
@@ -33,7 +33,7 @@ exports.astroSSR = onRequest(
   },
   async (request, response) => {
     try {
-      const astroHandler = getAstroHandler();
+      const astroHandler = await getAstroHandler();
       await astroHandler(request, response);
     } catch (error) {
       console.error("Astro SSR error:", error);

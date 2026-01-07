@@ -1,8 +1,8 @@
-const { HttpsError } = require("firebase-functions/v2/https");
-const admin = require("firebase-admin");
+import { HttpsError } from "firebase-functions/v2/https";
+import admin from "firebase-admin";
 
 // Normalizza il campo ruolo (può essere string o array) in un array di stringhe
-function normalizeRoles(ruoloField) {
+export function normalizeRoles(ruoloField) {
     if (Array.isArray(ruoloField)) {
         return ruoloField.filter(r => typeof r === 'string' && r.trim().length > 0);
     }
@@ -18,7 +18,7 @@ function normalizeRoles(ruoloField) {
  * @param {string} uid - UID dell'utente
  * @returns {Promise<string|null>} Il ruolo dell'utente o null se non trovato
  */
-async function getUserRole(uid) {
+export async function getUserRole(uid) {
     try {
         const db = admin.firestore();
         const userDoc = await db.collection('utenti').doc(uid).get();
@@ -31,7 +31,6 @@ async function getUserRole(uid) {
         const roles = normalizeRoles(userDoc.data().ruolo);
         const primaryRole = roles[0] || null;
 
-        console.log(`Ruolo utente ${uid}: ${primaryRole || 'nessuno'}`);
         return primaryRole;
     } catch (error) {
         console.error(`Errore nel recupero ruolo per ${uid}:`, error);
@@ -44,7 +43,7 @@ async function getUserRole(uid) {
  * @param {string} ruolo - Ruolo da verificare
  * @returns {boolean}
  */
-function isSuperUser(ruolo) {
+export function isSuperUser(ruolo) {
     return normalizeRoles(ruolo).includes('superuser');
 }
 
@@ -53,7 +52,7 @@ function isSuperUser(ruolo) {
  * @param {string} ruolo - Ruolo da verificare
  * @returns {boolean}
  */
-function isAdmin(ruolo) {
+export function isAdmin(ruolo) {
     const roles = normalizeRoles(ruolo);
     return roles.includes('admin') || roles.includes('superuser');
 }
@@ -63,7 +62,7 @@ function isAdmin(ruolo) {
  * @param {string} ruolo - Ruolo da verificare
  * @returns {boolean}
  */
-function isOperator(ruolo) {
+export function isOperator(ruolo) {
     const roles = normalizeRoles(ruolo);
     return roles.includes('operatore') || roles.includes('admin') || roles.includes('superuser');
 }
@@ -73,7 +72,7 @@ function isOperator(ruolo) {
  * @param {Object} request - Request object della Cloud Function
  * @throws {HttpsError} Se l'utente non è autenticato
  */
-function requireAuth(request) {
+export function requireAuth(request) {
     if (!request.auth) {
         throw new HttpsError('unauthenticated', 'Devi essere autenticato per eseguire questa operazione.');
     }
@@ -84,7 +83,7 @@ function requireAuth(request) {
  * @param {Object} request - Request object della Cloud Function
  * @throws {HttpsError} Se l'utente non è autenticato o non è superuser
  */
-async function requireSuperUser(request) {
+export async function requireSuperUser(request) {
     requireAuth(request);
 
     const role = await getUserRole(request.auth.uid);
@@ -104,7 +103,7 @@ async function requireSuperUser(request) {
  * @param {Object} request - Request object della Cloud Function
  * @throws {HttpsError} Se l'utente non è autenticato o non è admin
  */
-async function requireAdmin(request) {
+export async function requireAdmin(request) {
     requireAuth(request);
 
     const role = await getUserRole(request.auth.uid);
@@ -124,7 +123,7 @@ async function requireAdmin(request) {
  * @param {Object} request - Request object della Cloud Function
  * @throws {HttpsError} Se l'utente non è autenticato o non è operatore
  */
-async function requireOperator(request) {
+export async function requireOperator(request) {
     requireAuth(request);
 
     const role = await getUserRole(request.auth.uid);
@@ -147,7 +146,7 @@ async function requireOperator(request) {
  * @param {string} targetRole - Ruolo dell'utente target
  * @returns {boolean}
  */
-function canManageUser(callerRole, targetRole) {
+export function canManageUser(callerRole, targetRole) {
     // Superuser può gestire chiunque
     if (isSuperUser(callerRole)) {
         return true;
@@ -167,29 +166,3 @@ function canManageUser(callerRole, targetRole) {
  * @param {string} newRole - Ruolo da assegnare al nuovo utente
  * @returns {boolean}
  */
-function canCreateUserWithRole(callerRole, newRole) {
-    // Superuser può creare chiunque
-    if (isSuperUser(callerRole)) {
-        return true;
-    }
-
-    // Admin può creare solo operatori
-    if (isAdmin(callerRole)) {
-        return newRole === 'operatore';
-    }
-
-    return false;
-}
-
-module.exports = {
-    getUserRole,
-    isSuperUser,
-    isAdmin,
-    isOperator,
-    requireAuth,
-    requireSuperUser,
-    requireAdmin,
-    requireOperator,
-    canManageUser,
-    canCreateUserWithRole
-};
