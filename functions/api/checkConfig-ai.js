@@ -8,8 +8,8 @@ const { requireSuperUser } = require("../utils/authHelpers");
  * Test configurazione AI - SOLO SUPERUSER
  * Solo i superuser possono testare la configurazione AI per sicurezza
  */
-exports.testAiApi = onCall({ region, cors: true }, async (request) => {
-    console.log("🔍 testAiApi chiamata");
+exports.checkAiApi = onCall({ region, cors: true }, async (request) => {
+    console.log("🔍 checkAiApi chiamata");
 
     // ✅ SECURITY: Richiede ruolo superuser
     await requireSuperUser(request);

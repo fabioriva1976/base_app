@@ -13,18 +13,15 @@ RUN set -eux; \
 
 WORKDIR /app
 
-# --- Install Root Dependencies ---
-# Copy only the dependency manifest to leverage Docker's layer caching.
+# --- Install All Workspace Dependencies ---
+# Copia tutti i file package.json e il lockfile per sfruttare la cache di Docker.
+# Questo permette a npm di riconoscere l'intera struttura del workspace.
 COPY package.json package-lock.json* ./
-# Install dependencies.
-RUN npm install --production
-
-# --- Install Functions Dependencies ---
-# Copy only the functions' package.json to its directory.
 COPY functions/package.json ./functions/
-# Run npm install inside the functions directory. This will generate a fresh
-# package-lock.json and install dependencies correctly within the image.
-RUN cd functions && npm install
+COPY shared/package.json ./shared/
+# Esegui un singolo 'npm ci' dalla root. Questo installerà tutte le dipendenze
+# per tutti i workspace (incluse le devDependencies necessarie per i test).
+RUN npm ci
 
 # --- Copy Application Code ---
 COPY . .

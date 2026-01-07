@@ -1,7 +1,7 @@
-const { onCall, HttpsError } = require("firebase-functions/v2/https");
-const admin = require("firebase-admin");
-const { region, corsOrigins, runtimeOpts } = require("../index");
-const { requireSuperUser, requireAdmin } = require("../utils/authHelpers");
+import { onCall, HttpsError } from "firebase-functions/v2/https";
+import admin from "firebase-admin";
+import { region, corsOrigins, runtimeOpts } from "../config.js";
+import { requireSuperUser, requireAdmin } from "../utils/authHelpers.js";
 
 if (admin.apps.length === 0) {
   admin.initializeApp();
@@ -27,7 +27,7 @@ function validateSmtp(data) {
 }
 
 // Lettura configurazione SMTP (admin/superuser)
-const getConfigSmtpApi = onCall(
+export const getConfigSmtpApi = onCall(
   { region, cors: corsOrigins, ...runtimeOpts },
   async (request) => {
     await requireAdmin(request);
@@ -42,7 +42,7 @@ const getConfigSmtpApi = onCall(
 );
 
 // Salvataggio configurazione SMTP (solo superuser)
-const saveConfigSmtpApi = onCall(
+export const saveConfigSmtpApi = onCall(
   { region, cors: corsOrigins, ...runtimeOpts },
   async (request) => {
     await requireSuperUser(request);
@@ -66,8 +66,3 @@ const saveConfigSmtpApi = onCall(
     return { success: true };
   }
 );
-
-module.exports = {
-  getConfigSmtpApi,
-  saveConfigSmtpApi
-};

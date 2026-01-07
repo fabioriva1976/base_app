@@ -10,8 +10,8 @@ const { requireSuperUser } = require("../utils/authHelpers");
  * Test configurazione SMTP - SOLO SUPERUSER
  * Solo i superuser possono testare la configurazione SMTP per sicurezza
  */
-exports.testSmtpApi = onCall({ region, cors: true }, async (request) => {
-    console.log("🔍 testSmtpApi chiamata con request.data:", request.data);
+exports.checkSmtpApi = onCall({ region, cors: true }, async (request) => {
+    console.log("🔍 checkSmtpApi chiamata con request.data:", request.data);
 
     // ✅ SECURITY: Richiede ruolo superuser
     await requireSuperUser(request);

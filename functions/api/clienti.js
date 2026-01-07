@@ -1,9 +1,13 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
+import { getApps, initializeApp } from "firebase-admin/app";
 import { requireAdmin, requireOperator } from "../utils/authHelpers.js";
 import { createCliente } from "../../shared/schemas/entityFactory.js";
 import { region, corsOrigins } from "../config.js";
 
+if (getApps().length === 0) {
+    initializeApp();
+}
 const db = getFirestore();
 
 /**

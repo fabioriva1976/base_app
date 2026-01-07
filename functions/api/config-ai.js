@@ -1,7 +1,7 @@
-const { onCall, HttpsError } = require("firebase-functions/v2/https");
-const admin = require("firebase-admin");
-const { region, corsOrigins, runtimeOpts } = require("../index");
-const { requireSuperUser, requireAdmin } = require("../utils/authHelpers");
+import { onCall, HttpsError } from "firebase-functions/v2/https";
+import admin from "firebase-admin";
+import { region, corsOrigins, runtimeOpts } from "../config.js";
+import { requireSuperUser, requireAdmin } from "../utils/authHelpers.js";
 
 if (admin.apps.length === 0) {
   admin.initializeApp();
@@ -31,7 +31,7 @@ function validateAi(data) {
 }
 
 // Lettura configurazione AI (admin/superuser)
-const getConfigAiApi = onCall(
+export const getConfigAiApi = onCall(
   { region, cors: corsOrigins, ...runtimeOpts },
   async (request) => {
     await requireAdmin(request);
@@ -46,7 +46,7 @@ const getConfigAiApi = onCall(
 );
 
 // Salvataggio configurazione AI (solo superuser)
-const saveConfigAiApi = onCall(
+export const saveConfigAiApi = onCall(
   { region, cors: corsOrigins, ...runtimeOpts },
   async (request) => {
     await requireSuperUser(request);
@@ -70,8 +70,3 @@ const saveConfigAiApi = onCall(
     return { success: true };
   }
 );
-
-module.exports = {
-  getConfigAiApi,
-  saveConfigAiApi
-};

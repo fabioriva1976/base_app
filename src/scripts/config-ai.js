@@ -154,7 +154,7 @@ async function testAI() {
     btn.innerHTML = '<span class="btn-loader"></span>Test in corso...';
 
     try {
-        const testAi = httpsCallable(functions, 'testAiApi');
+        const testAi = httpsCallable(functions, 'checkAiApi');
         const result = await testAi({});
 
         if (result.data.success) {

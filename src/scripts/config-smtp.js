@@ -193,7 +193,7 @@ async function sendTestEmail() {
         }
 
         // Chiama la Cloud Function per testare SMTP
-        const testSmtp = httpsCallable(functions, 'testSmtpApi');
+        const testSmtp = httpsCallable(functions, 'checkSmtpApi');
         const result = await testSmtp({ testEmail });
 
         console.log('Test SMTP result:', result.data);

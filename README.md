@@ -19,18 +19,15 @@ Prerequisiti: Docker + docker-compose. Tutto parte nel container `firebase-cli` 
 Se ti serve una shell (es. per comandi firebase manuali):  
 `docker compose exec -it firebase-cli sh`
 
-## Deploy su Firebase
-Devi essere autenticato con Firebase CLI (puoi farlo anche nel container con `firebase login`).
 
-- Deploy completo (Hosting + astroSSR + funzioni API):  
-  `docker compose exec firebase-cli npm run deploy:hosting`
-- Solo funzioni:  
-  `docker compose exec firebase-cli firebase deploy --only functions`
-- Solo hosting + astroSSR:  
-  `docker compose exec firebase-cli firebase deploy --only hosting,functions:astroSSR`
+## Testing
+Per eseguire i test, entra nel container Docker:
+`docker compose exec -it firebase-cli sh`
 
-- **Regole di Sicurezza**: se modifichi i file `firestore.rules` o `storage.rules`, esegui il deploy specifico:
-  `docker compose exec firebase-cli firebase deploy --only firestore:rules,storage:rules`
+Una volta dentro, puoi lanciare i comandi:
+- `cd /app`
+- **Esegui tutti i test (Unit e Integrazione):** `npm test`
+- **Apri l'interfaccia di Cypress per i test E2E:** `npx cypress open`
 
 
 ## Sincronizzare Indici Firestore in Locale
@@ -52,10 +49,25 @@ Le funzioni cron non partono automaticamente nell'emulatore. Per testarle:
 
 
 
+
+## Lanciare npm install
+docker compose run --rm firebase-cli npm install
+
+
+
+## Deploy su Firebase
+Devi essere autenticato con Firebase CLI (puoi farlo anche nel container con `firebase login`).
+
+- Deploy completo (Hosting + astroSSR + funzioni API):  
+  `docker compose exec firebase-cli npm run deploy:hosting`
+- Solo funzioni:  
+  `docker compose exec firebase-cli firebase deploy --only functions`
+- Solo hosting + astroSSR:  
+  `docker compose exec firebase-cli firebase deploy --only hosting,functions:astroSSR`
+
+- **Regole di Sicurezza**: se modifichi i file `firestore.rules` o `storage.rules`, esegui il deploy specifico:
+  `docker compose exec firebase-cli firebase deploy --only firestore:rules,storage:rules`
+
+
 ## Log produzione di function
 `docker compose exec firebase-cli firebase functions:log --only astroSSR`
-
-
-
-
-
