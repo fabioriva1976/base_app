@@ -1,0 +1,28 @@
+FROM cypress/included:15.0.0
+
+USER root
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    xvfb \
+    dbus-x11 \
+    x11-utils \
+    x11vnc \
+    fluxbox \
+    novnc \
+    websockify \
+  && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /e2e
+
+COPY package.json package-lock.json* ./
+RUN npm ci
+
+COPY . .
+RUN chmod +x /e2e/scripts/cypress-ui.sh
+
+ENV CYPRESS_BASE_URL=http://firebase-cli:3000
+ENV DISPLAY=:99
+
+EXPOSE 5900 7900
+
+ENTRYPOINT ["/e2e/scripts/cypress-ui.sh"]

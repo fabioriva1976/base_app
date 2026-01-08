@@ -6,3 +6,4 @@ firebase-debug.log
 firestore-debug.log
 .git
 .DS_Store
+.firebase-credentials

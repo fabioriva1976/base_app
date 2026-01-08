@@ -34,7 +34,24 @@ services:
       - CHOKIDAR_INTERVAL=500
       # Ruolo utente per testing in DEV (superuser, admin, operatore)
       - DEV_USER_ROLE=superuser
+  cypress-ui:
+    build:
+      context: .
+      dockerfile: Dockerfile.cypress
+    container_name: "cypress_ui"
+    working_dir: /e2e
+    depends_on:
+      - firebase-cli
+    # Usa network host per accedere direttamente a localhost
+    network_mode: "host"
+    environment:
+      - CYPRESS_BASE_URL=http://localhost:3000
+      - DISPLAY=:99
+    volumes:
+      - .:/e2e
+      - cypress_node_modules:/e2e/node_modules
 
 volumes:
   node_modules:
   functions_node_modules:
+  cypress_node_modules:

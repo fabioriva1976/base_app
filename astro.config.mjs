@@ -17,6 +17,24 @@ export default defineConfig({
     host: true
   },
   vite: {
+    server: {
+      host: '0.0.0.0',
+      // Permetti connessioni da qualsiasi host (per Docker e testing)
+      hmr: {
+        host: 'firebase-cli',
+        clientPort: 3000
+      },
+      // Disabilita il controllo dell'host per permettere richieste da Docker
+      strictPort: false,
+      // Disabilita completamente il check dell'host per test E2E
+      watch: {
+        usePolling: true
+      }
+    },
+    // Previene il blocco delle richieste da host non localhost
+    preview: {
+      host: '0.0.0.0'
+    },
     ssr: {
       external: ['firebase-admin']
     },
