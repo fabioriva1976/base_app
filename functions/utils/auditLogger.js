@@ -2,8 +2,10 @@
 
 import admin from "firebase-admin";
 
-// Non inizializzare qui - usa l'istanza già inizializzata
-const db = admin.firestore();
+// Lazy initialization - ottiene Firestore solo quando serve
+function getDb() {
+    return admin.firestore();
+}
 
 /**
  * Enum per i tipi di azioni
@@ -67,7 +69,7 @@ export async function logAudit({
         };
 
         // Salva nel database nella collection 'audit_logs'
-        const docRef = await db.collection("audit_logs").add(auditLog);
+        const docRef = await getDb().collection("audit_logs").add(auditLog);
 
         console.log(`Audit log creato: ${docRef.id} - ${action} su ${entityType}/${entityId}`);
         return docRef.id;
@@ -143,7 +145,7 @@ function sanitizeData(data) {
  */
 export async function getAuditLogs(entityType, entityId, limit = 50) {
     try {
-        const snapshot = await db.collection("audit_logs")
+        const snapshot = await getDb().collection("audit_logs")
             .where("entityType", "==", entityType)
             .where("entityId", "==", entityId)
             .orderBy("timestamp", "desc")
@@ -174,7 +176,7 @@ export async function getAuditLogs(entityType, entityId, limit = 50) {
  */
 export async function getAuditLogsByUser(userId, limit = 50) {
     try {
-        const snapshot = await db.collection("audit_logs")
+        const snapshot = await getDb().collection("audit_logs")
             .where("userId", "==", userId)
             .orderBy("timestamp", "desc")
             .limit(limit)
@@ -209,7 +211,7 @@ export async function getAuditLogsByUser(userId, limit = 50) {
  */
 export async function getAuditLogsWithFilters(filters = {}) {
     try {
-        let query = db.collection("audit_logs");
+        let query = getDb().collection("audit_logs");
 
         if (filters.entityType) {
             query = query.where("entityType", "==", filters.entityType);
@@ -263,7 +265,7 @@ export async function cleanOldAuditLogs(daysToKeep = 90) {
         const cutoffDate = new Date();
         cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
 
-        const snapshot = await db.collection("audit_logs")
+        const snapshot = await getDb().collection("audit_logs")
             .where("timestamp", "<", cutoffDate)
             .get();
 

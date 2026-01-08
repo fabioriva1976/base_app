@@ -1,19 +1,48 @@
+/**
+ * 🎯 PATTERN TEMPLATE: API CRUD per Entità "Clienti"
+ *
+ * Questo file implementa il pattern standard CRUD per l'entità Cliente.
+ * Per creare una nuova entità (es: Prodotti), copia questo file e:
+ * 1. Sostituisci "Cliente" con "Prodotto"
+ * 2. Sostituisci "clienti" con "prodotti"
+ * 3. Aggiorna i campi di validazione nella funzione validate*Data()
+ * 4. Aggiorna il COLLECTION_NAME
+ * 5. Importa la factory corretta da entityFactory.js
+ *
+ * Operazioni implementate:
+ * - CREATE: clienteCreateApi (solo admin)
+ * - UPDATE: clienteUpdateApi (solo admin)
+ * - DELETE: clienteDeleteApi (solo admin)
+ * - LIST: listClientiApi (operatore+)
+ *
+ * Vedi: PATTERNS.md per la guida completa
+ */
+
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { getApps, initializeApp } from "firebase-admin/app";
 import { requireAdmin, requireOperator } from "../utils/authHelpers.js";
 import { createCliente } from "../../shared/schemas/entityFactory.js";
 import { region, corsOrigins } from "../config.js";
+import { logAudit, AuditAction } from "../utils/auditLogger.js";
 
+// 🔧 Inizializza Firebase Admin (singleton pattern)
 if (getApps().length === 0) {
     initializeApp();
 }
 const db = getFirestore();
 
+// 📝 CONFIGURAZIONE: Nome collection in Firestore
+const COLLECTION_NAME = 'anagrafica_clienti';
+
 /**
- * Valida i dati di un cliente.
- * In un'applicazione reale, qui si userebbe una libreria come Zod.
- * @param {object} data - I dati del cliente.
+ * 🎯 STEP 1: VALIDAZIONE
+ *
+ * Valida i dati di un cliente prima di salvarli.
+ * Per nuove entità: copia questa funzione e aggiorna i campi validati.
+ *
+ * @param {object} data - I dati del cliente da validare
+ * @throws {HttpsError} Se i dati non sono validi
  */
 function validateClienteData(data) {
     if (!data.ragione_sociale || typeof data.ragione_sociale !== 'string' || data.ragione_sociale.trim() === '') {
@@ -25,35 +54,58 @@ function validateClienteData(data) {
 }
 
 /**
- * API per creare un nuovo cliente.
- * Solo gli utenti con ruolo 'admin' o 'superuser' possono accedervi.
+ * 🎯 CREATE API: Crea nuovo cliente
+ *
+ * Permessi richiesti: ADMIN
+ * Input: { ragione_sociale, email?, telefono?, ... }
+ * Output: { id, ...dati cliente }
+ *
+ * Pattern CRUD Step-by-Step:
+ * 1. SICUREZZA: Verifica permessi utente
+ * 2. VALIDAZIONE: Controlla dati input
+ * 3. BUSINESS LOGIC: Usa factory per creare oggetto
+ * 4. DATABASE: Salva in Firestore
+ * 5. LOGGING: Registra azione
+ * 6. RESPONSE: Ritorna dati salvati
  */
 export const clienteCreateApi = onCall({
     region: region,
     cors: corsOrigins
 }, async (request) => {
-    // 1. Sicurezza: Verifica che l'utente sia un admin
+    // 1. SICUREZZA: Verifica che l'utente sia un admin
     await requireAdmin(request);
 
     const { uid, token } = request.auth;
     const data = request.data;
 
     try {
-        // 2. Validazione: Controlla che i dati inviati siano validi
+        // 2. VALIDAZIONE: Controlla che i dati inviati siano validi
         validateClienteData(data);
 
-        // 3. Logica di Business: Crea l'oggetto cliente usando la factory condivisa
+        // 3. BUSINESS LOGIC: Crea l'oggetto cliente usando la factory condivisa
         const nuovoCliente = createCliente({
             ...data,
             createdBy: uid,
             createdByEmail: token.email,
         });
 
-        // 4. Interazione DB: Salva il nuovo cliente in Firestore
-        const docRef = await db.collection('anagrafica_clienti').add(nuovoCliente);
+        // 4. DATABASE: Salva il nuovo cliente in Firestore
+        const docRef = await db.collection(COLLECTION_NAME).add(nuovoCliente);
+
+        // 5. AUDIT LOG: Registra azione per tracciabilità
+        await logAudit({
+            entityType: 'clienti',
+            entityId: docRef.id,
+            action: AuditAction.CREATE,
+            userId: uid,
+            userEmail: token.email,
+            newData: nuovoCliente,
+            source: 'web'
+        });
 
         console.log(`Utente ${uid} ha creato il cliente ${docRef.id}`);
 
+        // 6. RESPONSE: Ritorna ID + dati salvati
         return { id: docRef.id, ...nuovoCliente };
 
     } catch (error) {
@@ -84,7 +136,11 @@ export const clienteUpdateApi = onCall({
     try {
         validateClienteData(updateData);
 
-        const clienteRef = db.collection('anagrafica_clienti').doc(id);
+        const clienteRef = db.collection(COLLECTION_NAME).doc(id);
+
+        // Recupera i dati attuali per l'audit log
+        const oldDoc = await clienteRef.get();
+        const oldData = oldDoc.exists ? oldDoc.data() : null;
 
         // Aggiunge il timestamp di aggiornamento
         const dataToUpdate = {
@@ -93,6 +149,18 @@ export const clienteUpdateApi = onCall({
         };
 
         await clienteRef.update(dataToUpdate);
+
+        // AUDIT LOG: Registra modifica con dati before/after
+        await logAudit({
+            entityType: 'clienti',
+            entityId: id,
+            action: AuditAction.UPDATE,
+            userId: uid,
+            userEmail: request.auth.token.email,
+            oldData: oldData,
+            newData: dataToUpdate,
+            source: 'web'
+        });
 
         console.log(`Utente ${uid} ha aggiornato il cliente ${id}`);
 
@@ -124,7 +192,25 @@ export const clienteDeleteApi = onCall({
     }
 
     try {
-        await db.collection('anagrafica_clienti').doc(id).delete();
+        const clienteRef = db.collection(COLLECTION_NAME).doc(id);
+
+        // Recupera i dati prima di eliminare per l'audit log
+        const oldDoc = await clienteRef.get();
+        const oldData = oldDoc.exists ? oldDoc.data() : null;
+
+        await clienteRef.delete();
+
+        // AUDIT LOG: Registra eliminazione con dati rimossi
+        await logAudit({
+            entityType: 'clienti',
+            entityId: id,
+            action: AuditAction.DELETE,
+            userId: uid,
+            userEmail: request.auth.token.email,
+            oldData: oldData,
+            source: 'web'
+        });
+
         console.log(`Utente ${uid} ha eliminato il cliente ${id}`);
         return { message: "Cliente eliminato con successo." };
     } catch (error) {
@@ -148,12 +234,12 @@ export const listClientiApi = onCall({
     const { pageSize = 25, pageToken } = request.data || {};
 
     try {
-        let query = db.collection('anagrafica_clienti').orderBy('ragione_sociale').limit(Number(pageSize));
+        let query = db.collection(COLLECTION_NAME).orderBy('ragione_sociale').limit(Number(pageSize));
 
         if (pageToken) {
             // Per la paginazione, recuperiamo l'ultimo documento della pagina precedente
             // per sapere da dove iniziare la nuova query.
-            const lastVisibleDoc = await db.collection('anagrafica_clienti').doc(pageToken).get();
+            const lastVisibleDoc = await db.collection(COLLECTION_NAME).doc(pageToken).get();
             if (lastVisibleDoc.exists) {
                 query = query.startAfter(lastVisibleDoc);
             }

@@ -1,5 +1,18 @@
-# Applicazione base per progetti Firebase
+# 🚀 Applicazione Base per Progetti Firebase
+
 App Astro SSR + Firebase (Functions, Firestore, Auth, Storage) con gestione utenti.
+
+**Template AI-Ready:** Questo progetto è strutturato per essere facilmente estendibile da AI.
+Vedi [PATTERNS.md](PATTERNS.md) per i pattern standard da replicare.
+
+## 📚 Documentazione
+
+- [PATTERNS.md](PATTERNS.md) - Pattern CRUD per creare nuove entità
+- [docs/architecture/](docs/architecture/) - Documentazione tecnica dell'architettura
+  - [FACTORIES_SYNC.md](docs/architecture/FACTORIES_SYNC.md) - Sistema di sincronizzazione factory frontend/backend
+  - [CACHE_SYSTEM.md](docs/architecture/CACHE_SYSTEM.md) - Sistema di cache Firestore in-memory
+  - [SERVER_SIDE_VALIDATION.md](docs/architecture/SERVER_SIDE_VALIDATION.md) - Validazione server-side per sicurezza
+  - [FORMATTERS_CONSOLIDATION.md](docs/architecture/FORMATTERS_CONSOLIDATION.md) - Utility di formattazione centralizzate
 
 ## Come avviare 
 Prerequisiti: Docker + docker-compose. Tutto parte nel container `firebase-cli` (emulatori + Astro).
@@ -20,12 +33,42 @@ Se ti serve una shell (es. per comandi firebase manuali):
 `docker compose exec -it firebase-cli sh`
 
 
-## Testing
-- **Esegui tutti i test (Unit e Integrazione):** 
-`docker exec firebase_base_app npm test`
+## 🧪 Testing
 
-- **Per i test sull'interfaccia con Cypress:** 
-`docker exec cypress_ui npm run test:e2e`
+### Test API (Backend)
+```bash
+# Tutti i test
+docker exec firebase_base_app npm test
+
+# Solo test unitari
+docker exec firebase_base_app npm run test:unit
+```
+
+### Test E2E (Frontend)
+```bash
+# Test Cypress headless
+docker exec cypress_ui npm run test:e2e
+
+# Test Cypress UI (VNC)
+# Accedi a: http://localhost:7900/vnc.html
+```
+
+## 📐 Aggiungere Nuove Entità
+
+Questo progetto segue pattern standardizzati per facilitare l'aggiunta di nuove entità.
+
+**Per creare una nuova entità (es: "prodotti"):**
+
+1. Leggi [PATTERNS.md](PATTERNS.md) - Guida completa ai pattern
+2. Aggiungi factory in `shared/schemas/entityFactory.js`
+3. Crea API in `functions/api/prodotti.js` (usa `functions/api/clienti.js` come template)
+4. Crea test in `functions/prodotti.test.js` (usa `functions/clienti.test.js` come template)
+5. Esegui `npm test` per verificare
+
+**File di riferimento:**
+- 📄 Template API: `functions/api/clienti.js` (commentato per AI)
+- 🏗️ Factory: `shared/schemas/entityFactory.js`
+- 🧪 Test: `functions/clienti.test.js`
 
 
 ## Sincronizzare Indici Firestore in Locale

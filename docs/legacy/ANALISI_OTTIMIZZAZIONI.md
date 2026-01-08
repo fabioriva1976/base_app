@@ -792,3 +792,37 @@ Le ottimizzazioni di priorità MEDIA e BASSA possono essere pianificate in sprin
 4. Kickoff sprint 1 (priorità ALTA)
 5. Setup CI/CD pipeline
 6. Implementazione incrementale con review settimanali
+
+
+
+
+Perfetto! Ho analizzato il documento. Per creare un'applicazione base template facilmente espandibile da un'AI, dobbiamo focalizzarci su standardizzazione, pattern ripetibili e struttura chiara.
+
+🎯 Obiettivo: Template Base Perfetto per AI
+Per permettere all'AI di replicare velocemente pattern (es: tabella prodotti = tabella clienti), dobbiamo:
+
+✅ Già Fatto (da questa sessione):
+✅ Test automatici (Jest + Cypress)
+✅ Factory pattern centralizzato (shared/schemas)
+✅ API standardizzate con authHelpers
+✅ Docker setup completo
+🔴 DA FARE SUBITO (per template AI-ready):
+1. Standardizzare CRUD Pattern (PRIORITÀ MASSIMA)
+
+Creare un template CRUD generico che l'AI può replicare
+File: shared/patterns/crud-template.js
+Documentare ogni file con commenti per AI
+2. API Layer Completo e Standardizzato
+
+Tutte le operazioni DEVONO passare per API
+Pattern uniforme per tutte le entità
+3. Generatori di Codice
+
+Script per creare nuove entità automaticamente
+npm run generate:entity prodotti
+4. Documentazione Strutturata per AI
+
+File PATTERNS.md che spiega ogni pattern
+Esempi commentati per ogni caso d'uso
+Vuoi che inizi a implementare questi miglioramenti partendo dal pattern CRUD standardizzato? Questo permetterà all'AI di creare una tabella "prodotti" semplicemente replicando il pattern "clienti".
+
