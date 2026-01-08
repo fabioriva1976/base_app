@@ -21,13 +21,11 @@ Se ti serve una shell (es. per comandi firebase manuali):
 
 
 ## Testing
-Per eseguire i test, entra nel container Docker:
-`docker compose exec -it firebase-cli sh`
+- **Esegui tutti i test (Unit e Integrazione):** 
+`docker exec firebase_base_app npm test`
 
-Una volta dentro, puoi lanciare i comandi:
-- `cd /app`
-- **Esegui tutti i test (Unit e Integrazione):** `npm test`
-- **Apri l'interfaccia di Cypress per i test E2E:** `npx cypress open`
+- **Per i test sull'interfaccia con Cypress:** 
+`docker exec cypress_ui npm run test:e2e`
 
 
 ## Sincronizzare Indici Firestore in Locale
