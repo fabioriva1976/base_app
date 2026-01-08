@@ -115,6 +115,9 @@ describe('API Utenti', () => {
         const adminUser = { uid: 'admin-delete', token: { email: 'admin-delete@test.com' } };
 
         await db.collection('utenti').doc(adminUser.uid).set({ ruolo: ['admin'] });
+        // Assicurati che il documento admin sia stato scritto
+        const adminDoc = await db.collection('utenti').doc(adminUser.uid).get();
+        expect(adminDoc.exists).to.equal(true);
 
         const target = await auth.createUser({
             uid: 'operatore-delete',
