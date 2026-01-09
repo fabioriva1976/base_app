@@ -1,9 +1,9 @@
-import { describe, it, beforeAll, afterEach } from '@jest/globals';
+import { describe, it, beforeAll, afterEach, afterAll, jest } from '@jest/globals';
 import { expect } from 'chai';
 import fft from 'firebase-functions-test';
 import admin from 'firebase-admin';
 
-const TEST_PROJECT_ID = process.env.TEST_PROJECT_ID || 'base-app-12108-test';
+const TEST_PROJECT_ID = process.env.TEST_PROJECT_ID || 'base-app-12108';
 process.env.FIREBASE_PROJECT_ID = TEST_PROJECT_ID;
 process.env.GCLOUD_PROJECT = TEST_PROJECT_ID;
 process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8080';
@@ -16,15 +16,26 @@ let getConfigSmtpApi;
 let saveConfigSmtpApi;
 
 describe('API Configurazioni', () => {
+    // Timeout più ampio per gli hook che usano gli emulatori.
+    jest.setTimeout(30000);
+
     let db;
 
     beforeAll(async () => {
-        if (admin.apps.length === 0) {
-            admin.initializeApp({ projectId: TEST_PROJECT_ID });
+        if (admin.apps.length > 0) {
+            await Promise.all(admin.apps.map(app => app.delete()));
         }
+        admin.initializeApp({ projectId: TEST_PROJECT_ID });
         db = admin.firestore();
         ({ getConfigAiApi, saveConfigAiApi } = await import('./api/config-ai.js'));
         ({ getConfigSmtpApi, saveConfigSmtpApi } = await import('./api/config-smtp.js'));
+    });
+
+    afterAll(async () => {
+        await test.cleanup();
+        if (admin.apps.length > 0) {
+            await Promise.all(admin.apps.map(app => app.delete()));
+        }
     });
 
     afterEach(async () => {

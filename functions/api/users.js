@@ -29,6 +29,7 @@ import {
   getUserRole,
   isSuperUser
 } from "../utils/authHelpers.js";
+import { logAudit, AuditAction } from "../utils/auditLogger.js";
 
 // 🔧 Inizializza Firebase Admin (singleton pattern)
 if (admin.apps.length === 0) {
@@ -173,11 +174,15 @@ export const userCreateApi = onCall({ region, cors: corsOrigins, ...runtimeOpts 
 
     // 6. RESPONSE: Ritorna dati salvati
     const userDocRef = db.collection('utenti').doc(userRecord.uid);
+    let existingProfile = null;
     let createdAt = now;
     if (wasExisting) {
       const existingDoc = await userDocRef.get();
-      if (existingDoc.exists && existingDoc.data().created) {
-        createdAt = existingDoc.data().created;
+      if (existingDoc.exists) {
+        existingProfile = existingDoc.data();
+        if (existingProfile.created) {
+          createdAt = existingProfile.created;
+        }
       }
     }
 
@@ -198,6 +203,18 @@ export const userCreateApi = onCall({ region, cors: corsOrigins, ...runtimeOpts 
     }
 
     await userDocRef.set(profileData, { merge: true });
+
+    const auditAction = wasExisting ? AuditAction.UPDATE : AuditAction.CREATE;
+    await logAudit({
+      entityType: 'utenti',
+      entityId: userRecord.uid,
+      action: auditAction,
+      userId: request.auth.uid,
+      userEmail: request.auth.token?.email || null,
+      oldData: wasExisting ? existingProfile : null,
+      newData: profileData,
+      source: 'web'
+    });
 
     return {
       uid: userRecord.uid,
@@ -280,13 +297,30 @@ export const userUpdateApi = onCall({ region, cors: corsOrigins, ...runtimeOpts 
     if (data.status !== undefined) profileUpdates.status = Boolean(data.status);
     if (targetRole) profileUpdates.ruolo = [targetRole];
 
-    await db.collection('utenti').doc(uid).set(profileUpdates, { merge: true });
+    const userDocRef = db.collection('utenti').doc(uid);
+    const oldDoc = await userDocRef.get();
+    const oldData = oldDoc.exists ? oldDoc.data() : null;
+    await userDocRef.set(profileUpdates, { merge: true });
+
+    await logAudit({
+      entityType: 'utenti',
+      entityId: uid,
+      action: AuditAction.UPDATE,
+      userId: request.auth.uid,
+      userEmail: request.auth.token?.email || null,
+      oldData,
+      newData: profileUpdates,
+      source: 'web'
+    });
 
     console.log(`Admin ${request.auth.uid} ha aggiornato l'utente ${uid}`);
 
     return { message: "Utente aggiornato con successo!" };
   } catch (error) {
     console.error("Errore nell'aggiornamento utente:", error);
+    if (error instanceof HttpsError) {
+      throw error;
+    }
     throw new HttpsError("internal", error.message);
   }
 });
@@ -344,7 +378,21 @@ export const userDeleteApi = onCall({ region, cors: corsOrigins, ...runtimeOpts 
       console.log("Utente non presente in Auth, elimino solo Firestore");
     }
 
-    await db.collection('utenti').doc(data.uid).delete();
+    const userDocRef = db.collection('utenti').doc(data.uid);
+    const oldDoc = await userDocRef.get();
+    const oldData = oldDoc.exists ? oldDoc.data() : null;
+    await userDocRef.delete();
+
+    await logAudit({
+      entityType: 'utenti',
+      entityId: data.uid,
+      action: AuditAction.DELETE,
+      userId: request.auth.uid,
+      userEmail: request.auth.token?.email || null,
+      oldData,
+      newData: null,
+      source: 'web'
+    });
 
     return {
       message: "Utente eliminato con successo.",
@@ -352,6 +400,9 @@ export const userDeleteApi = onCall({ region, cors: corsOrigins, ...runtimeOpts 
     };
   } catch (error) {
     console.error("Errore nell'eliminazione utente:", error);
+    if (error instanceof HttpsError) {
+      throw error;
+    }
     throw new HttpsError("internal", error.message);
   }
 });

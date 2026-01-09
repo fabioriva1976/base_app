@@ -5,7 +5,7 @@
  *
  * Legge il file ES6 del frontend e lo converte in CommonJS per le Cloud Functions
  *
- * Usage: node scripts/sync-entity-factories.js
+ * Usage: node scripts/sync-entity-factories.cjs
  */
 
 const fs = require('fs');
@@ -29,7 +29,7 @@ try {
   const header = `/**
  * Factory functions per creare entità con struttura consistente
  *
- * NOTA: Questo file è AUTO-GENERATO da /src/scripts/schemas/entityFactory.js
+ * NOTA: Questo file è AUTO-GENERATO da /shared/schemas/entityFactory.js
  * Non modificare direttamente questo file! Modifica il file sorgente e riesegui:
  * npm run sync-factories
  *

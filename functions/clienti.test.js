@@ -1,9 +1,9 @@
-import { describe, it, beforeAll, afterEach } from '@jest/globals';
+import { describe, it, beforeAll, afterEach, afterAll, jest } from '@jest/globals';
 import { expect } from 'chai';
 import fft from 'firebase-functions-test';
 import admin from 'firebase-admin';
 
-const TEST_PROJECT_ID = process.env.TEST_PROJECT_ID || 'base-app-12108-test';
+const TEST_PROJECT_ID = process.env.TEST_PROJECT_ID || 'base-app-12108';
 process.env.FIREBASE_PROJECT_ID = TEST_PROJECT_ID;
 process.env.GCLOUD_PROJECT = TEST_PROJECT_ID;
 process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8080';
@@ -14,18 +14,29 @@ process.env.FIREBASE_AUTH_EMULATOR_HOST = '127.0.0.1:9099';
 const test = fft({ projectId: TEST_PROJECT_ID });
 
 let listClientiApi;
-let clienteCreateApi;
+let createClienteApi;
 
 describe('API Clienti', () => {
+    // Timeout più ampio per gli hook che usano gli emulatori.
+    jest.setTimeout(30000);
+
     let db;
 
     // Prima di tutti i test, inizializziamo l'app admin
     beforeAll(async () => {
-        if (admin.apps.length === 0) {
-            admin.initializeApp({ projectId: TEST_PROJECT_ID });
+        if (admin.apps.length > 0) {
+            await Promise.all(admin.apps.map(app => app.delete()));
         }
+        admin.initializeApp({ projectId: TEST_PROJECT_ID });
         db = admin.firestore();
-        ({ listClientiApi, clienteCreateApi } = await import('./api/clienti.js'));
+        ({ listClientiApi, createClienteApi } = await import('./api/clienti.js'));
+    });
+
+    afterAll(async () => {
+        await test.cleanup();
+        if (admin.apps.length > 0) {
+            await Promise.all(admin.apps.map(app => app.delete()));
+        }
     });
 
     // Dopo ogni test, puliamo il database per garantire l'isolamento
@@ -81,7 +92,7 @@ describe('API Clienti', () => {
 
     describe('clienteCreateApi', () => {
         it('dovrebbe negare a un operatore la creazione di un cliente', async () => {
-            const wrapped = test.wrap(clienteCreateApi);
+            const wrapped = test.wrap(createClienteApi);
             const user = { uid: 'operatore-test', token: { email: 'op@test.com' } };
             const clienteData = { ragione_sociale: 'Nuovo Cliente' };
 
@@ -97,7 +108,7 @@ describe('API Clienti', () => {
         });
 
         it('dovrebbe permettere a un admin di creare un cliente', async () => {
-            const wrapped = test.wrap(clienteCreateApi);
+            const wrapped = test.wrap(createClienteApi);
             const user = { uid: 'admin-test', token: { email: 'admin@test.com' } };
             const clienteData = { ragione_sociale: 'Nuovo Cliente da Admin', email: 'cliente@test.com' };
 
@@ -116,7 +127,7 @@ describe('API Clienti', () => {
         });
 
         it('dovrebbe lanciare un errore se la ragione sociale manca', async () => {
-            const wrapped = test.wrap(clienteCreateApi);
+            const wrapped = test.wrap(createClienteApi);
             const user = { uid: 'admin-test', token: { email: 'admin@test.com' } };
             const clienteData = { email: 'cliente@test.com' }; // Manca ragione_sociale
 

@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",
-    "build": "astro build",
+    "sync-factories": "node scripts/sync-entity-factories.cjs",
+    "build": "npm run sync-factories && astro build",
     "preview": "astro preview",
     "astro": "astro",
     "deploy:hosting": "firebase deploy --only hosting,functions:astroSSR",

@@ -3,7 +3,7 @@
 ## Problema Risolto
 
 Prima avevamo **due file duplicati** con lo stesso codice di factory functions:
-- `/src/scripts/schemas/entityFactory.js` (frontend - ES6 modules)
+- `/shared/schemas/entityFactory.js` (sorgente unica - ES6 modules)
 - `/functions/schemas/entityFactory.js` (backend - CommonJS)
 
 Questo causava:
@@ -30,6 +30,8 @@ functions/schemas/entityFactory.js    ← AUTO-GENERATO (CommonJS)
    - File principale con la logica
    - Usa ES6 modules (`export function`)
    - Modifiche vanno fatte QUI
+
+   Nota frontend: `src/scripts/schemas/entityFactory.js` re-esporta da `@shared/schemas/entityFactory.js`.
 
 2. **Target**: [/functions/schemas/entityFactory.js](../functions/schemas/entityFactory.js)
    - **AUTO-GENERATO** - Non modificare direttamente!
@@ -113,7 +115,7 @@ import { createDocumento } from './schemas/entityFactory.js';
 const doc = createDocumento({ titolo: 'File.pdf', tipo: 'application/pdf', ... });
 
 // Backend
-const { createDocumento } = require('./schemas/entityFactory');
+  const { createDocumento } = require('./schemas/entityFactory');
 const doc = createDocumento({ titolo: 'File.pdf', tipo: 'application/pdf', ... });
 ```
 
@@ -154,7 +156,7 @@ Lo script deve essere `.cjs` (non `.js`) perché il progetto usa `"type": "modul
 
 ### ✅ DO
 
-- Modifica SOLO il file frontend in `src/scripts/schemas/`
+- Modifica SOLO il file sorgente in `shared/schemas/`
 - Esegui `npm run sync-factories` dopo ogni modifica
 - Testa sia frontend che backend dopo sync
 - Aggiungi test per le nuove factory functions
@@ -184,8 +186,8 @@ Per migliorare ulteriormente:
 
 ## File Modificati
 
-- ✅ `/src/scripts/schemas/entityFactory.js` - Fonte principale
+- ✅ `/shared/schemas/entityFactory.js` - Fonte principale
 - ✅ `/functions/schemas/entityFactory.js` - Auto-generato con header
 - ✅ `/scripts/sync-entity-factories.cjs` - Script di sincronizzazione
 - ✅ `/package.json` - Aggiunto script `sync-factories`
-- ✅ `/schemas/FACTORIES_SYNC.md` - Questa documentazione
+- ✅ `/docs/architecture/FACTORIES_SYNC.md` - Questa documentazione
