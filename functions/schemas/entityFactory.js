@@ -126,3 +126,26 @@ export function createUtente({
     createdByEmail: createdByEmail ? String(createdByEmail).toLowerCase() : null
   };
 }
+
+export function createComment({
+  text,
+  entityId,
+  entityCollection,
+  createdBy = null,
+  createdByEmail = null
+} = {}) {
+  if (!text || !entityId || !entityCollection) {
+    throw new Error('text, entityId e entityCollection sono obbligatori');
+  }
+
+  const timestamp = nowIso();
+
+  return {
+    text: String(text),
+    entityId: String(entityId),
+    entityCollection: String(entityCollection),
+    createdAt: timestamp,
+    createdBy: createdBy ? String(createdBy) : null,
+    createdByEmail: createdByEmail ? String(createdByEmail) : null
+  };
+}

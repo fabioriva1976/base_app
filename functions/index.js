@@ -69,6 +69,13 @@ export {
     updateAttachmentApi
 } from "./api/attachments.js";
 
+// === FUNZIONI API - COMMENTS ===
+export {
+    createCommentApi,
+    getEntityCommentsApi,
+    deleteCommentApi
+} from "./api/comments.js";
+
 // === FUNZIONI API - CONFIGURAZIONI ===
 export {
     getConfigSmtpApi,
