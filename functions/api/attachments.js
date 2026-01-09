@@ -100,14 +100,21 @@ export const createAttachmentRecordApi = onCall(
       const docRef = await db.collection(COLLECTION_NAME).add(nuovoAttachment);
 
       // 5. AUDIT LOG: Registra creazione documento
+      // Salva il log con riferimento all'entità parent per mostrarlo nel tab azioni
       await logAudit({
-        entityType: 'attachments',
-        entityId: docRef.id,
+        entityType: nuovoAttachment.metadata.entityCollection || 'attachments',
+        entityId: nuovoAttachment.metadata.entityId || docRef.id,
         action: AuditAction.CREATE,
         userId: user.uid,
         userEmail: user.token.email,
-        newData: nuovoAttachment,
-        source: 'web'
+        newData: {
+          attachmentId: docRef.id,
+          attachmentName: nuovoAttachment.nome,
+          attachmentType: nuovoAttachment.tipo,
+          ...nuovoAttachment.metadata
+        },
+        source: 'web',
+        details: `Caricato file: ${nuovoAttachment.nome}`
       });
 
       console.log(`Utente ${user.uid} ha creato il record documento ${docRef.id}`);
@@ -173,15 +180,22 @@ export const deleteAttachmentApi = onCall(
     }
 
     // AUDIT LOG: Registra eliminazione documento
+    // Salva il log con riferimento all'entità parent per mostrarlo nel tab azioni
     await logAudit({
-      entityType: 'attachments',
-      entityId: docId,
+      entityType: oldData?.metadata?.entityCollection || 'attachments',
+      entityId: oldData?.metadata?.entityId || docId,
       action: AuditAction.DELETE,
       userId: uid,
       userEmail: request.auth.token.email,
-      oldData: oldData,
+      oldData: {
+        attachmentId: docId,
+        attachmentName: oldData?.nome || 'File',
+        attachmentType: oldData?.tipo || '',
+        ...oldData?.metadata
+      },
       metadata: { storagePath: storagePath },
-      source: 'web'
+      source: 'web',
+      details: `Eliminato file: ${oldData?.nome || 'File'}`
     });
 
     return { success: true };

@@ -154,7 +154,25 @@ export class ActionManager {
     renderActionDetails(action) {
         let details = '';
 
-        // Gestione speciale per documenti (metadata.documento presente)
+        // Gestione speciale per attachments (newData.attachmentName o oldData.attachmentName presente)
+        const attachmentData = action.newData || action.oldData;
+        if (attachmentData && attachmentData.attachmentName) {
+            const colorClass = action.action === 'create' ? 'change-new' : (action.action === 'delete' ? 'change-old' : '');
+            details += '<div class="timeline-changes">';
+            details += '<div class="changes-title">Documento:</div>';
+
+            // Mostra descrizione se presente, altrimenti nome file
+            const displayText = (attachmentData.description && attachmentData.description.trim() !== '')
+                ? attachmentData.description
+                : attachmentData.attachmentName;
+
+            details += `<div class="document-name ${colorClass}">${displayText}</div>`;
+
+            details += '</div>';
+            return details;
+        }
+
+        // Gestione speciale per documenti legacy (metadata.documento presente)
         if (action.metadata && action.metadata.documento) {
             const colorClass = action.action === 'create' ? 'change-new' : (action.action === 'delete' ? 'change-old' : '');
             details += '<div class="timeline-changes">';
