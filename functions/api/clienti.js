@@ -10,9 +10,9 @@
  * 5. Importa la factory corretta da entityFactory.js
  *
  * Operazioni implementate:
- * - CREATE: clienteCreateApi (solo admin)
- * - UPDATE: clienteUpdateApi (solo admin)
- * - DELETE: clienteDeleteApi (solo admin)
+ * - CREATE: createClienteApi (solo admin)
+ * - UPDATE: updateClienteApi (solo admin)
+ * - DELETE: deleteClienteApi (solo admin)
  * - LIST: listClientiApi (operatore+)
  *
  * Vedi: PATTERNS.md per la guida completa
@@ -68,7 +68,7 @@ function validateClienteData(data) {
  * 5. LOGGING: Registra azione
  * 6. RESPONSE: Ritorna dati salvati
  */
-export const clienteCreateApi = onCall({
+export const createClienteApi = onCall({
     region: region,
     cors: corsOrigins
 }, async (request) => {
@@ -120,7 +120,7 @@ export const clienteCreateApi = onCall({
 /**
  * API per aggiornare un cliente esistente.
  */
-export const clienteUpdateApi = onCall({
+export const updateClienteApi = onCall({
     region: region,
     cors: corsOrigins
 }, async (request) => {
@@ -178,7 +178,7 @@ export const clienteUpdateApi = onCall({
 /**
  * API per eliminare un cliente.
  */
-export const clienteDeleteApi = onCall({
+export const deleteClienteApi = onCall({
     region: region,
     cors: corsOrigins
 }, async (request) => {

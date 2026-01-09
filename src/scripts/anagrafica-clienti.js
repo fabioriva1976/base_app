@@ -43,7 +43,7 @@ function setupEventListeners() {
 async function loadEntities() {
     const listApi = httpsCallable(functions, 'listClientiApi');
     const result = await listApi();
-    entities = result.data?.items || [];
+    entities = result.data?.clienti || [];
     renderTable();
 }
 
@@ -128,7 +128,7 @@ async function saveEntity(e) {
             }
         } else {
             const updateApi = httpsCallable(functions, 'updateClienteApi');
-            await updateApi({ clienteId: currentEntityId, ...payloadToSend });
+            await updateApi({ id: currentEntityId, ...payloadToSend });
         }
 
         showSaveMessage('save-message');

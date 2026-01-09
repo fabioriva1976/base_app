@@ -56,9 +56,9 @@ export {
 
 // === FUNZIONI API - CLIENTI ===
 export {
-    clienteCreateApi,
-    clienteUpdateApi,
-    clienteDeleteApi,
+    createClienteApi,
+    updateClienteApi,
+    deleteClienteApi,
     listClientiApi
 } from "./api/clienti.js";
 
