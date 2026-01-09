@@ -1,20 +1,15 @@
 /**
- * 🎯 PATTERN TEMPLATE: API CRUD per Entità "Documenti"
+ * 🎯 PATTERN TEMPLATE: API CRUD per Entità "Attachments"
  *
- * Questo file implementa il pattern standard CRUD per l'entità Documento.
- * Per creare una nuova entità (es: Prodotti), copia questo file e:
- * 1. Sostituisci "Documento" con "Prodotto"
- * 2. Sostituisci "documenti" con "prodotti"
- * 3. Aggiorna i campi di validazione nella funzione validate*Data()
- * 4. Aggiorna il COLLECTION_NAME
- * 5. Importa la factory corretta da entityFactory.js
+ * Questo file implementa il pattern standard CRUD per l'entità Attachment.
+ * Attachments sono file associati ad altre entità (clienti, prodotti, etc.)
  *
  * Operazioni implementate:
- * - CREATE: createDocumentoRecordApi (utenti autenticati)
- * - UPDATE: updateDocumentoApi (solo admin)
- * - DELETE: deleteDocumentoApi (solo admin, elimina anche file Storage)
+ * - CREATE: createAttachmentRecordApi (utenti autenticati)
+ * - UPDATE: updateAttachmentApi (solo admin)
+ * - DELETE: deleteAttachmentApi (solo admin, elimina anche file Storage)
  *
- * NOTA: Documenti è un'entità speciale che gestisce sia Firestore che Storage
+ * NOTA: Attachments è un'entità speciale che gestisce sia Firestore che Storage
  *
  * Vedi: PATTERNS.md per la guida completa
  */
@@ -24,7 +19,7 @@ import admin from "firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
 import { region, corsOrigins, runtimeOpts } from "../config.js";
 import { requireAuth, requireAdmin } from "../utils/authHelpers.js";
-import { createDocumento } from "../../shared/schemas/entityFactory.js";
+import { createAttachment } from "../../shared/schemas/entityFactory.js";
 import { logAudit, AuditAction } from "../utils/auditLogger.js";
 
 // 🔧 Inizializza Firebase Admin (singleton pattern)
@@ -36,7 +31,7 @@ const db = admin.firestore();
 const storage = admin.storage();
 
 // 📝 CONFIGURAZIONE: Nome collection in Firestore
-const COLLECTION_NAME = 'documenti';
+const COLLECTION_NAME = 'attachments';
 
 /**
  * 🎯 STEP 1: VALIDAZIONE
@@ -47,7 +42,7 @@ const COLLECTION_NAME = 'documenti';
  * @param {object} data - I dati del documento da validare
  * @throws {HttpsError} Se i dati non sono validi
  */
-function validateDocumentoData(data) {
+function validateAttachmentData(data) {
   const required = ["nome", "tipo", "storagePath", "metadata"];
   for (const field of required) {
     if (data[field] === undefined || data[field] === null || data[field] === "") {
@@ -81,7 +76,7 @@ function validateDocumentoData(data) {
  * 5. LOGGING: Registra azione
  * 6. RESPONSE: Ritorna dati salvati
  */
-export const createDocumentoRecordApi = onCall(
+export const createAttachmentRecordApi = onCall(
   { region, cors: corsOrigins, ...runtimeOpts },
   async (request) => {
     // 1. SICUREZZA: Qualsiasi utente autenticato può creare un documento
@@ -92,33 +87,33 @@ export const createDocumentoRecordApi = onCall(
 
     try {
       // 2. VALIDAZIONE: Controlla che i dati inviati siano validi
-      validateDocumentoData(data);
+      validateAttachmentData(data);
 
       // 3. BUSINESS LOGIC: Crea l'oggetto documento usando la factory condivisa
-      const nuovoDocumento = createDocumento({
+      const nuovoAttachment = createAttachment({
         ...data,
         createdBy: user.uid,
         createdByEmail: user.token.email,
       });
 
       // 4. DATABASE: Salva il nuovo documento in Firestore
-      const docRef = await db.collection(COLLECTION_NAME).add(nuovoDocumento);
+      const docRef = await db.collection(COLLECTION_NAME).add(nuovoAttachment);
 
       // 5. AUDIT LOG: Registra creazione documento
       await logAudit({
-        entityType: 'documenti',
+        entityType: 'attachments',
         entityId: docRef.id,
         action: AuditAction.CREATE,
         userId: user.uid,
         userEmail: user.token.email,
-        newData: nuovoDocumento,
+        newData: nuovoAttachment,
         source: 'web'
       });
 
       console.log(`Utente ${user.uid} ha creato il record documento ${docRef.id}`);
 
       // 6. RESPONSE: Ritorna dati salvati
-      return { success: true, id: docRef.id, ...nuovoDocumento };
+      return { success: true, id: docRef.id, ...nuovoAttachment };
 
     } catch (error) {
       console.error("Errore durante la creazione del record documento:", error);
@@ -139,7 +134,7 @@ export const createDocumentoRecordApi = onCall(
  *
  * NOTA: Elimina sia record Firestore che file fisico da Storage
  */
-export const deleteDocumentoApi = onCall(
+export const deleteAttachmentApi = onCall(
   { region, cors: corsOrigins, ...runtimeOpts },
   async (request) => {
     // 1. SICUREZZA: Solo gli admin possono eliminare documenti
@@ -179,7 +174,7 @@ export const deleteDocumentoApi = onCall(
 
     // AUDIT LOG: Registra eliminazione documento
     await logAudit({
-      entityType: 'documenti',
+      entityType: 'attachments',
       entityId: docId,
       action: AuditAction.DELETE,
       userId: uid,
@@ -200,7 +195,7 @@ export const deleteDocumentoApi = onCall(
  * Input: { id, ...updateData }
  * Output: { message }
  */
-export const updateDocumentoApi = onCall(
+export const updateAttachmentApi = onCall(
   { region, cors: corsOrigins, ...runtimeOpts },
   async (request) => {
     // 1. SICUREZZA: Solo admin possono modificare documenti
@@ -229,7 +224,7 @@ export const updateDocumentoApi = onCall(
 
       // AUDIT LOG: Registra modifica documento
       await logAudit({
-        entityType: 'documenti',
+        entityType: 'attachments',
         entityId: id,
         action: AuditAction.UPDATE,
         userId: uid,

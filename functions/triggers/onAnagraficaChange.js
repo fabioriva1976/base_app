@@ -87,11 +87,11 @@ export const onAnagraficaClientiDelete = onDocumentDeleted({ region, document: "
     });
 });
 
-// Trigger per documenti
-export const onDocumentiCreate = onDocumentCreated({ region, document: "documenti/{docId}", ...runtimeOpts }, async (event) => {
+// Trigger per attachments
+export const onAttachmentsCreate = onDocumentCreated({ region, document: "attachments/{docId}", ...runtimeOpts }, async (event) => {
     const afterData = event.data.data();
     await logAudit({
-        entityType: 'documenti',
+        entityType: 'attachments',
         entityId: event.params.docId,
         action: AuditAction.CREATE,
         userId: afterData?.lastModifiedBy || null,
@@ -101,18 +101,18 @@ export const onDocumentiCreate = onDocumentCreated({ region, document: "document
     });
 });
 
-export const onDocumentiUpdate = onDocumentUpdated({ region, document: "documenti/{docId}", ...runtimeOpts }, async (event) => {
+export const onAttachmentsUpdate = onDocumentUpdated({ region, document: "attachments/{docId}", ...runtimeOpts }, async (event) => {
     const beforeData = event.data.before.data();
     const afterData = event.data.after.data();
 
     // Controlla se ci sono effettivamente cambiamenti nei dati (escludendo campi di sistema)
     if (!hasActualChanges(beforeData, afterData)) {
-        console.log(`Nessun cambiamento reale per documenti/${event.params.docId}, audit log non creato`);
+        console.log(`Nessun cambiamento reale per attachments/${event.params.docId}, audit log non creato`);
         return;
     }
 
     await logAudit({
-        entityType: 'documenti',
+        entityType: 'attachments',
         entityId: event.params.docId,
         action: AuditAction.UPDATE,
         userId: afterData?.lastModifiedBy || null,
@@ -123,10 +123,10 @@ export const onDocumentiUpdate = onDocumentUpdated({ region, document: "document
     });
 });
 
-export const onDocumentiDelete = onDocumentDeleted({ region, document: "documenti/{docId}", ...runtimeOpts }, async (event) => {
+export const onAttachmentsDelete = onDocumentDeleted({ region, document: "attachments/{docId}", ...runtimeOpts }, async (event) => {
     const beforeData = event.data.data();
     await logAudit({
-        entityType: 'documenti',
+        entityType: 'attachments',
         entityId: event.params.docId,
         action: AuditAction.DELETE,
         userId: beforeData?.lastModifiedBy || null,

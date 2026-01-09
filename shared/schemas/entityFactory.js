@@ -5,56 +5,51 @@
 
 const nowIso = () => new Date().toISOString();
 
-export function createDocumento({
+export function createAttachment({
   nome,
   tipo,
   storagePath,
-  entityType = 'altro',
-  entityId = null,
+  metadata = {},
   createdBy = null,
-  createdByEmail = null,
-  metadata = {}
+  createdByEmail = null
 } = {}) {
   if (!nome || !tipo || !storagePath) {
     throw new Error('nome, tipo e storagePath sono obbligatori');
   }
 
-  const baseMeta = createDocumentoMetadata(metadata);
   const timestamp = nowIso();
 
   return {
     nome: String(nome),
     tipo: String(tipo),
     storagePath: String(storagePath),
-    entityType: entityType ? String(entityType) : 'altro',
-    entityId: entityId ? String(entityId) : null,
+    metadata: {
+      entityId: metadata.entityId ? String(metadata.entityId) : null,
+      entityCollection: metadata.entityCollection ? String(metadata.entityCollection) : null,
+      url: metadata.url ? String(metadata.url) : '',
+      size: Number(metadata.size) || 0,
+      description: metadata.description ? String(metadata.description) : ''
+    },
     createdAt: timestamp,
     updatedAt: timestamp,
     createdBy: createdBy ? String(createdBy) : null,
-    createdByEmail: createdByEmail ? String(createdByEmail) : null,
-    metadata: baseMeta
+    createdByEmail: createdByEmail ? String(createdByEmail) : null
   };
 }
 
-export function createDocumentoMetadata({
-  fonte = 'Upload Manuale',
-  dimensione = 0,
-  tags = [],
-  titolo = '',
-  descrizione = '',
-  tipologia = '',
-  stato = true,
-  codiceRedazionale = ''
+export function createAttachmentMetadata({
+  entityId = null,
+  entityCollection = null,
+  url = '',
+  size = 0,
+  description = ''
 } = {}) {
   return {
-    fonte: fonte ? String(fonte) : 'Upload Manuale',
-    dimensione: Number(dimensione) || 0,
-    tags: Array.isArray(tags) ? tags.map(String) : [],
-    titolo: titolo ? String(titolo) : '',
-    descrizione: descrizione ? String(descrizione) : '',
-    tipologia: tipologia ? String(tipologia) : '',
-    stato: Boolean(stato),
-    codiceRedazionale: codiceRedazionale ? String(codiceRedazionale) : ''
+    entityId: entityId ? String(entityId) : null,
+    entityCollection: entityCollection ? String(entityCollection) : null,
+    url: url ? String(url) : '',
+    size: Number(size) || 0,
+    description: description ? String(description) : ''
   };
 }
 

@@ -62,12 +62,12 @@ export {
     listClientiApi
 } from "./api/clienti.js";
 
-// === FUNZIONI API - DOCUMENTI ===
+// === FUNZIONI API - ATTACHMENTS ===
 export {
-    createDocumentoRecordApi,
-    deleteDocumentoApi,
-    updateDocumentoApi
-} from "./api/documenti.js";
+    createAttachmentRecordApi,
+    deleteAttachmentApi,
+    updateAttachmentApi
+} from "./api/attachments.js";
 
 // === FUNZIONI API - CONFIGURAZIONI ===
 export {
@@ -90,7 +90,7 @@ export {
     onAnagraficaClientiCreate,
     onAnagraficaClientiUpdate,
     onAnagraficaClientiDelete,
-    onDocumentiCreate,
-    onDocumentiUpdate,
-    onDocumentiDelete
+    onAttachmentsCreate,
+    onAttachmentsUpdate,
+    onAttachmentsDelete
 } from "./triggers/onAnagraficaChange.js";

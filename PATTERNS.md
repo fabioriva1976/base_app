@@ -6,9 +6,9 @@
 
 ---
 
-## 🎯 Come Usare Questo Documento
+## 🎯 Come Usare Questo Attachment
 
-Questo documento definisce i **pattern standard** per creare nuove entità (es: prodotti, fornitori, ordini).
+Questo attachment definisce i **pattern standard** per creare nuove entità (es: prodotti, fornitori, ordini).
 Ogni nuova entità DEVE seguire questi pattern per garantire:
 - ✅ Coerenza del codice
 - ✅ Facilità di manutenzione
@@ -76,12 +76,12 @@ Template per entità che usano Firebase Authentication.
 - Verifica gerarchica permessi (admin non può eliminare superuser)
 - Dual-storage (Auth per login, Firestore per metadati)
 
-### 3. **Documenti** (Firestore + Storage)
+### 3. **Attachments** (Firestore + Storage)
 Template per entità che gestiscono file.
 
-- 📄 **API**: [functions/api/documenti.js](functions/api/documenti.js)
-- 🏗️ **Factory**: [shared/schemas/entityFactory.js](shared/schemas/entityFactory.js) - `createDocumento()`
-- 🗄️ **Collection**: `documenti`
+- 📄 **API**: [functions/api/attachments.js](functions/api/attachments.js)
+- 🏗️ **Factory**: [shared/schemas/entityFactory.js](shared/schemas/entityFactory.js) - `createAttachment()`
+- 🗄️ **Collection**: `attachments`
 - 💾 **Storage**: Firebase Storage bucket
 - 👥 **Permessi**: Authenticated per C, Admin per UD
 
@@ -275,7 +275,7 @@ export const [entita]CreateApi = onCall({
 
         // 5. AUDIT LOG: Registra azione per tracciabilità (chi, cosa, quando)
         await logAudit({
-            entityType: '[entita]',  // es: 'clienti', 'utenti', 'documenti'
+            entityType: '[entita]',  // es: 'clienti', 'utenti', 'attachments'
             entityId: docRef.id,
             action: AuditAction.CREATE,
             userId: uid,
@@ -487,7 +487,7 @@ const auth = getAuth();
 
 describe('API [EntityName]', () => {
     afterEach(async () => {
-        // Pulizia: elimina documenti di test
+        // Pulizia: elimina attachments di test
         const snapshot = await db.collection('anagrafica_[entita]')
             .where('createdBy', 'in', ['admin-test', 'operatore-test'])
             .get();
@@ -657,6 +657,249 @@ createProdotto({
 
 ---
 
+## 📎 Associare Attachments alle Entità
+
+Il sistema di gestione attachments è **già predisposto** per funzionare con qualsiasi entità. Non devi creare nuove API o backend, ma solo collegare il componente frontend.
+
+### 🎯 Come Funziona
+
+I attachments sono salvati in una **collection centrale** (`attachments`) con metadata che puntano all'entità associata:
+
+```javascript
+{
+  nome: "fattura.pdf",
+  tipo: "application/pdf",
+  storagePath: "attachments/ABC123/1234567890_fattura.pdf",
+  metadata: {
+    entityId: "ABC123",              // ID dell'entità (cliente, prodotto, etc.)
+    entityCollection: "anagrafica_clienti",  // Nome collection
+    url: "https://...",
+    size: 123456,
+    description: "Fattura 2024"
+  },
+  createdBy: "user123",
+  createdByEmail: "user@example.com",
+  createdAt: Timestamp
+}
+```
+
+### ✅ 3 Passi per Aggiungere Attachments a una Nuova Entità
+
+#### PASSO 1: Aggiungi Tab Attachments alla Pagina Astro
+
+Nel file `src/pages/anagrafica-[entita].astro`, aggiungi il tab attachments nella sidebar:
+
+```html
+<!-- Tab buttons -->
+<div class="tabs">
+    <button class="tab-link active" data-tab="generale">Dati Generali</button>
+    <button class="tab-link" data-tab="attachments">Attachments</button>
+    <button class="tab-link" data-tab="azioni">Azioni</button>
+</div>
+
+<!-- Tab content -->
+<div id="tab-attachments" class="tab-content">
+    <div id="file-drop-area" class="file-drop-area" style="display: none;">
+        <p>Trascina i file qui o clicca per selezionare</p>
+        <input type="file" id="document-upload" multiple hidden>
+    </div>
+    <div id="document-preview-list" class="file-preview-list"></div>
+</div>
+```
+
+#### PASSO 2: Importa e Configura DocumentUtils nel Frontend
+
+Nel file `src/scripts/anagrafica-[entita].js`:
+
+```javascript
+// Import
+import * as attachmentUtils from './utils/attachmentUtils.js';
+
+// Setup (nella funzione init)
+export function initPageAnagrafica[Entita]Page() {
+    const db = getFirestore();
+    attachmentUtils.setup({
+        db,
+        storage,
+        auth,
+        functions,
+        entityCollection: 'anagrafica_[entita]'  // Nome collection della tua entità
+    });
+    // ... resto del codice
+}
+
+// Quando salvi una nuova entità
+if (isNew) {
+    const createApi = httpsCallable(functions, 'create[Entita]Api');
+    const result = await createApi(payloadToSend);
+    const id = result.data?.id;
+    if (id) {
+        currentEntityId = id;
+        showTabsForExistingEntity();
+        attachmentUtils.listenForAttachments(id);  // ✅ Attiva gestione attachments
+        actionUtils.loadActions(id);
+    }
+}
+
+// Quando modifichi un'entità esistente
+const editEntity = async (id) => {
+    currentEntityId = id;
+    // ... carica dati entità
+    showTabsForExistingEntity();
+    attachmentUtils.listenForAttachments(id);  // ✅ Carica attachments esistenti
+    actionUtils.loadActions(id);
+    openSidebar();
+};
+```
+
+#### PASSO 3: Nascondi Tab per Nuove Entità
+
+Le nuove entità non hanno ancora un ID, quindi nascondi il tab attachments:
+
+```javascript
+function hideTabsForNewEntity() {
+    document.querySelectorAll('[data-tab="attachments"], [data-tab="azioni"]')
+        .forEach(t => t.style.display = 'none');
+    document.querySelectorAll('#tab-attachments, #tab-azioni')
+        .forEach(t => t.style.display = 'none');
+}
+
+function showTabsForExistingEntity() {
+    document.querySelectorAll('[data-tab="attachments"], [data-tab="azioni"]')
+        .forEach(t => t.style.display = '');
+    document.querySelectorAll('#tab-attachments, #tab-azioni')
+        .forEach(t => t.style.display = '');
+}
+```
+
+### 🔍 Query Firestore per Attachments
+
+Firestore viene interrogato automaticamente da `attachmentUtils` con:
+
+```javascript
+query(
+    collection(db, 'attachments'),
+    where("metadata.entityId", "==", entityId),
+    orderBy("createdAt", "desc")
+)
+```
+
+### 📋 Firestore Security Rules
+
+**IMPORTANTE:** Assicurati che le regole permettano la lettura per campo nested:
+
+```javascript
+match /attachments/{docId} {
+  allow read: if request.auth != null &&
+    (resource.data.metadata.entityId == request.auth.uid ||
+     hasRole('operatore'));
+
+  allow create: if request.auth != null;
+  allow update, delete: if hasRole('admin');
+}
+```
+
+### ✅ Esempio Completo: Prodotti
+
+Copia questo pattern per aggiungere attachments ai prodotti:
+
+```javascript
+// src/scripts/anagrafica-prodotti.js
+
+import { storage, auth, functions } from '../lib/firebase-client';
+import { doc, getFirestore } from "firebase/firestore";
+import * as attachmentUtils from './utils/attachmentUtils.js';
+import * as actionUtils from './utils/actionUtils.js';
+import { httpsCallable } from "firebase/functions";
+
+let currentEntityId = null;
+
+export function initPageAnagraficaProdottiPage() {
+    const db = getFirestore();
+
+    // ✅ Setup DocumentUtils con entityCollection
+    attachmentUtils.setup({
+        db,
+        storage,
+        auth,
+        functions,
+        entityCollection: 'anagrafica_prodotti'
+    });
+
+    actionUtils.setup({ db, auth, functions, entityCollection: 'anagrafica_prodotti' });
+    setupEventListeners();
+    loadEntities();
+}
+
+async function saveEntity(e) {
+    e.preventDefault();
+    const isNew = !currentEntityId;
+
+    // ... raccolta dati ...
+
+    if (isNew) {
+        const createApi = httpsCallable(functions, 'createProdottoApi');
+        const result = await createApi(payloadToSend);
+        const id = result.data?.id;
+        if (id) {
+            currentEntityId = id;
+            document.getElementById('entity-id').value = id;
+            showTabsForExistingEntity();
+
+            // ✅ Attiva gestione attachments
+            attachmentUtils.listenForAttachments(id);
+            actionUtils.loadActions(id);
+        }
+    } else {
+        // ... update ...
+    }
+}
+
+const editEntity = async (id) => {
+    currentEntityId = id;
+    // ... carica dati prodotto ...
+
+    showTabsForExistingEntity();
+
+    // ✅ Carica attachments associati
+    attachmentUtils.listenForAttachments(id);
+    actionUtils.loadActions(id);
+
+    openSidebar();
+};
+
+function hideTabsForNewEntity() {
+    document.querySelectorAll('[data-tab="attachments"], [data-tab="azioni"]')
+        .forEach(t => t.style.display = 'none');
+    document.querySelectorAll('#tab-attachments, #tab-azioni')
+        .forEach(t => t.style.display = 'none');
+}
+
+function showTabsForExistingEntity() {
+    document.querySelectorAll('[data-tab="attachments"], [data-tab="azioni"]')
+        .forEach(t => t.style.display = '');
+    document.querySelectorAll('#tab-attachments, #tab-azioni')
+        .forEach(t => t.style.display = '');
+}
+```
+
+### 🚀 Vantaggi di Questo Approccio
+
+✅ **Riutilizzabile:** Stesso codice per tutte le entità
+✅ **Zero backend:** API attachments già pronte
+✅ **Audit automatico:** Ogni upload tracciato
+✅ **Storage organizzato:** File separati per entità
+✅ **Query efficienti:** Index su `metadata.entityId`
+
+### 📝 Note Importanti
+
+1. **Non creare nuove API attachments** - Usa quelle esistenti (`createAttachmentRecordApi`, `deleteAttachmentApi`)
+2. **entityCollection deve corrispondere** - Deve essere lo stesso nome usato per audit e collection
+3. **Tab sempre nascosto per nuove entità** - Gli upload richiedono un ID salvato
+4. **Cleanup automatico Storage** - L'eliminazione del attachment rimuove anche il file fisico
+
+---
+
 ## ✅ Best Practices
 
 1. **Sempre usa Factory:** Non creare oggetti manualmente, usa `create[Entity]()`
@@ -667,6 +910,8 @@ createProdotto({
 6. **Test per ogni operazione:** Almeno 5 test (create, update, delete, list, permessi)
 7. **Log strutturati:** Sempre `console.log("Utente X ha fatto Y")`
 8. **Error handling:** Try-catch con HttpsError specifici
+9. **Attachments sempre associati:** Usa `attachmentUtils.setup()` con `entityCollection` corretta
+10. **Storage path unico:** Ogni entità ha la sua cartella `attachments/[entityId]/`
 
 ---
 

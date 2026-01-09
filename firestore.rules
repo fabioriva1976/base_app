@@ -82,8 +82,8 @@ service cloud.firestore {
         allow write, list: if false;
       }
 
-      // COLLEZIONE DOCUMENTI
-      match /documenti/{documentId} {
+      // COLLEZIONE ATTACHMENTS
+      match /attachments/{attachmentId} {
         // Lettura permessa a tutti gli utenti autenticati.
         allow read: if request.auth != null;
 

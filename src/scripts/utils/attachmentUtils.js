@@ -1,16 +1,16 @@
-// js/utils/documentUtils.js
+// js/utils/attachmentUtils.js
 
 import { collection, query, where, orderBy, onSnapshot, addDoc, deleteDoc, doc, serverTimestamp } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { httpsCallable } from "firebase/functions";
 
-export class DocumentManager {
+export class AttachmentManager {
     constructor(config) {
         this.db = config.db;
         this.storage = config.storage;
         this.auth = config.auth;
         this.functions = config.functions;
-        this.documentsCollectionName = config.documentsCollectionName || 'documenti';
+        this.attachmentsCollectionName = config.attachmentsCollectionName || 'attachments';
         this.entityCollection = config.entityCollection;
         
         this.dropAreaEl = document.getElementById(config.dropAreaId || 'file-drop-area');
@@ -44,7 +44,7 @@ export class DocumentManager {
                 item.remove();
             } else if (item.classList.contains('existing-file')) {
                 const { docId, storagePath, fileName, description } = confirmYesButton.dataset;
-                this.deleteDocument(docId, storagePath, fileName, description);
+                this.deleteAttachment(docId, storagePath, fileName, description);
             }
             this.resetAllDeleteOverlays();
             return;
@@ -140,48 +140,38 @@ export class DocumentManager {
         if (!user) throw new Error("Utente non autenticato.");
         if (!this.currentEntityId) throw new Error("ID Entità non trovato.");
         if (!this.entityCollection) throw new Error("entityCollection non configurato.");
-        const storagePath = `${this.documentsCollectionName}/${this.currentEntityId}/${Date.now()}_${file.name}`;
+
+        console.log('📎 Upload file - currentEntityId:', this.currentEntityId, 'entityCollection:', this.entityCollection);
+
+        const storagePath = `${this.attachmentsCollectionName}/${this.currentEntityId}/${Date.now()}_${file.name}`;
         const fileRef = ref(this.storage, storagePath);
         const snapshot = await uploadBytes(fileRef, file);
         const url = await getDownloadURL(snapshot.ref);
-        const createDocApi = httpsCallable(this.functions, 'createDocumentoRecordApi');
-        await createDocApi({
-            entityId: this.currentEntityId,
-            entityCollection: this.entityCollection,
-            name: file.name,
-            path: snapshot.ref.fullPath,
-            url: url,
-            size: file.size,
-            type: file.type,
-            description: description || ''
+        const createAttachmentApi = httpsCallable(this.functions, 'createAttachmentRecordApi');
+        await createAttachmentApi({
+            nome: file.name,
+            tipo: file.type,
+            storagePath: snapshot.ref.fullPath,
+            metadata: {
+                entityId: this.currentEntityId,
+                entityCollection: this.entityCollection,
+                url: url,
+                size: file.size,
+                description: description || ''
+            }
         });
 
-        // Registra l'azione nell'audit log
-        try {
-            const createAuditLogApi = httpsCallable(this.functions, 'createAuditLogApi');
-            const documentDisplayName = description || file.name;
-            await createAuditLogApi({
-                entityType: this.entityCollection,
-                entityId: this.currentEntityId,
-                action: 'create',
-                metadata: {
-                    documento: documentDisplayName
-                }
-            });
-        } catch (auditError) {
-            console.error('Errore durante la creazione dell\'audit log:', auditError);
-            // Non bloccare l'upload se l'audit log fallisce
-        }
+        // L'audit log viene creato automaticamente dalla Cloud Function createAttachmentRecordApi
     }
     
-    listenForDocuments(entityId) {
+    listenForAttachments(entityId) {
         this.currentEntityId = entityId;
         if (this.dropAreaEl) this.dropAreaEl.style.display = 'flex';
         if (this.previewListEl) {
             this.previewListEl.querySelectorAll('.existing-file').forEach(el => el.remove());
         }
-        const docsRef = collection(this.db, this.documentsCollectionName);
-        const q = query(docsRef, where("entityId", "==", entityId), orderBy("createdAt", "desc"));
+        const attachmentsRef = collection(this.db, this.attachmentsCollectionName);
+        const q = query(attachmentsRef, where("metadata.entityId", "==", entityId), orderBy("createdAt", "desc"));
         if (this.unsubscribeListener) {
             this.unsubscribeListener();
         }
@@ -198,23 +188,27 @@ export class DocumentManager {
             }
             const emptyStateEl = this.previewListEl ? this.previewListEl.querySelector('.empty-state') : null;
             if (emptyStateEl) emptyStateEl.remove();
-            snapshot.docs.forEach(doc => this.renderDocument(doc.id, doc.data()));
+            snapshot.docs.forEach(doc => this.renderAttachment(doc.id, doc.data()));
         }, (error) => {
-            console.error("Errore nell'ascolto dei documenti:", error);
-            if (this.previewListEl) this.previewListEl.innerHTML = `<div class="empty-state">Errore nel caricamento dei documenti.</div>`;
+            console.error("Errore nell'ascolto dei attachments:", error);
+            if (this.previewListEl) this.previewListEl.innerHTML = `<div class="empty-state">Errore nel caricamento dei attachments.</div>`;
         });
     }
     
-    renderDocument(docId, data) {
+    renderAttachment(docId, data) {
         if (!this.previewListEl) return;
         const item = document.createElement('div');
         item.className = 'file-preview-item existing-file';
         const date = this.parseDate(data.createdAt);
         const formattedDate = date.toLocaleString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' });
-        const size = Number(data.size) || 0;
+        const metadata = data.metadata || {};
+        const size = Number(metadata.size) || 0;
         const formattedSize = size > 1024 * 1024 ? `${(size / (1024 * 1024)).toFixed(2)} MB` : `${(size / 1024).toFixed(2)} KB`;
-        const descriptionHtml = data.description ? `<p class="file-description-display">${data.description}</p>` : '';
-        item.innerHTML = `<div class="file-icon-wrapper"><svg class="file-icon" viewBox="0 0 24 24"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg></div><div class="file-details"><a href="${data.url}" target="_blank" class="file-name-link">${data.name}</a>${descriptionHtml}<span class="file-meta">Caricato da: ${data.userName || 'N/D'} il ${formattedDate} (${formattedSize})</span></div><div class="file-actions"><button type="button" class="remove-file-btn" data-doc-id="${docId}" data-storage-path="${data.path}" data-file-name="${data.name}" data-description="${data.description || ''}">&times;</button></div>`;
+        const descriptionHtml = metadata.description ? `<p class="file-description-display">${metadata.description}</p>` : '';
+        const url = metadata.url || '';
+        const nome = data.nome || 'File';
+        const description = metadata.description || '';
+        item.innerHTML = `<div class="file-icon-wrapper"><svg class="file-icon" viewBox="0 0 24 24"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg></div><div class="file-details"><a href="${url}" target="_blank" class="file-name-link">${nome}</a>${descriptionHtml}<span class="file-meta">Caricato da: ${data.createdByEmail || 'N/D'} il ${formattedDate} (${formattedSize})</span></div><div class="file-actions"><button type="button" class="remove-file-btn" data-doc-id="${docId}" data-storage-path="${data.storagePath}" data-file-name="${nome}" data-description="${description}">&times;</button></div>`;
         this.previewListEl.prepend(item);
     }
 
@@ -238,27 +232,12 @@ export class DocumentManager {
         }
     }
     
-    async deleteDocument(docId, storagePath, fileName, description) {
+    async deleteAttachment(docId, storagePath, fileName, description) {
         try {
-            const deleteDocApi = httpsCallable(this.functions, 'deleteDocumentoApi');
-            await deleteDocApi({ docId, storagePath });
+            const deleteAttachmentApi = httpsCallable(this.functions, 'deleteAttachmentApi');
+            await deleteAttachmentApi({ docId, storagePath });
 
-            // Registra l'azione nell'audit log
-            try {
-                const createAuditLogApi = httpsCallable(this.functions, 'createAuditLogApi');
-                const documentDisplayName = description || fileName;
-                await createAuditLogApi({
-                    entityType: this.entityCollection,
-                    entityId: this.currentEntityId,
-                    action: 'delete',
-                    metadata: {
-                        documento: documentDisplayName
-                    }
-                });
-            } catch (auditError) {
-                console.error('Errore durante la creazione dell\'audit log:', auditError);
-                // Non bloccare l'eliminazione se l'audit log fallisce
-            }
+            // L'audit log viene creato automaticamente dalla Cloud Function deleteAttachmentApi
 
             this.showFormMessage("File eliminato con successo!", 'success');
         } catch (error) {
@@ -289,10 +268,10 @@ export class DocumentManager {
 // Mantieni la compatibilità con il vecchio codice
 let defaultInstance = null;
 export function setup(config) {
-    defaultInstance = new DocumentManager(config);
+    defaultInstance = new AttachmentManager(config);
 }
-export function listenForDocuments(entityId) {
-    return defaultInstance?.listenForDocuments(entityId);
+export function listenForAttachments(entityId) {
+    return defaultInstance?.listenForAttachments(entityId);
 }
 export function showEmptyState(message) {
     defaultInstance?.showEmptyState(message);

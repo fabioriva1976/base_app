@@ -1,7 +1,7 @@
 import { storage, auth, functions } from '../lib/firebase-client';
 import { doc, getFirestore } from "firebase/firestore";
 import * as ui from './utils/uiUtils.js';
-import * as documentUtils from './utils/documentUtils.js';
+import * as attachmentUtils from './utils/attachmentUtils.js';
 import * as actionUtils from './utils/actionUtils.js';
 import { httpsCallable } from "firebase/functions";
 import { createCliente } from './schemas/entityFactory.js';
@@ -13,7 +13,7 @@ let dataTable = null;
 
 export function initPageAnagraficaClientiPage() {
     const db = getFirestore();
-    documentUtils.setup({ db, storage, auth, functions, entityCollection: collection_name });
+    attachmentUtils.setup({ db, storage, auth, functions, entityCollection: collection_name });
     actionUtils.setup({ db, auth, functions, entityCollection: collection_name });
     setupEventListeners();
     loadEntities();
@@ -123,7 +123,7 @@ async function saveEntity(e) {
                 currentEntityId = id;
                 document.getElementById('entity-id').value = id;
                 showTabsForExistingEntity();
-                documentUtils.listenForDocuments(id);
+                attachmentUtils.listenForAttachments(id);
                 actionUtils.loadActions(id);
             }
         } else {
@@ -178,7 +178,7 @@ const editEntity = async (id) => {
     document.getElementById('toggle-stato').checked = data.stato || false;
     
     showTabsForExistingEntity();
-    documentUtils.listenForDocuments(id);
+    attachmentUtils.listenForAttachments(id);
     actionUtils.loadActions(id);
     resetToFirstTab('entity-form-sidebar');
     openSidebar();
@@ -186,7 +186,7 @@ const editEntity = async (id) => {
 
 async function deleteEntity(id) {
     const deleteApi = httpsCallable(functions, 'deleteClienteApi');
-    await deleteApi({ clienteId: id });
+    await deleteApi({ id: id });
     loadEntities();
 }
 
@@ -244,13 +244,13 @@ function setupTableClickHandlers() {
 }
 
 function hideTabsForNewEntity() {
-    document.querySelectorAll('[data-tab="documenti"], [data-tab="azioni"]').forEach(t => t.style.display = 'none');
-    document.querySelectorAll('#tab-documenti, #tab-azioni').forEach(t => t.style.display = 'none');
+    document.querySelectorAll('[data-tab="attachments"], [data-tab="azioni"]').forEach(t => t.style.display = 'none');
+    document.querySelectorAll('#tab-attachments, #tab-azioni').forEach(t => t.style.display = 'none');
 }
 
 function showTabsForExistingEntity() {
-    document.querySelectorAll('[data-tab="documenti"], [data-tab="azioni"]').forEach(t => t.style.display = '');
-    document.querySelectorAll('#tab-documenti, #tab-azioni').forEach(t => t.style.display = '');
+    document.querySelectorAll('[data-tab="attachments"], [data-tab="azioni"]').forEach(t => t.style.display = '');
+    document.querySelectorAll('#tab-attachments, #tab-azioni').forEach(t => t.style.display = '');
 }
 
 function openSidebar() { document.getElementById('entity-form-sidebar').classList.add('open'); }

@@ -20,7 +20,7 @@ import AuthLayout from '../layouts/AuthLayout.astro';
         <form id="entity-form">
             <div class="tab-nav">
                 <button type="button" class="tab-link active" data-tab="anagrafica">Anagrafica</button>
-                <button type="button" class="tab-link" data-tab="documenti">Documenti</button>
+                <button type="button" class="tab-link" data-tab="attachments">Documenti</button>
                 <button type="button" class="tab-link" data-tab="azioni">Azioni</button>
             </div>
             <input type="hidden" id="entity-id">
@@ -72,7 +72,7 @@ import AuthLayout from '../layouts/AuthLayout.astro';
                         </div>
                     </div>
                 </div>
-                <div id="tab-documenti" class="tab-content">
+                <div id="tab-attachments" class="tab-content">
                     <div class="form-group">
                         <label>Aggiungi documenti</label>
                         <div class="file-drop-area" id="file-drop-area">
