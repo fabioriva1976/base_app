@@ -15,6 +15,8 @@ const test = fft({ projectId: TEST_PROJECT_ID });
 
 let listClientiApi;
 let createClienteApi;
+let updateClienteApi;
+let deleteClienteApi;
 
 describe('API Clienti', () => {
     // Timeout più ampio per gli hook che usano gli emulatori.
@@ -29,11 +31,14 @@ describe('API Clienti', () => {
         }
         admin.initializeApp({ projectId: TEST_PROJECT_ID });
         db = admin.firestore();
-        ({ listClientiApi, createClienteApi } = await import('./api/clienti.js'));
+        ({ listClientiApi, createClienteApi, updateClienteApi, deleteClienteApi } = await import('./api/clienti.js'));
     });
 
     afterAll(async () => {
         await test.cleanup();
+        if (db && typeof db.terminate === 'function') {
+            await db.terminate();
+        }
         if (admin.apps.length > 0) {
             await Promise.all(admin.apps.map(app => app.delete()));
         }
@@ -45,9 +50,11 @@ describe('API Clienti', () => {
         // Pulisci le collezioni usate nei test
         const clientiSnap = await db.collection('anagrafica_clienti').get();
         const utentiSnap = await db.collection('utenti').get();
+        const auditSnap = await db.collection('audit_logs').get();
         const deletePromises = [];
         clientiSnap.forEach(doc => deletePromises.push(doc.ref.delete()));
         utentiSnap.forEach(doc => deletePromises.push(doc.ref.delete()));
+        auditSnap.forEach(doc => deletePromises.push(doc.ref.delete()));
         await Promise.all(deletePromises);
     });
 
@@ -124,6 +131,15 @@ describe('API Clienti', () => {
             const doc = await db.collection('anagrafica_clienti').doc(result.id).get();
             expect(doc.exists).to.be.true;
             expect(doc.data().ragione_sociale).to.equal('Nuovo Cliente da Admin');
+
+            // Verifica audit log di creazione
+            const auditSnap = await db.collection('audit_logs')
+                .where('entityType', '==', 'clienti')
+                .where('entityId', '==', result.id)
+                .where('action', '==', 'create')
+                .limit(1)
+                .get();
+            expect(auditSnap.empty).to.equal(false);
         });
 
         it('dovrebbe lanciare un errore se la ragione sociale manca', async () => {
@@ -140,6 +156,136 @@ describe('API Clienti', () => {
                 expect(error.code).to.equal('invalid-argument');
                 expect(error.message).to.include('La ragione sociale è obbligatoria');
             }
+        });
+    });
+
+    describe('updateClienteApi', () => {
+        it('dovrebbe negare a un operatore l\'aggiornamento di un cliente', async () => {
+            const wrapped = test.wrap(updateClienteApi);
+            const user = { uid: 'operatore-update', token: { email: 'op-update@test.com' } };
+
+            await db.collection('utenti').doc(user.uid).set({ ruolo: ['operatore'] });
+
+            try {
+                await wrapped({ data: { id: 'cliente-id', ragione_sociale: 'Aggiornato' }, auth: user });
+                expect.fail('La funzione non ha lanciato un errore per operatore');
+            } catch (error) {
+                expect(error.code).to.equal('permission-denied');
+            }
+        });
+
+        it('dovrebbe validare la presenza dell\'ID cliente', async () => {
+            const wrapped = test.wrap(updateClienteApi);
+            const user = { uid: 'admin-update-missing', token: { email: 'admin-update-missing@test.com' } };
+
+            await db.collection('utenti').doc(user.uid).set({ ruolo: ['admin'] });
+
+            try {
+                await wrapped({ data: { ragione_sociale: 'Aggiornato' }, auth: user });
+                expect.fail('La funzione non ha validato l\'ID');
+            } catch (error) {
+                expect(error.code).to.equal('invalid-argument');
+            }
+        });
+
+        it('dovrebbe validare i dati aggiornati', async () => {
+            const wrapped = test.wrap(updateClienteApi);
+            const user = { uid: 'admin-update-invalid', token: { email: 'admin-update-invalid@test.com' } };
+
+            await db.collection('utenti').doc(user.uid).set({ ruolo: ['admin'] });
+
+            const docRef = await db.collection('anagrafica_clienti').add({ ragione_sociale: 'Cliente Old' });
+
+            try {
+                await wrapped({
+                    data: { id: docRef.id, ragione_sociale: 'Cliente New', email: 'not-an-email' },
+                    auth: user
+                });
+                expect.fail('La funzione non ha validato l\'email');
+            } catch (error) {
+                expect(error.code).to.equal('invalid-argument');
+            }
+        });
+
+        it('dovrebbe permettere a un admin di aggiornare un cliente', async () => {
+            const wrapped = test.wrap(updateClienteApi);
+            const user = { uid: 'admin-update', token: { email: 'admin-update@test.com' } };
+
+            await db.collection('utenti').doc(user.uid).set({ ruolo: ['admin'] });
+
+            const docRef = await db.collection('anagrafica_clienti').add({ ragione_sociale: 'Cliente Old' });
+
+            const result = await wrapped({
+                data: { id: docRef.id, ragione_sociale: 'Cliente New', email: 'cliente@update.com' },
+                auth: user
+            });
+
+            expect(result.message).to.equal('Cliente aggiornato con successo.');
+
+            const updatedDoc = await db.collection('anagrafica_clienti').doc(docRef.id).get();
+            expect(updatedDoc.data().ragione_sociale).to.equal('Cliente New');
+
+            const auditSnap = await db.collection('audit_logs')
+                .where('entityType', '==', 'clienti')
+                .where('entityId', '==', docRef.id)
+                .where('action', '==', 'update')
+                .limit(1)
+                .get();
+            expect(auditSnap.empty).to.equal(false);
+        });
+    });
+
+    describe('deleteClienteApi', () => {
+        it('dovrebbe negare a un operatore l\'eliminazione di un cliente', async () => {
+            const wrapped = test.wrap(deleteClienteApi);
+            const user = { uid: 'operatore-delete', token: { email: 'op-delete@test.com' } };
+
+            await db.collection('utenti').doc(user.uid).set({ ruolo: ['operatore'] });
+
+            try {
+                await wrapped({ data: { id: 'cliente-id' }, auth: user });
+                expect.fail('La funzione non ha lanciato un errore per operatore');
+            } catch (error) {
+                expect(error.code).to.equal('permission-denied');
+            }
+        });
+
+        it('dovrebbe validare la presenza dell\'ID cliente', async () => {
+            const wrapped = test.wrap(deleteClienteApi);
+            const user = { uid: 'admin-delete-missing', token: { email: 'admin-delete-missing@test.com' } };
+
+            await db.collection('utenti').doc(user.uid).set({ ruolo: ['admin'] });
+
+            try {
+                await wrapped({ data: {}, auth: user });
+                expect.fail('La funzione non ha validato l\'ID');
+            } catch (error) {
+                expect(error.code).to.equal('invalid-argument');
+            }
+        });
+
+        it('dovrebbe permettere a un admin di eliminare un cliente', async () => {
+            const wrapped = test.wrap(deleteClienteApi);
+            const user = { uid: 'admin-delete', token: { email: 'admin-delete@test.com' } };
+
+            await db.collection('utenti').doc(user.uid).set({ ruolo: ['admin'] });
+
+            const docRef = await db.collection('anagrafica_clienti').add({ ragione_sociale: 'Cliente Delete' });
+
+            const result = await wrapped({ data: { id: docRef.id }, auth: user });
+
+            expect(result.message).to.equal('Cliente eliminato con successo.');
+
+            const deletedDoc = await db.collection('anagrafica_clienti').doc(docRef.id).get();
+            expect(deletedDoc.exists).to.equal(false);
+
+            const auditSnap = await db.collection('audit_logs')
+                .where('entityType', '==', 'clienti')
+                .where('entityId', '==', docRef.id)
+                .where('action', '==', 'delete')
+                .limit(1)
+                .get();
+            expect(auditSnap.empty).to.equal(false);
         });
     });
 });

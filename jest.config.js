@@ -7,6 +7,8 @@ export default {
   modulePathIgnorePatterns: ['<rootDir>/.firebase-credentials/'],
   // Esegui in singolo worker per evitare interferenze tra suite che usano gli emulatori.
   maxWorkers: 1,
+  // Rileva handle aperti per evitare warning a fine run.
+  detectOpenHandles: true,
   // Eventuali altre configurazioni, come transform per TypeScript, ecc.
   // setupFilesAfterEnv: ['./jest.setup.js'],
 };

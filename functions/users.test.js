@@ -42,8 +42,11 @@ describe('API Utenti', () => {
 
     afterAll(async () => {
         await test.cleanup();
+        if (db && typeof db.terminate === 'function') {
+            await db.terminate();
+        }
         if (admin.apps.length > 0) {
-            await admin.app().delete();
+            await Promise.all(admin.apps.map(app => app.delete()));
         }
     });
 
