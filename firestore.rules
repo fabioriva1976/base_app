@@ -93,6 +93,17 @@ service cloud.firestore {
         allow write: if false;
       }
 
+      // COLLEZIONE COMMENTS
+      match /comments/{commentId} {
+        // Lettura permessa a tutti gli utenti autenticati.
+        allow read: if request.auth != null;
+
+        // Scrittura (create, update, delete) NON permessa ai client.
+        // Le modifiche devono passare obbligatoriamente tramite le Cloud Functions,
+        // che contengono la logica di validazione e i controlli sui permessi.
+        allow write: if false;
+      }
+
       // COLLEZIONE AUDIT LOGS
       match /auditLogs/{logId} {
         // Lettura: solo admin e superuser

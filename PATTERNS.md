@@ -900,6 +900,355 @@ function showTabsForExistingEntity() {
 
 ---
 
+## 💬 Associare Comments alle Entità
+
+Il sistema di gestione comments è **già predisposto** per funzionare con qualsiasi entità, esattamente come gli attachments. Non devi creare nuove API o backend, ma solo collegare il componente frontend.
+
+### 🎯 Come Funziona
+
+I comments sono salvati in una **collection centrale** (`comments`) con metadata che puntano all'entità associata:
+
+```javascript
+{
+  text: "Contattare il cliente per preventivo 2024",
+  entityId: "ABC123",              // ID dell'entità (cliente, prodotto, etc.)
+  entityCollection: "anagrafica_clienti",  // Nome collection
+  createdBy: "user123",
+  createdByEmail: "user@example.com",
+  createdAt: "2026-01-09T10:30:00.000Z"
+}
+```
+
+### 🔄 Differenze tra Comments e Attachments
+
+| Feature | Attachments | Comments |
+|---------|-------------|----------|
+| **Storage** | Firestore + Storage | Solo Firestore |
+| **Struttura** | `metadata.entityId` | `entityId` diretto |
+| **Query Index** | `metadata.entityId` + `createdAt` | `entityId` + `entityCollection` + `createdAt` |
+| **Permessi Delete** | Solo admin | Admin o creatore |
+| **Audit Log** | Salvato su parent entity | Salvato su parent entity |
+
+### ✅ 3 Passi per Aggiungere Comments a una Nuova Entità
+
+#### PASSO 1: Aggiungi Tab Note alla Pagina Astro
+
+Nel file `src/pages/anagrafica-[entita].astro`, aggiungi il tab note nella sidebar:
+
+```html
+<!-- Tab buttons -->
+<div class="tab-nav">
+    <button type="button" class="tab-link active" data-tab="anagrafica">Anagrafica</button>
+    <button type="button" class="tab-link" data-tab="attachments">Documenti</button>
+    <button type="button" class="tab-link" data-tab="note">Note</button>
+    <button type="button" class="tab-link" data-tab="azioni">Azioni</button>
+</div>
+
+<!-- Tab content -->
+<div id="tab-note" class="tab-content">
+    <div class="form-group">
+        <label for="comment-text">Aggiungi una nota</label>
+        <textarea id="comment-text" rows="4" placeholder="Scrivi una nota..."></textarea>
+    </div>
+    <div class="form-group">
+        <button type="button" id="save-comment-btn" class="btn btn-small">Salva Nota</button>
+    </div>
+    <div id="comment-form" style="display: none;"></div>
+    <div id="comment-list"></div>
+</div>
+```
+
+#### PASSO 2: Importa e Configura CommentUtils nel Frontend
+
+Nel file `src/scripts/anagrafica-[entita].js`:
+
+```javascript
+// Import
+import * as commentUtils from './utils/commentUtils.js';
+
+// Setup (nella funzione init)
+export function initPageAnagrafica[Entita]Page() {
+    const db = getFirestore();
+    commentUtils.setup({
+        db,
+        auth,
+        functions,
+        entityCollection: 'anagrafica_[entita]'  // Nome collection della tua entità
+    });
+    // ... resto del codice
+}
+
+// Quando salvi una nuova entità
+if (isNew) {
+    const createApi = httpsCallable(functions, 'create[Entita]Api');
+    const result = await createApi(payloadToSend);
+    const id = result.data?.id;
+    if (id) {
+        currentEntityId = id;
+        showTabsForExistingEntity();
+        attachmentUtils.listenForAttachments(id);
+        actionUtils.loadActions(id);
+        commentUtils.listenForComments(id);  // ✅ Attiva gestione comments
+    }
+}
+
+// Quando modifichi un'entità esistente
+const editEntity = async (id) => {
+    currentEntityId = id;
+    // ... carica dati entità
+    showTabsForExistingEntity();
+    attachmentUtils.listenForAttachments(id);
+    actionUtils.loadActions(id);
+    commentUtils.listenForComments(id);  // ✅ Carica comments esistenti
+    openSidebar();
+};
+```
+
+#### PASSO 3: Nascondi Tab per Nuove Entità
+
+Le nuove entità non hanno ancora un ID, quindi nascondi il tab note insieme agli altri:
+
+```javascript
+function hideTabsForNewEntity() {
+    document.querySelectorAll('[data-tab="attachments"], [data-tab="note"], [data-tab="azioni"]')
+        .forEach(t => t.style.display = 'none');
+    document.querySelectorAll('#tab-attachments, #tab-note, #tab-azioni')
+        .forEach(t => t.style.display = 'none');
+}
+
+function showTabsForExistingEntity() {
+    document.querySelectorAll('[data-tab="attachments"], [data-tab="note"], [data-tab="azioni"]')
+        .forEach(t => t.style.display = '');
+    document.querySelectorAll('#tab-attachments, #tab-note, #tab-azioni')
+        .forEach(t => t.style.display = '');
+}
+```
+
+### 🔍 Query Firestore per Comments
+
+Firestore viene interrogato automaticamente da `commentUtils` con:
+
+```javascript
+query(
+    collection(db, 'comments'),
+    where("entityId", "==", entityId),
+    where("entityCollection", "==", entityCollection),
+    orderBy("createdAt", "desc")
+)
+```
+
+**IMPORTANTE:** Richiede composite index in `firestore.indexes.json`:
+
+```json
+{
+  "collectionGroup": "comments",
+  "queryScope": "COLLECTION",
+  "fields": [
+    {"fieldPath": "entityId", "order": "ASCENDING"},
+    {"fieldPath": "entityCollection", "order": "ASCENDING"},
+    {"fieldPath": "createdAt", "order": "DESCENDING"}
+  ]
+}
+```
+
+### 📋 Firestore Security Rules
+
+Le regole sono già configurate in `firestore.rules`:
+
+```javascript
+match /comments/{commentId} {
+  // Lettura permessa a tutti gli utenti autenticati
+  allow read: if request.auth != null;
+
+  // Scrittura NON permessa ai client - solo tramite Cloud Functions
+  allow write: if false;
+}
+```
+
+### 🎯 API Backend (Già Implementate)
+
+Le Cloud Functions per comments sono in `functions/api/comments.js`:
+
+1. **createCommentApi** - Crea nuovo commento
+   - Permessi: Tutti gli utenti autenticati
+   - Input: `{ text, entityId, entityCollection }`
+   - Audit log salvato su parent entity
+
+2. **getEntityCommentsApi** - Recupera commenti di un'entità
+   - Permessi: Tutti gli utenti autenticati
+   - Input: `{ entityId, entityCollection }`
+
+3. **deleteCommentApi** - Elimina commento
+   - Permessi: Admin o creatore del commento
+   - Input: `{ commentId }`
+   - Audit log salvato su parent entity
+
+### ✅ Esempio Completo: Prodotti
+
+Copia questo pattern per aggiungere comments ai prodotti:
+
+```javascript
+// src/scripts/anagrafica-prodotti.js
+
+import { storage, auth, functions } from '../lib/firebase-client';
+import { doc, getFirestore } from "firebase/firestore";
+import * as attachmentUtils from './utils/attachmentUtils.js';
+import * as actionUtils from './utils/actionUtils.js';
+import * as commentUtils from './utils/commentUtils.js';
+import { httpsCallable } from "firebase/functions";
+
+let currentEntityId = null;
+
+export function initPageAnagraficaProdottiPage() {
+    const db = getFirestore();
+
+    // ✅ Setup utilities con entityCollection
+    attachmentUtils.setup({
+        db,
+        storage,
+        auth,
+        functions,
+        entityCollection: 'anagrafica_prodotti'
+    });
+
+    actionUtils.setup({ db, auth, functions, entityCollection: 'anagrafica_prodotti' });
+
+    commentUtils.setup({
+        db,
+        auth,
+        functions,
+        entityCollection: 'anagrafica_prodotti'
+    });
+
+    setupEventListeners();
+    loadEntities();
+}
+
+async function saveEntity(e) {
+    e.preventDefault();
+    const isNew = !currentEntityId;
+
+    // ... raccolta dati ...
+
+    if (isNew) {
+        const createApi = httpsCallable(functions, 'createProdottoApi');
+        const result = await createApi(payloadToSend);
+        const id = result.data?.id;
+        if (id) {
+            currentEntityId = id;
+            document.getElementById('entity-id').value = id;
+            showTabsForExistingEntity();
+
+            // ✅ Attiva gestione attachments e comments
+            attachmentUtils.listenForAttachments(id);
+            actionUtils.loadActions(id);
+            commentUtils.listenForComments(id);
+        }
+    } else {
+        // ... update ...
+    }
+}
+
+const editEntity = async (id) => {
+    currentEntityId = id;
+    // ... carica dati prodotto ...
+
+    showTabsForExistingEntity();
+
+    // ✅ Carica attachments e comments associati
+    attachmentUtils.listenForAttachments(id);
+    actionUtils.loadActions(id);
+    commentUtils.listenForComments(id);
+
+    openSidebar();
+};
+
+function hideTabsForNewEntity() {
+    document.querySelectorAll('[data-tab="attachments"], [data-tab="note"], [data-tab="azioni"]')
+        .forEach(t => t.style.display = 'none');
+    document.querySelectorAll('#tab-attachments, #tab-note, #tab-azioni')
+        .forEach(t => t.style.display = 'none');
+}
+
+function showTabsForExistingEntity() {
+    document.querySelectorAll('[data-tab="attachments"], [data-tab="note"], [data-tab="azioni"]')
+        .forEach(t => t.style.display = '');
+    document.querySelectorAll('#tab-attachments, #tab-note, #tab-azioni')
+        .forEach(t => t.style.display = '');
+}
+```
+
+### 🚀 Vantaggi di Questo Approccio
+
+✅ **Riutilizzabile:** Stesso codice per tutte le entità
+✅ **Zero backend:** API comments già pronte
+✅ **Audit automatico:** Ogni commento tracciato su parent entity
+✅ **Real-time:** Listener Firestore per aggiornamenti live
+✅ **Query efficienti:** Composite index su `entityId` + `entityCollection`
+✅ **Permessi granulari:** Admin o creatore possono eliminare
+
+### 📝 Note Importanti
+
+1. **Non creare nuove API comments** - Usa quelle esistenti (`createCommentApi`, `deleteCommentApi`)
+2. **entityCollection deve corrispondere** - Deve essere lo stesso nome usato per audit e collection
+3. **Tab sempre nascosto per nuove entità** - I commenti richiedono un ID salvato
+4. **Audit logs su parent** - I log appaiono nella timeline dell'entità associata
+5. **Real-time updates** - Usa `onSnapshot` per visualizzazione live dei commenti
+
+### 🔧 Componenti HTML Necessari
+
+Il tab note richiede questi elementi HTML:
+
+```html
+<div id="tab-note" class="tab-content">
+    <!-- Form per aggiungere nota -->
+    <div class="form-group">
+        <label for="comment-text">Aggiungi una nota</label>
+        <textarea id="comment-text" rows="4" placeholder="Scrivi una nota..."></textarea>
+    </div>
+    <div class="form-group">
+        <button type="button" id="save-comment-btn" class="btn btn-small">Salva Nota</button>
+    </div>
+
+    <!-- Container nascosto per compatibilità -->
+    <div id="comment-form" style="display: none;"></div>
+
+    <!-- Lista commenti (popolata dinamicamente) -->
+    <div id="comment-list"></div>
+</div>
+```
+
+### 📊 Factory Function (Già Implementata)
+
+La factory per comments è in `shared/schemas/entityFactory.js`:
+
+```javascript
+export function createComment({
+  text,
+  entityId,
+  entityCollection,
+  createdBy = null,
+  createdByEmail = null
+} = {}) {
+  if (!text || !entityId || !entityCollection) {
+    throw new Error('text, entityId e entityCollection sono obbligatori');
+  }
+
+  const timestamp = nowIso();
+
+  return {
+    text: String(text),
+    entityId: String(entityId),
+    entityCollection: String(entityCollection),
+    createdAt: timestamp,
+    createdBy: createdBy ? String(createdBy) : null,
+    createdByEmail: createdByEmail ? String(createdByEmail) : null
+  };
+}
+```
+
+---
+
 ## ✅ Best Practices
 
 1. **Sempre usa Factory:** Non creare oggetti manualmente, usa `create[Entity]()`

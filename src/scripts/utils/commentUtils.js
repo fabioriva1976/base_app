@@ -1,12 +1,14 @@
 // js/utils/commentUtils.js
 
-import { collection, query, where, orderBy, onSnapshot, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, query, where, orderBy, onSnapshot } from "firebase/firestore";
+import { httpsCallable } from "firebase/functions";
 
 export class CommentManager {
     constructor(config) {
         this.db = config.db;
         this.auth = config.auth;
-        this.commentsCollectionName = config.commentsCollectionName || 'commenti';
+        this.functions = config.functions;
+        this.commentsCollectionName = config.commentsCollectionName || 'comments';
         this.entityCollection = config.entityCollection;
         
         this.listEl = document.getElementById(config.listElementId || 'comment-list');
@@ -39,16 +41,13 @@ export class CommentManager {
             return;
         }
         this.setLoading(true);
-        const newComment = {
-            text: text,
-            entityId: this.currentEntityId,
-            entityCollection: this.entityCollection,
-            userId: user.uid,
-            userName: user.displayName || user.email,
-            createdAt: serverTimestamp()
-        };
         try {
-            await addDoc(collection(this.db, this.commentsCollectionName), newComment);
+            const createCommentApi = httpsCallable(this.functions, 'createCommentApi');
+            await createCommentApi({
+                text: text,
+                entityId: this.currentEntityId,
+                entityCollection: this.entityCollection
+            });
             this.textEl.value = '';
         } catch (error) {
             console.error("Errore nel salvataggio del commento:", error);
@@ -100,10 +99,19 @@ export class CommentManager {
         if (!this.listEl) return;
         const item = document.createElement('div');
         item.className = 'comment-item';
-        const date = data.createdAt ? data.createdAt.toDate() : new Date();
+        const date = this.parseDate(data.createdAt);
         const formattedDate = date.toLocaleString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-        item.innerHTML = `<div class="comment-header"><span class="comment-user">${data.userName || 'Utente Sconosciuto'}</span><span class="comment-date">${formattedDate}</span></div><div class="comment-body">${data.text}</div>`;
+        const userName = data.createdByEmail || 'Utente Sconosciuto';
+        item.innerHTML = `<div class="comment-header"><span class="comment-user">${userName}</span><span class="comment-date">${formattedDate}</span></div><div class="comment-body">${data.text}</div>`;
         this.listEl.appendChild(item);
+    }
+
+    parseDate(value) {
+        if (!value) return new Date();
+        if (value.toDate && typeof value.toDate === 'function') return value.toDate();
+        if (value._seconds) return new Date(value._seconds * 1000);
+        if (typeof value === 'string' || typeof value === 'number') return new Date(value);
+        return new Date();
     }
     
     showEmptyState(message) {

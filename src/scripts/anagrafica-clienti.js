@@ -3,6 +3,7 @@ import { doc, getFirestore } from "firebase/firestore";
 import * as ui from './utils/uiUtils.js';
 import * as attachmentUtils from './utils/attachmentUtils.js';
 import * as actionUtils from './utils/actionUtils.js';
+import * as commentUtils from './utils/commentUtils.js';
 import { httpsCallable } from "firebase/functions";
 import { createCliente } from './schemas/entityFactory.js';
 
@@ -15,6 +16,7 @@ export function initPageAnagraficaClientiPage() {
     const db = getFirestore();
     attachmentUtils.setup({ db, storage, auth, functions, entityCollection: collection_name });
     actionUtils.setup({ db, auth, functions, entityCollection: collection_name });
+    commentUtils.setup({ db, auth, functions, entityCollection: collection_name });
     setupEventListeners();
     loadEntities();
 }
@@ -125,6 +127,7 @@ async function saveEntity(e) {
                 showTabsForExistingEntity();
                 attachmentUtils.listenForAttachments(id);
                 actionUtils.loadActions(id);
+                commentUtils.listenForComments(id);
             }
         } else {
             const updateApi = httpsCallable(functions, 'updateClienteApi');
@@ -180,6 +183,7 @@ const editEntity = async (id) => {
     showTabsForExistingEntity();
     attachmentUtils.listenForAttachments(id);
     actionUtils.loadActions(id);
+    commentUtils.listenForComments(id);
     resetToFirstTab('entity-form-sidebar');
     openSidebar();
 };
@@ -244,13 +248,13 @@ function setupTableClickHandlers() {
 }
 
 function hideTabsForNewEntity() {
-    document.querySelectorAll('[data-tab="attachments"], [data-tab="azioni"]').forEach(t => t.style.display = 'none');
-    document.querySelectorAll('#tab-attachments, #tab-azioni').forEach(t => t.style.display = 'none');
+    document.querySelectorAll('[data-tab="attachments"], [data-tab="note"], [data-tab="azioni"]').forEach(t => t.style.display = 'none');
+    document.querySelectorAll('#tab-attachments, #tab-note, #tab-azioni').forEach(t => t.style.display = 'none');
 }
 
 function showTabsForExistingEntity() {
-    document.querySelectorAll('[data-tab="attachments"], [data-tab="azioni"]').forEach(t => t.style.display = '');
-    document.querySelectorAll('#tab-attachments, #tab-azioni').forEach(t => t.style.display = '');
+    document.querySelectorAll('[data-tab="attachments"], [data-tab="note"], [data-tab="azioni"]').forEach(t => t.style.display = '');
+    document.querySelectorAll('#tab-attachments, #tab-note, #tab-azioni').forEach(t => t.style.display = '');
 }
 
 function openSidebar() { document.getElementById('entity-form-sidebar').classList.add('open'); }

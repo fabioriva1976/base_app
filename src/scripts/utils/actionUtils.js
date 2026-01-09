@@ -172,6 +172,25 @@ export class ActionManager {
             return details;
         }
 
+        // Gestione speciale per comments (newData.commentText o oldData.commentText presente)
+        const commentData = action.newData || action.oldData;
+        if (commentData && commentData.commentText) {
+            const colorClass = action.action === 'create' ? 'change-new' : (action.action === 'delete' ? 'change-old' : '');
+            details += '<div class="timeline-changes">';
+            details += '<div class="changes-title">Nota:</div>';
+
+            // Mostra primi 30 caratteri del testo
+            const commentText = commentData.commentText;
+            const displayText = commentText.length > 30
+                ? commentText.substring(0, 30) + '...'
+                : commentText;
+
+            details += `<div class="document-name ${colorClass}">${displayText}</div>`;
+
+            details += '</div>';
+            return details;
+        }
+
         // Gestione speciale per documenti legacy (metadata.documento presente)
         if (action.metadata && action.metadata.documento) {
             const colorClass = action.action === 'create' ? 'change-new' : (action.action === 'delete' ? 'change-old' : '');

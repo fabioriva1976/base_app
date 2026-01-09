@@ -21,6 +21,7 @@ import AuthLayout from '../layouts/AuthLayout.astro';
             <div class="tab-nav">
                 <button type="button" class="tab-link active" data-tab="anagrafica">Anagrafica</button>
                 <button type="button" class="tab-link" data-tab="attachments">Documenti</button>
+                <button type="button" class="tab-link" data-tab="note">Note</button>
                 <button type="button" class="tab-link" data-tab="azioni">Azioni</button>
             </div>
             <input type="hidden" id="entity-id">
@@ -86,6 +87,17 @@ import AuthLayout from '../layouts/AuthLayout.astro';
                         </div>
                     </div>
                     <div id="document-preview-list"></div>
+                </div>
+                <div id="tab-note" class="tab-content">
+                    <div class="form-group">
+                        <label for="comment-text">Aggiungi una nota</label>
+                        <textarea id="comment-text" rows="4" placeholder="Scrivi una nota sul cliente..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <button type="button" id="save-comment-btn" class="btn btn-small">Salva Nota</button>
+                    </div>
+                    <div id="comment-form" style="display: none;"></div>
+                    <div id="comment-list"></div>
                 </div>
                 <div id="tab-azioni" class="tab-content">
                     <div class="action-list-container">
