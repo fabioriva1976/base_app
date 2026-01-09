@@ -1,6 +1,6 @@
 describe('Anagrafica Utenti - creazione', () => {
   const apiKey = 'AIzaSyD8Wqok8hADg9bipYln3KpQbQ99nHVI-4s';
-  const projectId = Cypress.env('FIREBASE_PROJECT_ID') || 'base-app-12108-test';
+  const projectId = Cypress.env('FIREBASE_PROJECT_ID') || 'base-app-12108';
   const authEmulatorUrl = 'http://localhost:9099';
   const firestoreEmulatorUrl = 'http://localhost:8080';
 
@@ -72,7 +72,7 @@ describe('Anagrafica Utenti - creazione', () => {
 
     cy.get('button[type="submit"][form="entity-form"]').scrollIntoView().click({ force: true });
 
-    cy.get('#entity-id', { timeout: 10000 }).should('have.value').and('not.be.empty');
+    cy.get('#entity-id', { timeout: 10000 }).invoke('val').should('match', /.+/);
 
     cy.get('#data-table', { timeout: 10000 }).contains(userEmail).should('be.visible');
   });

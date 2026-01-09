@@ -117,6 +117,5 @@ Devi essere autenticato con Firebase CLI (puoi farlo anche nel container con `fi
 - **Regole di Sicurezza**: se modifichi i file `firestore.rules` o `storage.rules`, esegui il deploy specifico:
   `docker compose exec firebase-cli firebase deploy --only firestore:rules,storage:rules`
 
-
 ## Log produzione di function
 `docker compose exec firebase-cli firebase functions:log --only astroSSR`

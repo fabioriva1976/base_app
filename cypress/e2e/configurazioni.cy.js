@@ -1,6 +1,6 @@
 describe('Configurazioni - AI e SMTP', () => {
   const apiKey = 'AIzaSyD8Wqok8hADg9bipYln3KpQbQ99nHVI-4s';
-  const projectId = Cypress.env('FIREBASE_PROJECT_ID') || 'base-app-12108-test';
+  const projectId = Cypress.env('FIREBASE_PROJECT_ID') || 'base-app-12108';
   const authEmulatorUrl = 'http://localhost:9099';
   const firestoreEmulatorUrl = 'http://localhost:8080';
 
