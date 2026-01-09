@@ -1,6 +1,5 @@
 import { auth, functions } from '../lib/firebase-client';
 import { httpsCallable } from "firebase/functions";
-import { showTemporaryMessage } from './utils/uiUtils.js';
 
 export function initConfigAiPage() {
     const form = document.getElementById('ai-config-form');
@@ -80,10 +79,10 @@ async function loadCurrentConfig() {
 
         // Se è un errore di permessi, mostra un messaggio più chiaro
         if (error.code === 'permission-denied') {
-            showTemporaryMessage('form-message', '⚠️ Solo i Superuser possono visualizzare le configurazioni sensibili (API keys, secrets)', 'error');
+            showMessage('⚠️ Solo i Superuser possono visualizzare le configurazioni sensibili (API keys, secrets)', 'error');
             makeFormReadOnly();
         } else {
-            showTemporaryMessage('form-message', 'Errore nel caricamento della configurazione', 'error');
+            showMessage('Errore nel caricamento della configurazione', 'error');
         }
     }
 }
@@ -132,11 +131,11 @@ async function handleSubmit(e) {
 
         await loadCurrentConfig();
 
-        showTemporaryMessage('save-message', 'Configurazione salvata con successo!');
+        showMessage('Configurazione salvata con successo!', 'success');
 
     } catch (error) {
         console.error('Errore nel salvare la configurazione:', error);
-        showTemporaryMessage('save-message', 'Errore: ' + (error.message || 'Impossibile salvare'), 'error', 3000);
+        showMessage('Errore: ' + (error.message || 'Impossibile salvare la configurazione'), 'error');
     } finally {
         submitBtn.disabled = false;
         submitBtn.innerHTML = originalText;
@@ -158,16 +157,12 @@ async function testAI() {
         const result = await testAi({});
 
         if (result.data.success) {
-            showTemporaryMessage('form-message', result.data.message, 'success');
+            showMessage(result.data.message, 'success');
         } else {
             throw new Error(result.data.message || 'Test fallito');
         }
     } catch (error) {
         console.error('Errore nel test AI:', error);
-        console.error('Error code:', error.code);
-        console.error('Error message:', error.message);
-        console.error('Error details:', error.details);
-        console.error('Full error object:', JSON.stringify(error, null, 2));
 
         // Estrai il messaggio di errore dalla struttura Firebase Functions
         let errorMessage = 'Impossibile testare la configurazione AI';
@@ -190,7 +185,7 @@ async function testAI() {
             errorMessage = 'Non hai i permessi per testare la configurazione AI';
         }
 
-        showTemporaryMessage('form-message', '❌ ' + errorMessage, 'error');
+        showMessage('❌ ' + errorMessage, 'error');
     } finally {
         btn.disabled = false;
         btn.textContent = originalText;
@@ -238,4 +233,18 @@ function updateStatus(data) {
             minute: '2-digit'
         });
     }
+}
+
+function showMessage(message, type) {
+    // Preferisci il messaggio vicino ai pulsanti
+    const messageElement = document.getElementById('save-message') || document.getElementById('form-message');
+    if (!messageElement) return;
+
+    messageElement.textContent = message;
+    messageElement.className = `save-message ${type}`;
+    messageElement.style.display = 'inline-block';
+
+    setTimeout(() => {
+        messageElement.style.display = 'none';
+    }, 5000);
 }

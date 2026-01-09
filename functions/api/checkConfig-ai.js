@@ -1,21 +1,28 @@
-const { onCall } = require("firebase-functions/v2/https");
-const { getFirestore } = require("firebase-admin/firestore");
-const { GoogleGenerativeAI } = require("@google/generative-ai");
-const { region } = require("../index.js");
-const { requireSuperUser } = require("../utils/authHelpers");
+// functions/api/checkConfig-ai.js
+
+import { onCall } from "firebase-functions/v2/https";
+import admin from "firebase-admin";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import axios from "axios";
+import { region, corsOrigins, runtimeOpts } from "../config.js";
+import { requireSuperUser } from "../utils/authHelpers.js";
+
+if (admin.apps.length === 0) {
+    admin.initializeApp();
+}
 
 /**
  * Test configurazione AI - SOLO SUPERUSER
  * Solo i superuser possono testare la configurazione AI per sicurezza
  */
-exports.checkAiApi = onCall({ region, cors: true }, async (request) => {
+export const checkAiApi = onCall({ region, cors: corsOrigins, ...runtimeOpts }, async (request) => {
     console.log("🔍 checkAiApi chiamata");
 
     // ✅ SECURITY: Richiede ruolo superuser
     await requireSuperUser(request);
 
     try {
-        const db = getFirestore();
+        const db = admin.firestore();
 
         // Carica la configurazione AI da Firestore
         console.log("📋 Caricamento configurazione AI da Firestore...");
@@ -164,9 +171,6 @@ async function testGoogleAI(aiConfig) {
 // Funzione di test per OpenAI
 async function testOpenAI(aiConfig) {
     console.log(`🤖 Testing OpenAI: ${aiConfig.model}`);
-
-    // Uso axios per chiamare l'API OpenAI direttamente
-    const axios = require('axios');
 
     console.log("🔄 Invio prompt di test...");
 

@@ -82,6 +82,8 @@ export {
 
 export { checkSmtpApi } from "./api/checkConfig-smtp.js";
 
+export { checkAiApi } from "./api/checkConfig-ai.js";
+
 // Triggers Firestore
 export { onUtentiChange } from "./triggers/onUtentiChange.js";
 export {
