@@ -29,7 +29,6 @@ const showCreateButton = canManageUsers(user);
         <form id="entity-form">
             <div class="tab-nav">
                 <button type="button" class="tab-link active" data-tab="anagrafica">Anagrafica</button>
-                <button type="button" class="tab-link" data-tab="documenti">Documenti</button>
                 <button type="button" class="tab-link" data-tab="azioni">Azioni</button>
             </div>
             <input type="hidden" id="entity-id">
@@ -77,21 +76,6 @@ const showCreateButton = canManageUsers(user);
                             </label>
                         </div>
                     </div>
-                </div>
-                <div id="tab-documenti" class="tab-content">
-                    <div class="form-group">
-                        <label>Aggiungi documenti</label>
-                        <div class="file-drop-area" id="file-drop-area">
-                            <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                <polyline points="17 8 12 3 7 8"></polyline>
-                                <line x1="12" y1="3" x2="12" y2="15"></line>
-                            </svg>
-                            <p class="file-message">Trascina i file qui o <strong>clicca</strong></p>
-                            <input type="file" id="document-upload" multiple>
-                        </div>
-                    </div>
-                    <div id="document-preview-list"></div>
                 </div>
                 <div id="tab-azioni" class="tab-content">
                     <div class="action-list-container">

@@ -1,16 +1,20 @@
-// functions/api/testSmtp.js
+// functions/api/checkConfig-smtp.js
 
-const { onCall } = require("firebase-functions/v2/https");
-const { getFirestore } = require("firebase-admin/firestore");
-const nodemailer = require("nodemailer");
-const { region } = require("../index.js");
-const { requireSuperUser } = require("../utils/authHelpers");
+import { onCall } from "firebase-functions/v2/https";
+import admin from "firebase-admin";
+import nodemailer from "nodemailer";
+import { region, corsOrigins, runtimeOpts } from "../config.js";
+import { requireSuperUser } from "../utils/authHelpers.js";
+
+if (admin.apps.length === 0) {
+    admin.initializeApp();
+}
 
 /**
  * Test configurazione SMTP - SOLO SUPERUSER
  * Solo i superuser possono testare la configurazione SMTP per sicurezza
  */
-exports.checkSmtpApi = onCall({ region, cors: true }, async (request) => {
+export const checkSmtpApi = onCall({ region, cors: corsOrigins, ...runtimeOpts }, async (request) => {
     console.log("🔍 checkSmtpApi chiamata con request.data:", request.data);
 
     // ✅ SECURITY: Richiede ruolo superuser
@@ -20,7 +24,7 @@ exports.checkSmtpApi = onCall({ region, cors: true }, async (request) => {
     console.log("📧 Email di test:", testEmail);
 
     try {
-        const db = getFirestore();
+        const db = admin.firestore();
 
         // Carica la configurazione SMTP da Firestore
         console.log("📋 Caricamento configurazione SMTP da Firestore...");

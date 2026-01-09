@@ -19,7 +19,8 @@ export const getEntityAuditLogsApi = onCall({ region, cors: corsOrigins, ...runt
         throw new HttpsError("invalid-argument", "entityType e entityId sono obbligatori.");
     }
 
-    return await getAuditLogs(entityType, entityId, limit);
+    const logs = await getAuditLogs(entityType, entityId, limit);
+    return { logs };
 });
 
 /**
@@ -34,7 +35,8 @@ export const getUserAuditLogsApi = onCall({ region, cors: corsOrigins, ...runtim
         throw new HttpsError("invalid-argument", "userId è obbligatorio.");
     }
 
-    return await getAuditLogsByUser(userId, limit);
+    const logs = await getAuditLogsByUser(userId, limit);
+    return { logs };
 });
 
 /**
@@ -53,5 +55,6 @@ export const searchAuditLogsApi = onCall({ region, cors: corsOrigins, ...runtime
         filters.endDate = new Date(filters.endDate);
     }
 
-    return await getAuditLogsWithFilters(filters);
+    const logs = await getAuditLogsWithFilters(filters);
+    return { logs };
 });

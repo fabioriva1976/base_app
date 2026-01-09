@@ -29,7 +29,6 @@ import {
   getUserRole,
   isSuperUser
 } from "../utils/authHelpers.js";
-import { logAudit, AuditAction } from "../utils/auditLogger.js";
 
 // 🔧 Inizializza Firebase Admin (singleton pattern)
 if (admin.apps.length === 0) {
@@ -37,6 +36,7 @@ if (admin.apps.length === 0) {
 }
 
 const auth = admin.auth();
+const db = admin.firestore();
 
 // 📝 CONFIGURAZIONE: Nome collection in Firestore
 // NOTA: Gli utenti sono principalmente in Firebase Auth,
@@ -59,6 +59,23 @@ function validateUserData(data) {
     if (data.displayName && typeof data.displayName !== 'string') {
         throw new HttpsError('invalid-argument', 'displayName deve essere una stringa');
     }
+}
+
+function validateUserUpdateData(data) {
+  if (data.email !== undefined) {
+    if (typeof data.email !== 'string' || !data.email.includes('@')) {
+      throw new HttpsError('invalid-argument', 'Email non valida');
+    }
+  }
+  if (data.nome !== undefined && typeof data.nome !== 'string') {
+    throw new HttpsError('invalid-argument', 'nome deve essere una stringa');
+  }
+  if (data.cognome !== undefined && typeof data.cognome !== 'string') {
+    throw new HttpsError('invalid-argument', 'cognome deve essere una stringa');
+  }
+  if (data.telefono !== undefined && typeof data.telefono !== 'string') {
+    throw new HttpsError('invalid-argument', 'telefono deve essere una stringa');
+  }
 }
 
 /**
@@ -125,6 +142,7 @@ export const userCreateApi = onCall({ region, cors: corsOrigins, ...runtimeOpts 
 
     let userRecord;
     let wasExisting = false;
+    const now = new Date().toISOString();
 
     // 3. BUSINESS LOGIC: Crea l'utente in Firebase Auth
     try {
@@ -137,17 +155,6 @@ export const userCreateApi = onCall({ region, cors: corsOrigins, ...runtimeOpts 
       // 5. LOGGING: Registra azione per audit
       console.log(`Utente creato da ${request.auth.uid}: ${userRecord.uid} (ruolo: ${targetRole})`);
 
-      // AUDIT LOG: Registra creazione utente
-      await logAudit({
-        entityType: 'utenti',
-        entityId: userRecord.uid,
-        action: AuditAction.CREATE,
-        userId: request.auth.uid,
-        userEmail: request.auth.token.email,
-        newData: { email: data.email, displayName: data.displayName, ruolo: targetRole, disabled: data.disabled },
-        source: 'web'
-      });
-
     } catch (error) {
       // CASO SPECIALE: Se l'email esiste già, sincronizza i dati
       if (error.code === "auth/email-already-exists") {
@@ -159,23 +166,39 @@ export const userCreateApi = onCall({ region, cors: corsOrigins, ...runtimeOpts 
         });
         console.log(`Utente esistente sincronizzato da ${request.auth.uid}: ${userRecord.uid}`);
 
-        // AUDIT LOG: Registra sincronizzazione
-        await logAudit({
-          entityType: 'utenti',
-          entityId: userRecord.uid,
-          action: AuditAction.UPDATE,
-          userId: request.auth.uid,
-          userEmail: request.auth.token.email,
-          newData: { displayName: data.displayName, disabled: data.disabled },
-          metadata: { reason: 'sync_existing_user' },
-          source: 'web'
-        });
       } else {
         throw error;
       }
     }
 
     // 6. RESPONSE: Ritorna dati salvati
+    const userDocRef = db.collection('utenti').doc(userRecord.uid);
+    let createdAt = now;
+    if (wasExisting) {
+      const existingDoc = await userDocRef.get();
+      if (existingDoc.exists && existingDoc.data().created) {
+        createdAt = existingDoc.data().created;
+      }
+    }
+
+    const status = data.status !== undefined ? Boolean(data.status) : !data.disabled;
+    const profileData = {
+      nome: data.nome || '',
+      cognome: data.cognome || '',
+      email: data.email,
+      telefono: data.telefono || '',
+      ruolo: targetRole ? [targetRole] : [],
+      status: status,
+      changed: now,
+      lastModifiedBy: request.auth.uid,
+      lastModifiedByEmail: request.auth.token.email || null
+    };
+    if (createdAt) {
+      profileData.created = createdAt;
+    }
+
+    await userDocRef.set(profileData, { merge: true });
+
     return {
       uid: userRecord.uid,
       message: wasExisting
@@ -206,6 +229,7 @@ export const userUpdateApi = onCall({ region, cors: corsOrigins, ...runtimeOpts 
   const { uid, ruolo: targetRole, ...updateData } = data;
 
   try {
+    validateUserUpdateData(data);
     let currentTargetRole = await getUserRole(uid);
 
     if (!currentTargetRole) {
@@ -233,27 +257,30 @@ export const userUpdateApi = onCall({ region, cors: corsOrigins, ...runtimeOpts 
       }
     }
 
-    // Recupera i dati attuali per audit
-    const oldUserRecord = await auth.getUser(uid);
-    const oldData = {
-      email: oldUserRecord.email,
-      displayName: oldUserRecord.displayName,
-      disabled: oldUserRecord.disabled
+    const authUpdate = {};
+    if (updateData.displayName !== undefined) authUpdate.displayName = updateData.displayName;
+    if (updateData.disabled !== undefined) authUpdate.disabled = updateData.disabled;
+    if (updateData.email !== undefined) authUpdate.email = updateData.email;
+
+    if (Object.keys(authUpdate).length > 0) {
+      await auth.updateUser(uid, authUpdate);
+    }
+
+    const now = new Date().toISOString();
+    const profileUpdates = {
+      changed: now,
+      lastModifiedBy: request.auth.uid,
+      lastModifiedByEmail: request.auth.token.email || null
     };
 
-    await auth.updateUser(uid, updateData);
+    if (data.nome !== undefined) profileUpdates.nome = data.nome;
+    if (data.cognome !== undefined) profileUpdates.cognome = data.cognome;
+    if (data.email !== undefined) profileUpdates.email = data.email;
+    if (data.telefono !== undefined) profileUpdates.telefono = data.telefono;
+    if (data.status !== undefined) profileUpdates.status = Boolean(data.status);
+    if (targetRole) profileUpdates.ruolo = [targetRole];
 
-    // AUDIT LOG: Registra modifica utente
-    await logAudit({
-      entityType: 'utenti',
-      entityId: uid,
-      action: AuditAction.UPDATE,
-      userId: request.auth.uid,
-      userEmail: request.auth.token.email,
-      oldData: oldData,
-      newData: updateData,
-      source: 'web'
-    });
+    await db.collection('utenti').doc(uid).set(profileUpdates, { merge: true });
 
     console.log(`Admin ${request.auth.uid} ha aggiornato l'utente ${uid}`);
 
@@ -310,32 +337,14 @@ export const userDeleteApi = onCall({ region, cors: corsOrigins, ...runtimeOpts 
       }
     }
 
-    // Recupera dati per audit prima di eliminare
-    let oldData = null;
     if (userExistsInAuth) {
-      const userRecord = await auth.getUser(data.uid);
-      oldData = {
-        email: userRecord.email,
-        displayName: userRecord.displayName,
-        disabled: userRecord.disabled
-      };
       await auth.deleteUser(data.uid);
       console.log(`Admin ${request.auth.uid} ha eliminato l'utente ${data.uid} da Firebase Auth`);
     } else {
       console.log("Utente non presente in Auth, elimino solo Firestore");
     }
 
-    // AUDIT LOG: Registra eliminazione utente
-    await logAudit({
-      entityType: 'utenti',
-      entityId: data.uid,
-      action: AuditAction.DELETE,
-      userId: request.auth.uid,
-      userEmail: request.auth.token.email,
-      oldData: oldData,
-      metadata: { wasInAuth: userExistsInAuth },
-      source: 'web'
-    });
+    await db.collection('utenti').doc(data.uid).delete();
 
     return {
       message: "Utente eliminato con successo.",

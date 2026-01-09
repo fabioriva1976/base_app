@@ -69,6 +69,19 @@ export {
     updateDocumentoApi
 } from "./api/documenti.js";
 
+// === FUNZIONI API - CONFIGURAZIONI ===
+export {
+    getConfigSmtpApi,
+    saveConfigSmtpApi
+} from "./api/config-smtp.js";
+
+export {
+    getConfigAiApi,
+    saveConfigAiApi
+} from "./api/config-ai.js";
+
+export { checkSmtpApi } from "./api/checkConfig-smtp.js";
+
 // Triggers Firestore
 export { onUtentiChange } from "./triggers/onUtentiChange.js";
 export {

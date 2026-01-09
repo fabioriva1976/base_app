@@ -32,4 +32,6 @@ const localCorsOrigins = isEmulator ? [
     "http://127.0.0.1:5173"
 ] : [];
 
-export const corsOrigins = [...baseCorsOrigins, ...localCorsOrigins];
+// Per Firebase Functions v2 (onCall), CORS è gestito automaticamente
+// Usiamo 'true' negli emulatori per consentire tutte le origini durante lo sviluppo
+export const corsOrigins = isEmulator ? true : [...baseCorsOrigins, ...localCorsOrigins];

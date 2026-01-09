@@ -1,6 +1,6 @@
 import { db, storage, auth, functions } from '../lib/firebase-client';
-import { doc, getDoc, setDoc } from "firebase/firestore";
-import { updateProfile, updateEmail, updatePassword } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
+import { updatePassword } from "firebase/auth";
 import { httpsCallable } from "firebase/functions";
 import * as documentUtils from './utils/documentUtils.js';
 
@@ -55,27 +55,39 @@ async function loadCurrentUserProfile() {
     currentUserId = user.uid;
     document.getElementById('profile-user-id').value = currentUserId;
 
+    console.log('📝 Caricamento profilo per utente:', currentUserId);
+
     try {
         const docSnap = await getDoc(doc(db, collection_name, currentUserId));
 
         if (docSnap.exists()) {
             const data = docSnap.data();
+            console.log('✅ Dati profilo trovati in Firestore:', data);
 
             document.getElementById('profile-nome').value = data.nome || '';
             document.getElementById('profile-cognome').value = data.cognome || '';
             document.getElementById('profile-email').value = data.email || user.email || '';
             document.getElementById('profile-telefono').value = data.telefono || '';
 
+            console.log('✅ Campi popolati:', {
+                nome: document.getElementById('profile-nome').value,
+                cognome: document.getElementById('profile-cognome').value,
+                email: document.getElementById('profile-email').value,
+                telefono: document.getElementById('profile-telefono').value
+            });
+
             // Carica i documenti dell'utente
             documentUtils.listenForDocuments(currentUserId);
         } else {
-            console.log('Profilo utente non trovato in Firestore, uso i dati da Auth');
+            console.log('⚠️ Profilo utente non trovato in Firestore, uso i dati da Auth');
+            console.log('Auth user:', { email: user.email, displayName: user.displayName });
+
             document.getElementById('profile-email').value = user.email || '';
             document.getElementById('profile-nome').value = user.displayName?.split(' ')[0] || '';
             document.getElementById('profile-cognome').value = user.displayName?.split(' ').slice(1).join(' ') || '';
         }
     } catch (error) {
-        console.error('Errore nel caricamento del profilo:', error);
+        console.error('❌ Errore nel caricamento del profilo:', error);
         alert('Errore nel caricamento del profilo');
     }
 }
@@ -91,88 +103,68 @@ async function saveProfile(e) {
     saveBtn.innerHTML = '<span class="btn-loader"></span>Salvataggio...';
 
     try {
-        const nome = document.getElementById('profile-nome').value;
-        const cognome = document.getElementById('profile-cognome').value;
-        const email = document.getElementById('profile-email').value;
-        const telefono = document.getElementById('profile-telefono').value;
+        const nome = document.getElementById('profile-nome').value.trim();
+        const cognome = document.getElementById('profile-cognome').value.trim();
+        const email = document.getElementById('profile-email').value.trim();
+        const telefono = document.getElementById('profile-telefono').value.trim();
         const password = document.getElementById('profile-password').value;
         const displayName = `${nome} ${cognome}`.trim();
-        const now = new Date().toISOString();
 
-        // Aggiorna Firebase Auth lato client
         const user = auth.currentUser;
-
-        // Aggiorna displayName
-        await updateProfile(user, {
-            displayName: displayName
-        });
-
-        // Se email è cambiata, aggiornala
-        if (email !== user.email) {
-            await updateEmail(user, email);
-        }
-
-        // Se è stata inserita una password, aggiornala
-        if (password && password.trim() !== '') {
-            await updatePassword(user, password);
-        }
 
         // Controlla se l'utente esiste già in Firestore
         const userDocSnap = await getDoc(doc(db, collection_name, currentUserId));
         const userExists = userDocSnap.exists();
 
-        // Prepara i dati da salvare
-        const data = {
-            nome: nome,
-            cognome: cognome,
-            email: email,
-            telefono: telefono,
-            changed: now,
-            lastModifiedBy: user.uid,
-            lastModifiedByEmail: user.email
-        };
-
-        // Se l'utente esiste già, preserva/normalizza il ruolo (array)
-        if (userExists) {
-            const existingRole = userDocSnap.data()?.ruolo;
-            const normalizedRole = Array.isArray(existingRole)
-                ? existingRole
-                : existingRole
-                ? [existingRole]
-                : [];
-            if (normalizedRole.length > 0) {
-                data.ruolo = normalizedRole;
-            }
-        }
-
-        // Se l'utente non esiste, controlla se è il primo utente del sistema
         let saveMessage = 'Profilo aggiornato con successo!';
 
         if (!userExists) {
-            // Prova a inizializzare come primo utente tramite Cloud Function (bypassa le regole client)
+            // Prova a inizializzare come primo utente tramite Cloud Function
             const initializeFirstUser = httpsCallable(functions, 'initializeFirstUserApi');
 
             try {
                 await initializeFirstUser({ nome, cognome, email, telefono });
-                data.ruolo = ['superuser'];
-                data.created = now;
                 console.log('🎉 Primo utente del sistema - Assegnato ruolo SUPERUSER');
                 saveMessage = 'Profilo creato con ruolo SUPERUSER (primo utente del sistema)!';
             } catch (claimsError) {
-                // Se la collezione non è vuota, la funzione risponde con failed-precondition: prosegui come utente normale
+                // Se la collezione non è vuota, la funzione risponde con failed-precondition
                 if (claimsError?.code === 'failed-precondition') {
                     // Non è il primo utente: il profilo va gestito dalla pagina anagrafica-utenti
                     throw new Error('Non puoi creare un nuovo profilo da questa pagina. Contatta un amministratore.');
                 }
 
                 console.error('Errore impostazione custom claims:', claimsError);
-                data.ruolo = ['superuser'];
-                data.created = now;
                 saveMessage = 'Profilo creato. ATTENZIONE: Esegui logout e login per attivare i permessi SUPERUSER.';
             }
+        } else {
+            // Aggiorna utente esistente tramite Cloud Function userUpdateApi
+            const userUpdateApi = httpsCallable(functions, 'userUpdateApi');
+
+            const updateData = {
+                uid: currentUserId,
+                displayName: displayName,
+                nome: nome,
+                cognome: cognome,
+                telefono: telefono
+            };
+
+            // Se email è cambiata, aggiornala
+            if (email && email !== user.email) {
+                updateData.email = email;
+            }
+
+            console.log('📤 Invio aggiornamento profilo tramite API:', updateData);
+
+            await userUpdateApi(updateData);
+
+            console.log('✅ Profilo aggiornato tramite API');
         }
 
-        await setDoc(doc(db, collection_name, currentUserId), data, { merge: true });
+        // Se è stata inserita una password, aggiornala lato client (Auth non ha API server-side per questo)
+        if (password && password.trim() !== '') {
+            await updatePassword(user, password);
+            console.log('✅ Password aggiornata');
+        }
 
         showSaveMessage(saveMessage);
 
@@ -187,8 +179,11 @@ async function saveProfile(e) {
             userIcon.setAttribute('alt', `${nome} ${cognome}`);
         }
 
+        // Ricarica i dati del profilo per assicurarsi che siano sincronizzati
+        await loadCurrentUserProfile();
+
     } catch (error) {
-        console.error('Errore nel salvare il profilo:', error);
+        console.error('❌ Errore nel salvare il profilo:', error);
         alert('Errore: ' + (error.message || 'Impossibile salvare il profilo'));
     } finally {
         // Riabilita il pulsante

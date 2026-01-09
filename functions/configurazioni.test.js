@@ -3,11 +3,12 @@ import { expect } from 'chai';
 import fft from 'firebase-functions-test';
 import admin from 'firebase-admin';
 
-process.env.FIREBASE_PROJECT_ID = 'base-app-12108';
-process.env.GCLOUD_PROJECT = 'base-app-12108';
+const TEST_PROJECT_ID = process.env.TEST_PROJECT_ID || 'base-app-12108-test';
+process.env.FIREBASE_PROJECT_ID = TEST_PROJECT_ID;
+process.env.GCLOUD_PROJECT = TEST_PROJECT_ID;
 process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8080';
 
-const test = fft({ projectId: 'base-app-12108' });
+const test = fft({ projectId: TEST_PROJECT_ID });
 
 let getConfigAiApi;
 let saveConfigAiApi;
@@ -19,7 +20,7 @@ describe('API Configurazioni', () => {
 
     beforeAll(async () => {
         if (admin.apps.length === 0) {
-            admin.initializeApp({ projectId: 'base-app-12108' });
+            admin.initializeApp({ projectId: TEST_PROJECT_ID });
         }
         db = admin.firestore();
         ({ getConfigAiApi, saveConfigAiApi } = await import('./api/config-ai.js'));

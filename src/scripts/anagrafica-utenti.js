@@ -1,7 +1,6 @@
 import { db, storage, auth, functions } from '../lib/firebase-client';
-import { collection, getDocs, doc, getDoc, setDoc, deleteDoc } from "firebase/firestore";
+import { collection, getDocs, doc, getDoc } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
-import * as documentUtils from './utils/documentUtils.js';
 import * as actionUtils from './utils/actionUtils.js';
 import { Multiselect } from './utils/multiSelectUtils.js';
 import { getAvailableRoles, getRoleLabel } from '../lib/roles.ts';
@@ -17,7 +16,6 @@ const labelNewEntity = 'Nuovo Utente';
 
 
 export function initPageAnagraficaUtentiPage() {
-    documentUtils.setup({ db, storage, auth, functions, entityCollection: collection_name });
     actionUtils.setup({ db, auth, functions, entityCollection: collection_name });
     const availableRoles = getAvailableRoles();
     ruoloMultiselect = new Multiselect({
@@ -101,8 +99,6 @@ function renderTable() {
 async function saveEntity(e) {
     e.preventDefault();
     const isNew = !currentEntityId;
-    const now = new Date().toISOString();
-
     // Ottieni il pulsante di salvataggio
     const saveBtn = document.querySelector('button[type="submit"][form="entity-form"]');
     const originalText = saveBtn.textContent;
@@ -112,21 +108,31 @@ async function saveEntity(e) {
     saveBtn.innerHTML = '<span class="btn-loader"></span>Salvataggio...';
 
     try {
-        const email = document.getElementById('email').value;
-        const nome = document.getElementById('nome').value;
-        const cognome = document.getElementById('cognome').value;
+        const email = document.getElementById('email').value.trim();
+        const nome = document.getElementById('nome').value.trim();
+        const cognome = document.getElementById('cognome').value.trim();
         const displayName = `${nome} ${cognome}`.trim();
+        if (!email) {
+            alert('Email obbligatoria.');
+            return;
+        }
 
         if (isNew) {
             // Crea nuovo utente tramite Cloud Function
             const password = document.getElementById('password')?.value || generateRandomPassword();
             const userCreateApi = httpsCallable(functions, 'userCreateApi');
+            const roleValue = ruoloMultiselect.getValue(); // restituisce la key (es. 'operatore')
 
             const requestData = {
                 email: email,
                 password: password,
                 displayName: displayName,
-                disabled: !document.getElementById('toggle-status').checked
+                disabled: !document.getElementById('toggle-status').checked,
+                ruolo: roleValue || undefined,
+                nome: nome,
+                cognome: cognome,
+                telefono: document.getElementById('telefono').value,
+                status: document.getElementById('toggle-status').checked
             };
 
             console.log('Invio dati alla Cloud Function:', {
@@ -145,31 +151,7 @@ async function saveEntity(e) {
             currentEntityId = uid;
             document.getElementById('entity-id').value = uid;
 
-            // Salva i dati aggiuntivi su Firestore
-            const roleValue = ruoloMultiselect.getValue(); // restituisce la key (es. 'superuser')
-
-            const currentUser = auth.currentUser;
-            const data = {
-                nome: nome,
-                cognome: cognome,
-                email: email,
-                telefono: document.getElementById('telefono').value,
-                ruolo: roleValue ? [roleValue] : [],
-                status: document.getElementById('toggle-status').checked,
-                changed: now,
-                lastModifiedBy: currentUser?.uid || null,
-                lastModifiedByEmail: currentUser?.email || null
-            };
-
-            // Se l'utente era già esistente, preserva la data di creazione originale
-            if (!wasExisting) {
-                data.created = now;
-            }
-
-            await setDoc(doc(db, collection_name, uid), data, { merge: true });
-
             showTabsForExistingEntity();
-            documentUtils.listenForDocuments(uid);
             actionUtils.loadActions(uid);
 
             // Mostra messaggio appropriato
@@ -188,39 +170,28 @@ async function saveEntity(e) {
             const updateData = {
                 uid: uid,
                 displayName: displayName,
-                disabled: !document.getElementById('toggle-status').checked
+                disabled: !document.getElementById('toggle-status').checked,
+                nome: nome,
+                cognome: cognome,
+                telefono: document.getElementById('telefono').value,
+                status: document.getElementById('toggle-status').checked
             };
 
-            // Se email è cambiata, aggiornala
+            // Se email è cambiata, aggiornala (evita di salvare stringhe vuote)
             const oldEntity = entities.find(e => e.id === uid);
-            if (email !== oldEntity?.email) {
+            if (email && email !== oldEntity?.email) {
                 updateData.email = email;
             }
 
-            await userUpdateApi(updateData);
-
-            // Aggiorna i dati su Firestore
             const roleValue = ruoloMultiselect.getValue(); // restituisce la key (es. 'admin')
-
-            const currentUser = auth.currentUser;
-            const data = {
-                nome: nome,
-                cognome: cognome,
-                email: email,
-                telefono: document.getElementById('telefono').value,
-                status: document.getElementById('toggle-status').checked,
-                changed: now,
-                lastModifiedBy: currentUser?.uid || null,
-                lastModifiedByEmail: currentUser?.email || null
-            };
 
             // Aggiungi il ruolo solo se è stato selezionato un valore valido
             // Altrimenti preserva il valore esistente nel database
             if (roleValue) {
-                data.ruolo = [roleValue];
+                updateData.ruolo = roleValue;
             }
 
-            await setDoc(doc(db, collection_name, uid), data, { merge: true });
+            await userUpdateApi(updateData);
 
             showSaveMessage('save-message');
         }
@@ -283,7 +254,6 @@ const editEntity = async (id) => {
 
     hidePasswordField(); // Nascondi il campo password in modifica
     showTabsForExistingEntity();
-    documentUtils.listenForDocuments(id);
     actionUtils.loadActions(id);
     resetToFirstTab('entity-form-sidebar');
     openSidebar();
@@ -300,9 +270,6 @@ async function deleteEntity(id) {
         // Elimina l'utente da Firebase Auth tramite Cloud Function
         const userDeleteApi = httpsCallable(functions, 'userDeleteApi');
         await userDeleteApi({ uid: id });
-
-        // Elimina anche da Firestore
-        await deleteDoc(doc(db, collection_name, id));
 
         loadEntities();
     } catch (error) {
@@ -368,13 +335,13 @@ function setupTableClickHandlers() {
 }
 
 function hideTabsForNewEntity() {
-    document.querySelectorAll('[data-tab="documenti"], [data-tab="azioni"]').forEach(t => t.style.display = 'none');
-    document.querySelectorAll('#tab-documenti, #tab-azioni').forEach(t => t.style.display = 'none');
+    document.querySelectorAll('[data-tab="azioni"]').forEach(t => t.style.display = 'none');
+    document.querySelectorAll('#tab-azioni').forEach(t => t.style.display = 'none');
 }
 
 function showTabsForExistingEntity() {
-    document.querySelectorAll('[data-tab="documenti"], [data-tab="azioni"]').forEach(t => t.style.display = '');
-    document.querySelectorAll('#tab-documenti, #tab-azioni').forEach(t => t.style.display = '');
+    document.querySelectorAll('[data-tab="azioni"]').forEach(t => t.style.display = '');
+    document.querySelectorAll('#tab-azioni').forEach(t => t.style.display = '');
 }
 
 function openSidebar() { document.getElementById('entity-form-sidebar').classList.add('open'); }

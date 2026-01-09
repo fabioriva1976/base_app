@@ -43,6 +43,10 @@ docker exec firebase_base_app npm test
 # Solo test unitari
 docker exec firebase_base_app npm run test:unit
 ```
+Note: per default i test usano `base-app-12108-test`. Se vuoi cambiare projectId:
+```bash
+docker exec firebase_base_app env TEST_PROJECT_ID=nome-progetto-test npm test
+```
 
 ### Test E2E (Frontend)
 ```bash
@@ -51,6 +55,10 @@ docker exec cypress_ui npm run test:e2e
 
 # Test Cypress UI (VNC)
 # Accedi a: http://localhost:7900/vnc.html
+```
+Per isolare i dati E2E, avvia l'ambiente con un projectId di test e riavvia i container:
+```bash
+FIREBASE_PROJECT_ID=base-app-12108-test docker compose up -d
 ```
 
 ## 📐 Aggiungere Nuove Entità

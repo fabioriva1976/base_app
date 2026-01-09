@@ -26,7 +26,7 @@ services:
       - ./.firebase-credentials/cache:/root/.cache
     command: /app/scripts/start-emulators.sh
     environment:
-      - FIREBASE_PROJECT_ID=base-app-12108
+      - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID:-base-app-12108}
       # Esporta anche per il frontend; usa fallback per evitare stringhe vuote
       - PUBLIC_FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID:-base-app-12108}
       - CHOKIDAR_USEPOLLING=true
@@ -46,6 +46,7 @@ services:
     network_mode: "host"
     environment:
       - CYPRESS_BASE_URL=http://localhost:3000
+      - CYPRESS_FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID:-base-app-12108}
       - DISPLAY=:99
     volumes:
       - .:/e2e

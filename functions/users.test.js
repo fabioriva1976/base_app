@@ -3,12 +3,13 @@ import { expect } from 'chai';
 import fft from 'firebase-functions-test';
 import admin from 'firebase-admin';
 
-process.env.FIREBASE_PROJECT_ID = 'base-app-12108';
-process.env.GCLOUD_PROJECT = 'base-app-12108';
+const TEST_PROJECT_ID = process.env.TEST_PROJECT_ID || 'base-app-12108-test';
+process.env.FIREBASE_PROJECT_ID = TEST_PROJECT_ID;
+process.env.GCLOUD_PROJECT = TEST_PROJECT_ID;
 process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8080';
 process.env.FIREBASE_AUTH_EMULATOR_HOST = '127.0.0.1:9099';
 
-const test = fft({ projectId: 'base-app-12108' });
+const test = fft({ projectId: TEST_PROJECT_ID });
 
 let userListApi;
 let userCreateApi;
@@ -21,7 +22,7 @@ describe('API Utenti', () => {
 
     beforeAll(async () => {
         if (admin.apps.length === 0) {
-            admin.initializeApp({ projectId: 'base-app-12108' });
+            admin.initializeApp({ projectId: TEST_PROJECT_ID });
         }
         db = admin.firestore();
         auth = admin.auth();
@@ -35,6 +36,11 @@ describe('API Utenti', () => {
         const deletePromises = [];
         utentiSnap.forEach(doc => deletePromises.push(doc.ref.delete()));
         await Promise.all(deletePromises);
+
+        const auditSnap = await db.collection('audit_logs').get();
+        const auditDeletes = [];
+        auditSnap.forEach(doc => auditDeletes.push(doc.ref.delete()));
+        await Promise.all(auditDeletes);
 
         const userRecords = await auth.listUsers(1000);
         await Promise.all(userRecords.users.map(user => auth.deleteUser(user.uid)));
@@ -83,6 +89,15 @@ describe('API Utenti', () => {
 
         const created = await auth.getUserByEmail(payload.email);
         expect(created.displayName).to.equal(payload.displayName);
+
+        const auditSnap = await db.collection('audit_logs')
+            .where('entityType', '==', 'utenti')
+            .where('entityId', '==', result.uid)
+            .where('action', '==', 'create')
+            .limit(1)
+            .get();
+
+        expect(auditSnap.empty).to.equal(false);
     });
 
     it('dovrebbe permettere a un admin di aggiornare un operatore', async () => {

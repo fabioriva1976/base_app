@@ -54,8 +54,8 @@ service cloud.firestore {
         // Un utente può creare/aggiornare solo il proprio profilo
         // Admin/Superuser possono creare/aggiornare qualsiasi profilo
         // IMPORTANTE: create permette self-registration senza controllare isAdmin()
-        allow create: if request.auth != null && request.auth.uid == userId;
-        allow update: if request.auth != null && request.auth.uid == userId;
+        allow create: if (request.auth != null && request.auth.uid == userId) || isAdmin();
+        allow update: if (request.auth != null && request.auth.uid == userId) || isAdmin();
 
         // Solo admin può eliminare
         allow delete: if isAdmin();

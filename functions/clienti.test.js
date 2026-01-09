@@ -3,16 +3,15 @@ import { expect } from 'chai';
 import fft from 'firebase-functions-test';
 import admin from 'firebase-admin';
 
-process.env.FIREBASE_PROJECT_ID = 'base-app-12108';
-process.env.GCLOUD_PROJECT = 'base-app-12108';
+const TEST_PROJECT_ID = process.env.TEST_PROJECT_ID || 'base-app-12108-test';
+process.env.FIREBASE_PROJECT_ID = TEST_PROJECT_ID;
+process.env.GCLOUD_PROJECT = TEST_PROJECT_ID;
 process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8080';
 process.env.FIREBASE_AUTH_EMULATOR_HOST = '127.0.0.1:9099';
 
 // Inizializza firebase-functions-test.
 // Puntiamo al file di configurazione corretto per gli emulatori.
-const test = fft({
-    projectId: 'base-app-12108',
-});
+const test = fft({ projectId: TEST_PROJECT_ID });
 
 let listClientiApi;
 let clienteCreateApi;
@@ -23,7 +22,7 @@ describe('API Clienti', () => {
     // Prima di tutti i test, inizializziamo l'app admin
     beforeAll(async () => {
         if (admin.apps.length === 0) {
-            admin.initializeApp({ projectId: 'base-app-12108' });
+            admin.initializeApp({ projectId: TEST_PROJECT_ID });
         }
         db = admin.firestore();
         ({ listClientiApi, clienteCreateApi } = await import('./api/clienti.js'));
