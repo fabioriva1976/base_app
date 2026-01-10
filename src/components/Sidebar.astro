@@ -1,5 +1,8 @@
 ---
+import { SITE_NAME } from '../lib/site';
+
 const currentPath = Astro.url.pathname;
+const shortName = SITE_NAME ? SITE_NAME.charAt(0) : '';
 
 // Voci principali dell'app (sempre visibili)
 const navItems = [
@@ -18,7 +21,10 @@ const navItems = [
 
 <aside class="sidebar">
     <div class="sidebar-header">
-        <h2 class="logo">Gestionale</h2>
+        <h2 class="logo">
+            <span class="logo-full">{SITE_NAME}</span>
+            <span class="logo-short" aria-hidden="true">{shortName}</span>
+        </h2>
     </div>
 
     <nav>
