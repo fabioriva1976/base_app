@@ -1,23 +1,12 @@
-import { db, storage, auth, functions } from '../lib/firebase-client';
+import { db, auth, functions } from '../lib/firebase-client';
 import { doc, getDoc } from "firebase/firestore";
 import { updatePassword } from "firebase/auth";
 import { httpsCallable } from "firebase/functions";
-import * as documentUtils from './utils/documentUtils.js';
 
 const collection_name = 'utenti';
 let currentUserId = null;
 
 export function initProfilePage() {
-    documentUtils.setup({ 
-        db, 
-        storage, 
-        auth, 
-        functions,
-        entityCollection: collection_name, 
-        previewListId: 'profile-document-preview-list', 
-        dropAreaId: 'profile-file-drop-area', 
-        fileInputId: 'profile-document-upload' 
-    });
     setupEventListeners();
 
     // Attendi che l'autenticazione sia pronta prima di caricare il profilo
@@ -76,8 +65,6 @@ async function loadCurrentUserProfile() {
                 telefono: document.getElementById('profile-telefono').value
             });
 
-            // Carica i documenti dell'utente
-            documentUtils.listenForDocuments(currentUserId);
         } else {
             console.log('⚠️ Profilo utente non trovato in Firestore, uso i dati da Auth');
             console.log('Auth user:', { email: user.email, displayName: user.displayName });
