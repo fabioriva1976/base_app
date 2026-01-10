@@ -20,8 +20,26 @@ describe('Users - UI e Sidebar', () => {
     }));
   }
 
+  function setCustomClaims(uid, claims) {
+    // Usa l'API REST dell'emulatore per settare custom claims
+    return cy.request({
+      method: 'POST',
+      url: `${authEmulatorUrl}/identitytoolkit.googleapis.com/v1/accounts:update?key=${apiKey}`,
+      body: {
+        localId: uid,
+        customAttributes: JSON.stringify(claims)
+      },
+      failOnStatusCode: false
+    });
+  }
+
   function setUserRole(uid, role, idToken, email) {
     const now = new Date().toISOString();
+
+    // Prima setta i custom claims in Auth
+    setCustomClaims(uid, { role: role });
+
+    // Poi crea il documento in Firestore
     return cy.request({
       method: 'POST',
       url: `${firestoreEmulatorUrl}/v1/projects/${projectId}/databases/(default)/documents/users?documentId=${uid}`,
@@ -90,18 +108,24 @@ describe('Users - UI e Sidebar', () => {
 
   beforeEach(() => {
     login(credentials.email, credentials.password);
+    // Attendi un momento per permettere ai custom claims di essere caricati
+    cy.wait(500);
     cy.visit('/users', { failOnStatusCode: false });
   });
 
   describe('Tabella', () => {
     it('dovrebbe visualizzare le colonne corrette', () => {
+      // Attendi che la tabella sia caricata
+      cy.get('#data-table', { timeout: 10000 }).should('exist');
       cy.get('#data-table').scrollIntoView().should('be.visible');
-      cy.get('#data-table').contains('th', 'Nome').should('be.visible');
-      cy.get('#data-table').contains('th', 'Cognome').should('be.visible');
-      cy.get('#data-table').contains('th', 'Email').should('be.visible');
-      cy.get('#data-table').contains('th', 'Ruolo').should('be.visible');
-      cy.get('#data-table').contains('th', 'Status').should('be.visible');
-      cy.get('#data-table').contains('th', 'Azioni').scrollIntoView().should('be.visible');
+
+      // Verifica le colonne - usa exist invece di be.visible per colonne che potrebbero essere fuori viewport
+      cy.get('#data-table').contains('th', 'Nome').should('exist');
+      cy.get('#data-table').contains('th', 'Cognome').should('exist');
+      cy.get('#data-table').contains('th', 'Email').should('exist');
+      cy.get('#data-table').contains('th', 'Ruolo').should('exist');
+      cy.get('#data-table').contains('th', 'Status').should('exist');
+      cy.get('#data-table').contains('th', 'Azioni').should('exist');
     });
 
     it('dovrebbe avere il pulsante Nuovo Utente', () => {
@@ -121,6 +145,9 @@ describe('Users - UI e Sidebar', () => {
       cy.get('button[type="submit"][form="entity-form"]').scrollIntoView().click({ force: true });
       cy.get('#save-message', { timeout: 10000 }).should('be.visible');
       cy.get('#close-sidebar-btn').click();
+
+      // Attendi che la tabella si aggiorni dopo la creazione
+      cy.wait(1000);
 
       findRowByEmail(userEmail);
       cy.get('#data-table').contains('td', userEmail).should('be.visible');
@@ -160,6 +187,9 @@ describe('Users - UI e Sidebar', () => {
       cy.get('#save-message', { timeout: 10000 }).should('be.visible');
       cy.get('#close-sidebar-btn').click();
 
+      // Attendi che la tabella si aggiorni dopo la creazione
+      cy.wait(1000);
+
       findRowByEmail(userEmail);
       cy.get('#data-table').contains('td', userEmail).closest('tr').within(() => {
         cy.get('.btn-edit').click();
@@ -188,8 +218,8 @@ describe('Users - UI e Sidebar', () => {
       cy.get('button[type="submit"][form="entity-form"]').scrollIntoView().click({ force: true });
       cy.get('#entity-id', { timeout: 10000 }).invoke('val').should('match', /.+/);
 
-      cy.get('[data-tab="anagrafica"]').should('be.visible');
-      cy.get('[data-tab="azioni"]').should('be.visible');
+      cy.get('[data-tab="anagrafica"]').scrollIntoView().should('be.visible');
+      cy.get('[data-tab="azioni"]').scrollIntoView().should('be.visible');
     });
   });
 

@@ -338,6 +338,11 @@ export const userUpdateApi = onCall({ region, cors: corsOrigins, ...runtimeOpts 
  * Permessi richiesti: UTENTE AUTENTICATO (solo se stesso)
  * Input: { displayName?, nome?, cognome?, telefono?, email? }
  * Output: { message }
+ *
+ * LOGICA SPECIALE - PRIMO UTENTE:
+ * Se l'utente non esiste in Firestore E la collection users è vuota,
+ * viene automaticamente creato come SUPERUSER (primo utente del sistema).
+ * Altrimenti, deve essere creato da un amministratore dalla pagina anagrafica-utenti.
  */
 export const userSelfUpdateApi = onCall({ region, cors: corsOrigins, ...runtimeOpts }, async (request) => {
   requireAuth(request);
@@ -369,6 +374,25 @@ export const userSelfUpdateApi = onCall({ region, cors: corsOrigins, ...runtimeO
     const oldData = oldDoc.exists ? oldDoc.data() : null;
     const created = oldData?.created || now;
 
+    // Se l'utente non esiste in Firestore, verifica se è il primo utente del sistema
+    let ruolo = oldData?.ruolo || null;
+    if (!oldDoc.exists) {
+      // Controlla se la collection è vuota
+      const allUsersSnapshot = await db.collection(COLLECTION_NAME).limit(1).get();
+      if (allUsersSnapshot.empty) {
+        // Primo utente del sistema: assegna ruolo SUPERUSER
+        ruolo = ['superuser'];
+        await auth.setCustomUserClaims(uid, { role: 'superuser' });
+        console.log(`🎉 Primo utente creato con ruolo SUPERUSER: ${uid}`);
+      } else {
+        // Non è il primo utente e non ha un profilo: errore
+        throw new HttpsError(
+          'failed-precondition',
+          'Il tuo profilo deve essere creato da un amministratore.'
+        );
+      }
+    }
+
     const profileUpdates = {
       changed: now,
       created,
@@ -383,12 +407,18 @@ export const userSelfUpdateApi = onCall({ region, cors: corsOrigins, ...runtimeO
     if (updateData.email !== undefined) profileUpdates.email = updateData.email;
     if (updateData.telefono !== undefined) profileUpdates.telefono = updateData.telefono;
 
+    // Aggiungi ruolo e status per nuovi utenti
+    if (!oldDoc.exists) {
+      profileUpdates.ruolo = ruolo;
+      profileUpdates.status = true;
+    }
+
     await userDocRef.set(profileUpdates, { merge: true });
 
     await logAudit({
       entityType: COLLECTION_NAME,
       entityId: uid,
-      action: AuditAction.UPDATE,
+      action: oldDoc.exists ? AuditAction.UPDATE : AuditAction.CREATE,
       userId: uid,
       userEmail: request.auth.token?.email || null,
       oldData,

@@ -238,7 +238,9 @@ const editEntity = async (id) => {
     const docSnap = await getDoc(doc(db, collection_name, id));
     const data = docSnap.data();
 
-    document.getElementById('entity-form-title').textContent = 'Modifica '+data.nome || labelNewEntity;
+    // Crea il titolo con nome e cognome
+    const fullName = [data.nome, data.cognome].filter(Boolean).join(' ') || 'Utente';
+    document.getElementById('entity-form-title').textContent = fullName;
     document.getElementById('entity-id').value = id;
     document.getElementById('nome').value = data.nome || '';
     document.getElementById('cognome').value = data.cognome || '';

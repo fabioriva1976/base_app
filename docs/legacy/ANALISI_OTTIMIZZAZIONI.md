@@ -11,10 +11,10 @@
 ### 1. **Security & Authentication**
 
 **Problemi identificati:**
-- ❌ Storage rules troppo permissive: `allow read, write: if request.auth != null` - qualsiasi utente autenticato può accedere a tutti i file
+- ❌ Storage rules troppo permissive: `allow read, write: if request.auth != null` - qualsiasi utente auserscato può accedere a tutti i file
 - ❌ Nessuna validazione lato server per i ruoli nelle Cloud Functions (si fidano del client)
 - ❌ Session cookies non hanno scadenza configurata
-- ❌ API keys e secrets hardcoded in configurazioni Firestore (visibili a tutti gli admin)
+- ❌ API keys e secrets hardcoded in settings Firestore (visibili a tutti gli admin)
 
 **Fix necessari:**
 ```javascript
@@ -114,7 +114,7 @@ let lastDoc = null;
 async function loadPage() {
   let q = query(
     collection(db, 'record'),
-    orderBy('updatedAt', 'desc'),
+    orderBy('changed', 'desc'),
     limit(pageSize)
   );
 
@@ -132,7 +132,7 @@ async function searchClienti(term) {
   // Usa Algolia o Firestore >= con where('ragione_sociale', '>=', term)
   // Limitare a 10 risultati
   return query(
-    collection(db, 'anagrafica_clienti'),
+    collection(db, 'clienti'),
     where('ragione_sociale', '>=', term),
     where('ragione_sociale', '<=', term + '\uf8ff'),
     limit(10)
@@ -144,12 +144,12 @@ async function searchClienti(term) {
 - `src/scripts/page-record.js`
 - `src/scripts/page-documenti.js`
 - `src/scripts/anagrafica-clienti.js`
-- `src/scripts/anagrafica-utenti.js`
+- `src/scripts/users.js`
 
 **Indici da aggiungere:**
 ```json
 {
-  "collectionGroup": "anagrafica_clienti",
+  "collectionGroup": "clienti",
   "queryScope": "COLLECTION",
   "fields": [
     { "fieldPath": "ragione_sociale", "order": "ASCENDING" },
@@ -191,7 +191,7 @@ const auth = await getFirebaseAuth();
 ### 6. **Caching & Network**
 
 **Problemi identificati:**
-- ❌ Nessuna cache per chiamate API ripetute (es. lista utenti)
+- ❌ Nessuna cache per chiamate API ripetute (es. lista users)
 - ❌ File upload senza chunking (fallisce per file >10MB)
 - ❌ Download allegati sempre da Storage (nessun CDN)
 - ❌ Nessun service worker per offline support
@@ -347,12 +347,12 @@ describe('createDocumento', () => {
       titolo: 'Test.pdf',
       tipo: 'application/pdf',
       storagePath: 'test/path',
-      createdBy: 'user123'
+      lastModifiedBy: 'user123'
     });
 
     expect(doc).toHaveProperty('titolo', 'Test.pdf');
-    expect(doc).toHaveProperty('createdAt');
-    expect(doc.createdAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+    expect(doc).toHaveProperty('created');
+    expect(doc.created).toMatch(/^\d{4}-\d{2}-\d{2}T/);
   });
 });
 ```
@@ -579,7 +579,7 @@ exports.archiveOldRecord = functions
     const oldRecord = await db
       .collection('record')
       .where('isOpen', '==', false)
-      .where('updatedAt', '<', sixMonthsAgo)
+      .where('changed', '<', sixMonthsAgo)
       .get();
 
     console.log(`Found ${oldRecord.size} record to archive`);
@@ -825,4 +825,3 @@ npm run generate:entity prodotti
 File PATTERNS.md che spiega ogni pattern
 Esempi commentati per ogni caso d'uso
 Vuoi che inizi a implementare questi miglioramenti partendo dal pattern CRUD standardizzato? Questo permetterà all'AI di creare una tabella "prodotti" semplicemente replicando il pattern "clienti".
-

@@ -69,7 +69,7 @@ import { getCached, invalidateCache } from './utils/firestoreCache.js';
 **Prima (senza cache):**
 ```javascript
 async function loadClienti() {
-    const clientiRef = collection(db, 'anagrafica_clienti');
+    const clientiRef = collection(db, 'clienti');
     const q = query(clientiRef, orderBy('ragione_sociale', 'asc'));
     const querySnapshot = await getDocs(q);
 
@@ -81,10 +81,10 @@ async function loadClienti() {
 ```javascript
 async function loadClienti() {
     const querySnapshot = await getCached(
-        'collection:anagrafica_clienti',  // Chiave cache univoca
+        'collection:clienti',  // Chiave cache univoca
         async () => {
             // Funzione fetch originale
-            const clientiRef = collection(db, 'anagrafica_clienti');
+            const clientiRef = collection(db, 'clienti');
             const q = query(clientiRef, orderBy('ragione_sociale', 'asc'));
             return await getDocs(q);
         },
@@ -101,10 +101,10 @@ async function loadClienti() {
 ```javascript
 async function createCliente(clienteData) {
     // Salva in Firestore
-    const docRef = await addDoc(collection(db, 'anagrafica_clienti'), clienteData);
+    const docRef = await addDoc(collection(db, 'clienti'), clienteData);
 
     // Invalida cache
-    invalidateCache('collection:anagrafica_clienti');
+    invalidateCache('collection:clienti');
 
     // Ricarica lista (userà fetch fresh)
     await loadClienti();
@@ -115,10 +115,10 @@ async function createCliente(clienteData) {
 ```javascript
 async function updateCliente(clienteId, updates) {
     // Aggiorna in Firestore
-    await updateDoc(doc(db, 'anagrafica_clienti', clienteId), updates);
+    await updateDoc(doc(db, 'clienti', clienteId), updates);
 
     // Invalida cache
-    invalidateCache('collection:anagrafica_clienti');
+    invalidateCache('collection:clienti');
 
     // Ricarica
     await loadClienti();
@@ -129,10 +129,10 @@ async function updateCliente(clienteId, updates) {
 ```javascript
 async function deleteCliente(clienteId) {
     // Elimina da Firestore
-    await deleteDoc(doc(db, 'anagrafica_clienti', clienteId));
+    await deleteDoc(doc(db, 'clienti', clienteId));
 
     // Invalida cache
-    invalidateCache('collection:anagrafica_clienti');
+    invalidateCache('collection:clienti');
 
     // Ricarica
     await loadClienti();
@@ -145,9 +145,9 @@ Scegli il TTL in base alla frequenza di modifica:
 
 | Tipo Dato | Frequenza Modifica | TTL Raccomandato |
 |-----------|-------------------|------------------|
-| **Anagrafica clienti** | Rara (1-2 volte/giorno) | 30 minuti |
+| **Clienti** | Rara (1-2 volte/giorno) | 30 minuti |
 | **Lista utenti** | Molto rara (nuovi utenti) | 60 minuti |
-| **Configurazioni** | Rarissima (admin only) | 60 minuti |
+| **Settings** | Rarissima (admin only) | 60 minuti |
 | **Record/Task** | Frequente (ogni ora) | 2-5 minuti |
 | **Messaggi chat** | Molto frequente | NO CACHE (usa real-time) |
 | **Documenti** | Media (giornaliera) | 10 minuti |
@@ -158,7 +158,7 @@ Usa pattern consistente per facile invalidazione:
 
 ```javascript
 // Collection semplice
-'collection:anagrafica_clienti'
+'collection:clienti'
 
 // Collection con filtro utente
 'collection:record:user:${userId}'
@@ -191,7 +191,7 @@ async function loadDocumenti(entityType, entityId) {
                 collection(db, 'documenti'),
                 where('entityType', '==', entityType),
                 where('entityId', '==', entityId),
-                orderBy('createdAt', 'desc')
+                orderBy('created', 'desc')
             );
             return await getDocs(q);
         },
@@ -258,7 +258,7 @@ window.firestoreCacheStats()
 //   totalSizeKB: 45.2,
 //   keys: [
 //     { key: 'collection:record:user:abc123', age: 45, sizeKB: 23.4 },
-//     { key: 'collection:anagrafica_clienti', age: 120, sizeKB: 18.7 },
+//     { key: 'collection:clienti', age: 120, sizeKB: 18.7 },
 //     { key: 'collection:documenti:record:xyz', age: 30, sizeKB: 3.1 }
 //   ]
 // }
@@ -272,7 +272,7 @@ window.clearFirestoreCache()
 Il sistema logga automaticamente:
 
 ```
-✅ Cache HIT: collection:anagrafica_clienti (età: 45s)
+✅ Cache HIT: collection:clienti (età: 45s)
 ⚠️ Cache MISS: collection:record:user:abc123
 🗑️ Cache invalidata: collection:record:user:abc123
 ```
@@ -328,7 +328,7 @@ RISPARMIO: $8.10/mese (75% riduzione)
 ```javascript
 // Verifica che dopo ogni write ci sia:
 await updateDoc(...);
-invalidateCache('collection:anagrafica_clienti'); // ← IMPORTANTE!
+invalidateCache('collection:clienti'); // ← IMPORTANTE!
 await loadClienti();
 ```
 
@@ -414,11 +414,11 @@ Per applicare il caching ad altri file:
 - [ ] `/src/scripts/anagrafica-clienti.js` - Invalida dopo modifica clienti
 
 ### Media Priorità
-- [ ] `/src/scripts/anagrafica-utenti.js` - Cache utenti (TTL 30 min)
+- [ ] `/src/scripts/users.js` - Cache utenti (TTL 30 min)
 - [ ] `/src/scripts/page-record.js` - Cache singola record (TTL 5 min)
 
 ### Bassa Priorità
-- [ ] Configurazioni (già caricano raramente)
+- [ ] Settings (già caricano raramente)
 - [ ] Audit logs (read-only, no cache needed)
 
 ---

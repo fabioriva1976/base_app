@@ -20,8 +20,26 @@ describe('Users - creazione', () => {
     }));
   }
 
+  function setCustomClaims(uid, claims) {
+    // Usa l'API REST dell'emulatore per settare custom claims
+    return cy.request({
+      method: 'POST',
+      url: `${authEmulatorUrl}/identitytoolkit.googleapis.com/v1/accounts:update?key=${apiKey}`,
+      body: {
+        localId: uid,
+        customAttributes: JSON.stringify(claims)
+      },
+      failOnStatusCode: false
+    });
+  }
+
   function setUserRole(uid, role, idToken, email) {
     const now = new Date().toISOString();
+
+    // Prima setta i custom claims in Auth
+    setCustomClaims(uid, { role: role });
+
+    // Poi crea il documento in Firestore
     return cy.request({
       method: 'POST',
       url: `${firestoreEmulatorUrl}/v1/projects/${projectId}/databases/(default)/documents/users?documentId=${uid}`,
@@ -85,16 +103,23 @@ describe('Users - creazione', () => {
 
     cy.location('pathname', { timeout: 10000 }).should('eq', '/dashboard');
 
+    // Attendi che i custom claims siano caricati
+    cy.wait(500);
+
     cy.visit('/users', { failOnStatusCode: false });
 
     cy.get('#new-entity-btn').click();
 
+    // Attendi che la sidebar sia completamente aperta
+    cy.get('#entity-form-sidebar').should('have.class', 'open');
+
     const userEmail = `operatore.${Date.now()}@test.local`;
 
-    cy.get('#nome').type('Mario');
-    cy.get('#cognome').type('Rossi');
-    cy.get('#email').type(userEmail);
-    cy.get('#password').type('Password123!');
+    // Usa invoke('val') per evitare problemi con re-render
+    cy.get('#nome').invoke('val', 'Mario');
+    cy.get('#cognome').invoke('val', 'Rossi');
+    cy.get('#email').invoke('val', userEmail);
+    cy.get('#password').invoke('val', 'Password123!');
 
     cy.get('#ruolo-multiselect-hidden').select('operatore', { force: true });
     cy.get('#ruolo-multiselect-hidden').should('have.value', 'operatore');
@@ -104,6 +129,9 @@ describe('Users - creazione', () => {
     cy.get('#entity-id', { timeout: 10000 }).invoke('val').should('match', /.+/);
     cy.get('#save-message', { timeout: 10000 }).should('be.visible');
     cy.get('#close-sidebar-btn').click();
+
+    // Attendi che la tabella si aggiorni dopo la creazione
+    cy.wait(1000);
 
     findRowByEmail(userEmail);
   });

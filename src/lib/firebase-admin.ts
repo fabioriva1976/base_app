@@ -4,6 +4,12 @@ import { getFirestore } from 'firebase-admin/firestore';
 
 let app: App;
 
+// Connetti agli emulatori in sviluppo locale (prima di inizializzare Firestore)
+if (process.env.NODE_ENV !== 'production') {
+  process.env.FIREBASE_AUTH_EMULATOR_HOST = process.env.FIREBASE_AUTH_EMULATOR_HOST || 'localhost:9099';
+  process.env.FIRESTORE_EMULATOR_HOST = process.env.FIRESTORE_EMULATOR_HOST || 'localhost:8080';
+}
+
 // Il Project ID viene letto dalle variabili d'ambiente, che sono standard in Google Cloud.
 // Questo elimina l'hardcoding e rende il codice portabile.
 const projectId = process.env.FIREBASE_PROJECT_ID || process.env.GCLOUD_PROJECT || process.env.GOOGLE_CLOUD_PROJECT || 'base-app-12108';
@@ -23,12 +29,6 @@ if (!getApps().length) {
 
 const auth = getAuth(app);
 const db = getFirestore(app);
-
-// Connetti agli emulatori in sviluppo locale
-if (process.env.NODE_ENV !== 'production') {
-  // Imposta l'URL dell'emulatore Auth
-  process.env.FIREBASE_AUTH_EMULATOR_HOST = process.env.FIREBASE_AUTH_EMULATOR_HOST || 'localhost:9099';
-}
 
 export const adminAuth = auth;
 export const adminDb = db;

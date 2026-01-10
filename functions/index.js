@@ -45,9 +45,6 @@ export {
     userDeleteApi
 } from "./api/users.js";
 
-// === FUNZIONE API - INIZIALIZZAZIONE PRIMO UTENTE ===
-export { initializeFirstUserApi } from "./api/usersFirstInitializa.js";
-
 // === FUNZIONI API - AUDIT LOGS ===
 export {
     getEntityAuditLogsApi,

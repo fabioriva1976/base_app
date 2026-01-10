@@ -28,14 +28,14 @@ Quando crei una nuova entità (es: `prodotti`), devi creare questi file:
 - [ ] `functions/api/prodotti.js` - CRUD completo (Create, Read, Update, Delete, List)
 
 ### 3. Test
-- [ ] `functions/prodotti.test.js` - Test per tutte le operazioni CRUD
+- [ ] `tests/functions/prodotti.test.js` - Test per tutte le operazioni CRUD
 
 ### 4. Frontend
-- [ ] `src/pages/anagrafica-prodotti.astro` - Pagina lista/gestione
-- [ ] `src/scripts/anagrafica-prodotti.js` - Logica frontend
+- [ ] `src/pages/prodotti.astro` - Pagina lista/gestione
+- [ ] `src/scripts/prodotti.js` - Logica frontend
 
 ### 5. Firestore Rules
-- [ ] `firestore.rules` - Aggiungi regole per collection `anagrafica_prodotti`
+- [ ] `firestore.rules` - Aggiungi regole per collection `prodotti`
 
 ---
 
@@ -48,8 +48,8 @@ File di riferimento più completo per entità con CRUD classico.
 
 - 📄 **API**: [functions/api/clienti.js](functions/api/clienti.js)
 - 🏗️ **Factory**: [shared/schemas/entityFactory.js](shared/schemas/entityFactory.js) - `createCliente()`
-- 🧪 **Test**: [functions/clienti.test.js](functions/clienti.test.js)
-- 🗄️ **Collection**: `anagrafica_clienti`
+- 🧪 **Test**: [tests/functions/clienti.test.js](tests/functions/clienti.test.js)
+- 🗄️ **Collection**: `clienti`
 - 👥 **Permessi**: Admin per CUD, Operatore+ per R
 
 **Quando usare come template:**
@@ -62,8 +62,8 @@ Template per entità che usano Firebase Authentication.
 
 - 📄 **API**: [functions/api/users.js](functions/api/users.js)
 - 🏗️ **Factory**: [shared/schemas/entityFactory.js](shared/schemas/entityFactory.js) - `createUtente()`
-- 🧪 **Test**: [functions/users.test.js](functions/users.test.js)
-- 🗄️ **Collection**: `utenti` + Firebase Auth
+- 🧪 **Test**: [tests/functions/users.test.js](tests/functions/users.test.js)
+- 🗄️ **Collection**: `users` + Firebase Auth
 - 👥 **Permessi**: Admin only, con controllo gerarchico ruoli
 
 **Quando usare come template:**
@@ -113,8 +113,8 @@ Template per entità che gestiscono file.
  * @param {Object} params - Parametri dell'entità
  * @param {string} params.[CAMPO_OBBLIGATORIO] - Descrizione campo
  * @param {string} [params.[CAMPO_OPZIONALE]] - Descrizione campo opzionale
- * @param {string} [params.createdBy] - UID utente che crea l'entità
- * @param {string} [params.createdByEmail] - Email utente che crea l'entità
+ * @param {string} [params.lastModifiedBy] - UID utente che crea l'entità
+ * @param {string} [params.lastModifiedByEmail] - Email utente che crea l'entità
  * @returns {Object} Oggetto [ENTITY_NAME] validato
  * @throws {Error} Se campi obbligatori mancanti
  */
@@ -124,11 +124,11 @@ export function create[EntityName]({
 
   // CAMPI OPZIONALI (con default)
   [campo_opzionale] = null,
-  stato = true,
+  status = true,
 
   // CAMPI AUDIT (sempre presenti)
-  createdBy = null,
-  createdByEmail = null
+  lastModifiedBy = null,
+  lastModifiedByEmail = null
 } = {}) {
   // 1. VALIDAZIONE: Verifica campi obbligatori
   if (![campo_obbligatorio]) {
@@ -145,13 +145,13 @@ export function create[EntityName]({
 
     // Campi opzionali (normalizzati)
     [campo_opzionale]: [campo_opzionale] ? String([campo_opzionale]) : null,
-    stato: Boolean(stato),
+    status: Boolean(status),
 
     // Campi audit (sempre presenti)
-    createdAt: timestamp,
-    updatedAt: timestamp,
-    createdBy: createdBy ? String(createdBy) : null,
-    createdByEmail: createdByEmail ? String(createdByEmail).toLowerCase() : null
+    created: timestamp,
+    changed: timestamp,
+    lastModifiedBy: lastModifiedBy ? String(lastModifiedBy) : null,
+    lastModifiedByEmail: lastModifiedByEmail ? String(lastModifiedByEmail).toLowerCase() : null
   };
 }
 ```
@@ -164,9 +164,9 @@ export function createCliente({
   email = null,     // OPZIONALE
   telefono = null,
   partita_iva = null,
-  stato = true,
-  createdBy = null,
-  createdByEmail = null
+  status = true,
+  lastModifiedBy = null,
+  lastModifiedByEmail = null
 } = {}) {
   if (!ragione_sociale) {
     throw new Error('ragione_sociale è obbligatorio');
@@ -179,11 +179,11 @@ export function createCliente({
     email: email ? String(email).toLowerCase() : null,
     telefono: telefono ? String(telefono) : null,
     partita_iva: partita_iva ? String(partita_iva) : null,
-    stato: Boolean(stato),
-    createdAt: timestamp,
-    updatedAt: timestamp,
-    createdBy: createdBy ? String(createdBy) : null,
-    createdByEmail: createdByEmail ? String(createdByEmail).toLowerCase() : null
+    status: Boolean(status),
+    created: timestamp,
+    changed: timestamp,
+    lastModifiedBy: lastModifiedBy ? String(lastModifiedBy) : null,
+    lastModifiedByEmail: lastModifiedByEmail ? String(lastModifiedByEmail).toLowerCase() : null
   };
 }
 ```
@@ -223,7 +223,7 @@ if (getApps().length === 0) {
 const db = getFirestore();
 
 // Nome collection Firestore
-const COLLECTION_NAME = 'anagrafica_[entita]';
+const COLLECTION_NAME = '[entita]';
 
 /**
  * 🎯 STEP 1: Validazione Dati
@@ -266,8 +266,8 @@ export const [entita]CreateApi = onCall({
         // 3. BUSINESS LOGIC: Crea oggetto con factory
         const nuovo[EntityName] = create[EntityName]({
             ...data,
-            createdBy: uid,
-            createdByEmail: token.email,
+            lastModifiedBy: uid,
+            lastModifiedByEmail: token.email,
         });
 
         // 4. DATABASE: Salva in Firestore
@@ -275,7 +275,7 @@ export const [entita]CreateApi = onCall({
 
         // 5. AUDIT LOG: Registra azione per tracciabilità (chi, cosa, quando)
         await logAudit({
-            entityType: '[entita]',  // es: 'clienti', 'utenti', 'attachments'
+            entityType: '[entita]',  // es: 'clienti', 'users', 'attachments'
             entityId: docRef.id,
             action: AuditAction.CREATE,
             userId: uid,
@@ -329,7 +329,7 @@ export const [entita]UpdateApi = onCall({
         // Aggiunge timestamp aggiornamento
         const dataToUpdate = {
             ...updateData,
-            updatedAt: FieldValue.serverTimestamp(),
+            changed: FieldValue.serverTimestamp(),
         };
 
         await docRef.update(dataToUpdate);
@@ -426,8 +426,8 @@ export const [entita]ListApi = onCall({
 
     try {
         const snapshot = await db.collection(COLLECTION_NAME)
-            .where('stato', '==', true)
-            .orderBy('createdAt', 'desc')
+            .where('status', '==', true)
+            .orderBy('created', 'desc')
             .get();
 
         const lista = snapshot.docs.map(doc => ({
@@ -450,7 +450,7 @@ export const [entita]ListApi = onCall({
 
 ## 🧪 PATTERN 3: Test Automatici
 
-**File:** `functions/[entita].test.js`
+**File:** `tests/functions/[entita].test.js`
 
 ### Template Test:
 
@@ -488,8 +488,8 @@ const auth = getAuth();
 describe('API [EntityName]', () => {
     afterEach(async () => {
         // Pulizia: elimina attachments di test
-        const snapshot = await db.collection('anagrafica_[entita]')
-            .where('createdBy', 'in', ['admin-test', 'operatore-test'])
+        const snapshot = await db.collection('[entita]')
+            .where('lastModifiedBy', 'in', ['admin-test', 'operatore-test'])
             .get();
 
         const batch = db.batch();
@@ -512,7 +512,7 @@ describe('API [EntityName]', () => {
         };
 
         // Crea utente admin nel DB
-        await db.collection('utenti').doc(adminUser.uid).set({
+        await db.collection('users').doc(adminUser.uid).set({
             ruolo: ['admin']
         });
 
@@ -540,7 +540,7 @@ describe('API [EntityName]', () => {
             token: { email: 'admin2@test.com' }
         };
 
-        await db.collection('utenti').doc(adminUser.uid).set({
+        await db.collection('users').doc(adminUser.uid).set({
             ruolo: ['admin']
         });
 
@@ -578,7 +578,7 @@ describe('API [EntityName]', () => {
             token: { email: 'op@test.com' }
         };
 
-        await db.collection('utenti').doc(operatoreUser.uid).set({
+        await db.collection('users').doc(operatoreUser.uid).set({
             ruolo: ['operatore']
         });
 
@@ -611,7 +611,7 @@ createCliente({ ragione_sociale, email, ... })
 - `clienteDeleteApi`
 - `clienteListApi`
 
-**Collection:** `anagrafica_clienti`
+**Collection:** `clienti`
 
 ### Dopo: Prodotti (Nuovo)
 
@@ -622,9 +622,9 @@ createProdotto({
   codice = null,  // campo opzionale
   prezzo = 0,
   categoria = null,
-  stato = true,
-  createdBy = null,
-  createdByEmail = null
+  status = true,
+  lastModifiedBy = null,
+  lastModifiedByEmail = null
 })
 ```
 
@@ -634,7 +634,7 @@ createProdotto({
 - `prodottoDeleteApi`
 - `prodottoListApi`
 
-**Collection:** `anagrafica_prodotti`
+**Collection:** `prodotti`
 
 ---
 
@@ -646,14 +646,14 @@ createProdotto({
 - **Firestore/DB:** `snake_case` → `ragione_sociale`
 - **Funzioni:** `camelCase` → `createCliente()`
 - **API Export:** `camelCase` → `clienteCreateApi`
-- **Collections:** `snake_case` → `anagrafica_clienti`
+- **Collections:** `snake_case` → `clienti`
 
 ### Nomi File
 
 - **API:** `functions/api/[entita].js` (plurale)
-- **Test:** `functions/[entita].test.js` (plurale)
-- **Frontend:** `src/scripts/anagrafica-[entita].js` (singolare con trattino)
-- **Pagina:** `src/pages/anagrafica-[entita].astro`
+- **Test:** `tests/functions/[entita].test.js` (plurale)
+- **Frontend:** `src/scripts/[entita].js` (singolare con trattino)
+- **Pagina:** `src/pages/[entita].astro`
 
 ---
 
@@ -672,14 +672,14 @@ I attachments sono salvati in una **collection centrale** (`attachments`) con me
   storagePath: "attachments/ABC123/1234567890_fattura.pdf",
   metadata: {
     entityId: "ABC123",              // ID dell'entità (cliente, prodotto, etc.)
-    entityCollection: "anagrafica_clienti",  // Nome collection
+    entityCollection: "clienti",  // Nome collection
     url: "https://...",
     size: 123456,
     description: "Fattura 2024"
   },
-  createdBy: "user123",
-  createdByEmail: "user@example.com",
-  createdAt: Timestamp
+  lastModifiedBy: "user123",
+  lastModifiedByEmail: "user@example.com",
+  created: Timestamp
 }
 ```
 
@@ -687,7 +687,7 @@ I attachments sono salvati in una **collection centrale** (`attachments`) con me
 
 #### PASSO 1: Aggiungi Tab Attachments alla Pagina Astro
 
-Nel file `src/pages/anagrafica-[entita].astro`, aggiungi il tab attachments nella sidebar:
+Nel file `src/pages/[entita].astro`, aggiungi il tab attachments nella sidebar:
 
 ```html
 <!-- Tab buttons -->
@@ -709,21 +709,21 @@ Nel file `src/pages/anagrafica-[entita].astro`, aggiungi il tab attachments nell
 
 #### PASSO 2: Importa e Configura DocumentUtils nel Frontend
 
-Nel file `src/scripts/anagrafica-[entita].js`:
+Nel file `src/scripts/[entita].js`:
 
 ```javascript
 // Import
 import * as attachmentUtils from './utils/attachmentUtils.js';
 
 // Setup (nella funzione init)
-export function initPageAnagrafica[Entita]Page() {
+export function init[Entita]Page() {
     const db = getFirestore();
     attachmentUtils.setup({
         db,
         storage,
         auth,
         functions,
-        entityCollection: 'anagrafica_[entita]'  // Nome collection della tua entità
+        entityCollection: '[entita]'  // Nome collection della tua entità
     });
     // ... resto del codice
 }
@@ -780,7 +780,7 @@ Firestore viene interrogato automaticamente da `attachmentUtils` con:
 query(
     collection(db, 'attachments'),
     where("metadata.entityId", "==", entityId),
-    orderBy("createdAt", "desc")
+    orderBy("created", "desc")
 )
 ```
 
@@ -804,7 +804,7 @@ match /attachments/{docId} {
 Copia questo pattern per aggiungere attachments ai prodotti:
 
 ```javascript
-// src/scripts/anagrafica-prodotti.js
+// src/scripts/prodotti.js
 
 import { storage, auth, functions } from '../lib/firebase-client';
 import { doc, getFirestore } from "firebase/firestore";
@@ -814,7 +814,7 @@ import { httpsCallable } from "firebase/functions";
 
 let currentEntityId = null;
 
-export function initPageAnagraficaProdottiPage() {
+export function initProdottiPage() {
     const db = getFirestore();
 
     // ✅ Setup DocumentUtils con entityCollection
@@ -823,10 +823,10 @@ export function initPageAnagraficaProdottiPage() {
         storage,
         auth,
         functions,
-        entityCollection: 'anagrafica_prodotti'
+        entityCollection: 'prodotti'
     });
 
-    actionUtils.setup({ db, auth, functions, entityCollection: 'anagrafica_prodotti' });
+    actionUtils.setup({ db, auth, functions, entityCollection: 'prodotti' });
     setupEventListeners();
     loadEntities();
 }
@@ -912,10 +912,10 @@ I comments sono salvati in una **collection centrale** (`comments`) con metadata
 {
   text: "Contattare il cliente per preventivo 2024",
   entityId: "ABC123",              // ID dell'entità (cliente, prodotto, etc.)
-  entityCollection: "anagrafica_clienti",  // Nome collection
-  createdBy: "user123",
-  createdByEmail: "user@example.com",
-  createdAt: "2026-01-09T10:30:00.000Z"
+  entityCollection: "clienti",  // Nome collection
+  lastModifiedBy: "user123",
+  lastModifiedByEmail: "user@example.com",
+  created: "2026-01-09T10:30:00.000Z"
 }
 ```
 
@@ -925,7 +925,7 @@ I comments sono salvati in una **collection centrale** (`comments`) con metadata
 |---------|-------------|----------|
 | **Storage** | Firestore + Storage | Solo Firestore |
 | **Struttura** | `metadata.entityId` | `entityId` diretto |
-| **Query Index** | `metadata.entityId` + `createdAt` | `entityId` + `entityCollection` + `createdAt` |
+| **Query Index** | `metadata.entityId` + `created` | `entityId` + `entityCollection` + `created` |
 | **Permessi Delete** | Solo admin | Admin o creatore |
 | **Audit Log** | Salvato su parent entity | Salvato su parent entity |
 
@@ -933,7 +933,7 @@ I comments sono salvati in una **collection centrale** (`comments`) con metadata
 
 #### PASSO 1: Aggiungi Tab Note alla Pagina Astro
 
-Nel file `src/pages/anagrafica-[entita].astro`, aggiungi il tab note nella sidebar:
+Nel file `src/pages/[entita].astro`, aggiungi il tab note nella sidebar:
 
 ```html
 <!-- Tab buttons -->
@@ -960,20 +960,20 @@ Nel file `src/pages/anagrafica-[entita].astro`, aggiungi il tab note nella sideb
 
 #### PASSO 2: Importa e Configura CommentUtils nel Frontend
 
-Nel file `src/scripts/anagrafica-[entita].js`:
+Nel file `src/scripts/[entita].js`:
 
 ```javascript
 // Import
 import * as commentUtils from './utils/commentUtils.js';
 
 // Setup (nella funzione init)
-export function initPageAnagrafica[Entita]Page() {
+export function init[Entita]Page() {
     const db = getFirestore();
     commentUtils.setup({
         db,
         auth,
         functions,
-        entityCollection: 'anagrafica_[entita]'  // Nome collection della tua entità
+        entityCollection: '[entita]'  // Nome collection della tua entità
     });
     // ... resto del codice
 }
@@ -1033,7 +1033,7 @@ query(
     collection(db, 'comments'),
     where("entityId", "==", entityId),
     where("entityCollection", "==", entityCollection),
-    orderBy("createdAt", "desc")
+    orderBy("created", "desc")
 )
 ```
 
@@ -1046,7 +1046,7 @@ query(
   "fields": [
     {"fieldPath": "entityId", "order": "ASCENDING"},
     {"fieldPath": "entityCollection", "order": "ASCENDING"},
-    {"fieldPath": "createdAt", "order": "DESCENDING"}
+    {"fieldPath": "created", "order": "DESCENDING"}
   ]
 }
 ```
@@ -1088,7 +1088,7 @@ Le Cloud Functions per comments sono in `functions/api/comments.js`:
 Copia questo pattern per aggiungere comments ai prodotti:
 
 ```javascript
-// src/scripts/anagrafica-prodotti.js
+// src/scripts/prodotti.js
 
 import { storage, auth, functions } from '../lib/firebase-client';
 import { doc, getFirestore } from "firebase/firestore";
@@ -1099,7 +1099,7 @@ import { httpsCallable } from "firebase/functions";
 
 let currentEntityId = null;
 
-export function initPageAnagraficaProdottiPage() {
+export function initProdottiPage() {
     const db = getFirestore();
 
     // ✅ Setup utilities con entityCollection
@@ -1108,16 +1108,16 @@ export function initPageAnagraficaProdottiPage() {
         storage,
         auth,
         functions,
-        entityCollection: 'anagrafica_prodotti'
+        entityCollection: 'prodotti'
     });
 
-    actionUtils.setup({ db, auth, functions, entityCollection: 'anagrafica_prodotti' });
+    actionUtils.setup({ db, auth, functions, entityCollection: 'prodotti' });
 
     commentUtils.setup({
         db,
         auth,
         functions,
-        entityCollection: 'anagrafica_prodotti'
+        entityCollection: 'prodotti'
     });
 
     setupEventListeners();
@@ -1227,8 +1227,8 @@ export function createComment({
   text,
   entityId,
   entityCollection,
-  createdBy = null,
-  createdByEmail = null
+  lastModifiedBy = null,
+  lastModifiedByEmail = null
 } = {}) {
   if (!text || !entityId || !entityCollection) {
     throw new Error('text, entityId e entityCollection sono obbligatori');
@@ -1240,9 +1240,9 @@ export function createComment({
     text: String(text),
     entityId: String(entityId),
     entityCollection: String(entityCollection),
-    createdAt: timestamp,
-    createdBy: createdBy ? String(createdBy) : null,
-    createdByEmail: createdByEmail ? String(createdByEmail) : null
+    created: timestamp,
+    lastModifiedBy: lastModifiedBy ? String(lastModifiedBy) : null,
+    lastModifiedByEmail: lastModifiedByEmail ? String(lastModifiedByEmail) : null
   };
 }
 ```
@@ -1253,9 +1253,9 @@ export function createComment({
 
 1. **Sempre usa Factory:** Non creare oggetti manualmente, usa `create[Entity]()`
 2. **Validazione sia client che server:** Non fidarti mai del client
-3. **Audit fields:** Sempre `createdBy`, `createdAt`, `updatedAt`
+3. **Audit fields:** Sempre `lastModifiedBy`, `created`, `changed`
 4. **Timestamp ISO:** Usa `.toISOString()` per consistenza
-5. **Firestore Timestamp solo per updatedAt:** Nelle update usa `FieldValue.serverTimestamp()`
+5. **Firestore Timestamp solo per changed:** Nelle update usa `FieldValue.serverTimestamp()`
 6. **Test per ogni operazione:** Almeno 5 test (create, update, delete, list, permessi)
 7. **Log strutturati:** Sempre `console.log("Utente X ha fatto Y")`
 8. **Error handling:** Try-catch con HttpsError specifici

@@ -104,8 +104,8 @@ Crea un documento con struttura standard.
 - `storagePath` (string) - Percorso in Storage
 - `entityType` (string, optional) - Tipo entità collegata
 - `entityId` (string, optional) - ID entità collegata
-- `createdBy` (string, optional) - UID utente creatore
-- `createdByEmail` (string, optional) - Email utente creatore
+- `lastModifiedBy` (string, optional) - UID utente creatore
+- `lastModifiedByEmail` (string, optional) - Email utente creatore
 - `metadata` (object, optional) - Metadati aggiuntivi
 
 **Esempio:**

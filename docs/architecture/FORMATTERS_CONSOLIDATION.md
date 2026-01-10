@@ -140,7 +140,7 @@ import { formatFileSize, formatDate, formatTags } from './utils/formatters.js';
 
 // Usa nelle funzioni di rendering
 <div>${formatFileSize(doc.size)}</div>
-<div>${formatDate(doc.createdAt)}</div>
+<div>${formatDate(doc.created)}</div>
 <div>${formatTags(doc.metadata.tags)}</div>
 ```
 
@@ -157,7 +157,7 @@ formatDate(attachment.uploadedAt, { emptyText: '', includeTime: true })
 import { formatDate } from './utils/formatters.js';
 
 // Formato relativo per tabelle
-formatDate(chat.updatedAt, { relative: true })
+formatDate(chat.changed, { relative: true })
 ```
 
 ## File Modificati

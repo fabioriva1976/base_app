@@ -38,14 +38,27 @@ const authMiddleware = defineMiddleware(async (context, next) => {
       const payload = JSON.parse(atob(idToken.split('.')[1]));
       const uid = payload.user_id || payload.sub || 'dev-user';
 
-      // In DEV, usa il ruolo dalla variabile d'ambiente DEV_USER_ROLE
-      // Valori possibili: 'superuser', 'admin', 'operatore'
-      // Default: 'superuser' per facilitare il testing
+      // In DEV, usa il ruolo dalla variabile d'ambiente DEV_USER_ROLE quando presente.
+      // Se non impostato, tenta di leggere il ruolo da Firestore (fallback a superuser).
       const envRole = process.env.DEV_USER_ROLE as 'superuser' | 'admin' | 'operatore' | undefined;
-      let userRole: 'superuser' | 'admin' | 'operatore' | undefined = 'superuser';
+      let userRole: 'superuser' | 'admin' | 'operatore' | undefined;
 
       if (envRole && ['superuser', 'admin', 'operatore'].includes(envRole)) {
         userRole = envRole;
+      } else {
+        try {
+          const { adminDb } = await import('../lib/firebase-admin');
+          const userDoc = await adminDb.collection(COLLECTIONS.USERS).doc(uid).get();
+          if (userDoc.exists) {
+            userRole = userDoc.data()?.ruolo;
+          }
+        } catch (error) {
+          console.error('[MIDDLEWARE DEV] Errore recupero ruolo da Firestore:', error);
+        }
+      }
+
+      if (!userRole) {
+        userRole = 'superuser';
       }
 
       console.log(`[MIDDLEWARE DEV] Ruolo utente: ${userRole} (DEV_USER_ROLE=${process.env.DEV_USER_ROLE || 'not set'})`);

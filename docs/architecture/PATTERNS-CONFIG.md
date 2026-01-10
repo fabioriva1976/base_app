@@ -23,15 +23,15 @@ Ogni nuova configurazione DEVE seguire questi pattern per garantire:
 Quando crei una nuova configurazione (es: `database`, `payment`), devi creare questi file:
 
 ### 1. API Backend
-- [ ] `functions/api/config-[nome].js` - GET/SAVE per la configurazione
-- [ ] `functions/api/checkConfig-[nome].js` - Test funzionale della configurazione
+- [ ] `functions/api/settings-[nome].js` - GET/SAVE per la configurazione
+- [ ] `functions/api/checkSettings-[nome].js` - Test funzionale della configurazione
 
 ### 2. Frontend
-- [ ] `src/pages/config-[nome].astro` - Pagina configurazione
-- [ ] `src/scripts/config-[nome].js` - Logica frontend
+- [ ] `src/pages/settings-[nome].astro` - Pagina configurazione
+- [ ] `src/scripts/settings-[nome].js` - Logica frontend
 
 ### 3. Firestore Document
-- [ ] Documento in `configurazioni/[nome]` - Salvataggio parametri
+- [ ] Documento in `settings/[nome]` - Salvataggio parametri
 
 ### 4. Export in index.js
 - [ ] `functions/index.js` - Export delle API
@@ -40,16 +40,16 @@ Quando crei una nuova configurazione (es: `database`, `payment`), devi creare qu
 
 ## 📚 Configurazioni Template Esistenti
 
-Il progetto include 2 configurazioni completamente documentate:
+Il progetto include 2 settings completamente documentate:
 
 ### 1. **SMTP** (Configurazione Email)
-File di riferimento più completo per configurazioni con secrets.
+File di riferimento più completo per settings con secrets.
 
-- 📄 **API Config**: [functions/api/config-smtp.js](functions/api/config-smtp.js)
-- 🧪 **API Test**: [functions/api/checkConfig-smtp.js](functions/api/checkConfig-smtp.js)
-- 🎨 **Frontend Page**: [src/pages/config-smtp.astro](src/pages/config-smtp.astro)
-- 📜 **Frontend Script**: [src/scripts/config-smtp.js](src/scripts/config-smtp.js)
-- 🗄️ **Document**: `configurazioni/smtp`
+- 📄 **API Config**: [functions/api/settings-smtp.js](functions/api/settings-smtp.js)
+- 🧪 **API Test**: [functions/api/checkSettings-smtp.js](functions/api/checkSettings-smtp.js)
+- 🎨 **Frontend Page**: [src/pages/settings-smtp.astro](src/pages/settings-smtp.astro)
+- 📜 **Frontend Script**: [src/scripts/settings-smtp.js](src/scripts/settings-smtp.js)
+- 🗄️ **Document**: `settings/smtp`
 - 👥 **Permessi**: Admin per R, Superuser per W
 - 🔐 **Secrets**: `password`, `user`
 
@@ -69,20 +69,21 @@ File di riferimento più completo per configurazioni con secrets.
   from: String,           // Email mittente
   fromName: String,       // Nome mittente
   secure: Boolean,        // Usa TLS/SSL
-  updatedAt: Timestamp,   // Ultimo aggiornamento
+  created: Timestamp,     // Creazione record
+  changed: Timestamp,     // Ultimo aggiornamento
   updatedBy: String,      // UID utente
   updatedByEmail: String  // Email utente
 }
 ```
 
 ### 2. **AI** (Configurazione AI Provider)
-Template per configurazioni multi-provider.
+Template per settings multi-provider.
 
-- 📄 **API Config**: [functions/api/config-ai.js](functions/api/config-ai.js)
-- 🧪 **API Test**: [functions/api/checkConfig-ai.js](functions/api/checkConfig-ai.js)
-- 🎨 **Frontend Page**: [src/pages/config-ai.astro](src/pages/config-ai.astro)
-- 📜 **Frontend Script**: [src/scripts/config-ai.js](src/scripts/config-ai.js)
-- 🗄️ **Document**: `configurazioni/ai`
+- 📄 **API Config**: [functions/api/settings-ai.js](functions/api/settings-ai.js)
+- 🧪 **API Test**: [functions/api/checkSettings-ai.js](functions/api/checkSettings-ai.js)
+- 🎨 **Frontend Page**: [src/pages/settings-ai.astro](src/pages/settings-ai.astro)
+- 📜 **Frontend Script**: [src/scripts/settings-ai.js](src/scripts/settings-ai.js)
+- 🗄️ **Document**: `settings/ai`
 - 👥 **Permessi**: Admin per R, Superuser per W
 - 🔐 **Secrets**: `apiKey`
 
@@ -106,7 +107,8 @@ Template per configurazioni multi-provider.
   ragLocation: String,    // Regione corpus
   enableContext: Boolean, // Abilita contesto
   enableSafety: Boolean,  // Abilita safety
-  updatedAt: Timestamp,   // Ultimo aggiornamento
+  created: Timestamp,     // Creazione record
+  changed: Timestamp,     // Ultimo aggiornamento
   updatedBy: String,      // UID utente
   updatedByEmail: String  // Email utente
 }
@@ -116,7 +118,7 @@ Template per configurazioni multi-provider.
 
 ## 🏗️ PATTERN 1: API Config (GET/SAVE)
 
-**File:** `functions/api/config-[nome].js`
+**File:** `functions/api/settings-[nome].js`
 
 ### Template Base:
 
@@ -162,7 +164,7 @@ export const getConfig[Name]Api = onCall(
     await requireAdmin(request);
 
     const db = admin.firestore();
-    const docSnap = await db.collection("configurazioni").doc("[nome]").get();
+    const docSnap = await db.collection("settings").doc("[nome]").get();
     if (!docSnap.exists) {
       return { exists: false, data: null };
     }
@@ -188,10 +190,15 @@ export const saveConfig[Name]Api = onCall(
     const now = new Date().toISOString();
     const userEmail = request.auth?.token?.email || null;
 
-    await db.collection("configurazioni").doc("[nome]").set(
+    const docRef = db.collection("settings").doc("[nome]");
+    const existing = await docRef.get();
+    const created = existing.exists ? existing.data()?.created || now : now;
+
+    await docRef.set(
       {
         ...sanitized,
-        updatedAt: now,
+        created,
+        changed: now,
         updatedBy: request.auth.uid,
         updatedByEmail: userEmail
       },
@@ -207,7 +214,7 @@ export const saveConfig[Name]Api = onCall(
 
 ## 🧪 PATTERN 2: API Check (Test Configurazione)
 
-**File:** `functions/api/checkConfig-[nome].js`
+**File:** `functions/api/checkSettings-[nome].js`
 
 ### Template Base:
 
@@ -243,7 +250,7 @@ export const check[Name]Api = onCall(
 
         // 1. Carica configurazione da Firestore
         console.log("📋 Caricamento configurazione [Nome] da Firestore...");
-        const configDoc = await db.collection("configurazioni").doc("[nome]").get();
+        const configDoc = await db.collection("settings").doc("[nome]").get();
 
         if (!configDoc.exists) {
             console.error("❌ Documento configurazione [Nome] non trovato");
@@ -320,7 +327,7 @@ async function performTest(config, testParam) {
 
 ## 🎨 PATTERN 3: Frontend Script
 
-**File:** `src/scripts/config-[nome].js`
+**File:** `src/scripts/settings-[nome].js`
 
 ### Template Base:
 
@@ -328,7 +335,7 @@ async function performTest(config, testParam) {
 import { auth, functions } from '../lib/firebase-client';
 import { httpsCallable } from "firebase/functions";
 
-export function initConfig[Name]Page() {
+export function initSettings[Name]Page() {
     const form = document.getElementById('[nome]-config-form');
     const canModify = form?.dataset.canModify === 'true';
 
@@ -358,7 +365,7 @@ function makeFormReadOnly() {
     // Mostra messaggio informativo
     const description = form.closest('.config-section')?.querySelector('.description');
     if (description) {
-        description.innerHTML = '<strong style="color: #f59e0b;">Solo i Superuser possono modificare le configurazioni.</strong> Puoi visualizzare i parametri ma non modificarli.';
+        description.innerHTML = '<strong style="color: #f59e0b;">Solo i Superuser possono modificare le settings.</strong> Puoi visualizzare i parametri ma non modificarli.';
     }
 }
 
@@ -395,7 +402,7 @@ async function loadCurrentConfig() {
         console.error('Errore nel caricamento della configurazione:', error);
 
         if (error.code === 'permission-denied') {
-            showMessage('⚠️ Solo i Superuser possono visualizzare le configurazioni sensibili', 'error');
+            showMessage('⚠️ Solo i Superuser possono visualizzare le settings sensibili', 'error');
             makeFormReadOnly();
         } else {
             showMessage('Errore nel caricamento della configurazione', 'error');
@@ -454,7 +461,7 @@ async function test[Name]() {
     btn.innerHTML = '<span class="btn-loader"></span>Test in corso...';
 
     try {
-        const testFunc = httpsCallable(functions, 'check[Name]Api');
+        const testFunc = httpsCallable(functions, 'checkSettings[Name]Api');
         const result = await testFunc({ /* parametri test opzionali */ });
 
         if (result.data.success) {
@@ -493,16 +500,16 @@ async function test[Name]() {
 
 function updateStatus(data) {
     const campo1Element = document.getElementById('status-campo1');
-    const updatedAtElement = document.getElementById('status-updatedAt');
+    const changedElement = document.getElementById('status-changed');
 
     if (campo1Element) {
         campo1Element.textContent = data.campo1 || 'Non configurato';
         campo1Element.className = data.campo1 ? 'status-value configured' : 'status-value not-configured';
     }
 
-    if (updatedAtElement && data.updatedAt) {
-        const date = data.updatedAt.toDate ? data.updatedAt.toDate() : new Date(data.updatedAt);
-        updatedAtElement.textContent = date.toLocaleDateString('it-IT', {
+    if (changedElement && data.changed) {
+        const date = data.changed.toDate ? data.changed.toDate() : new Date(data.changed);
+        changedElement.textContent = date.toLocaleDateString('it-IT', {
             year: 'numeric',
             month: 'long',
             day: 'numeric',
@@ -536,13 +543,13 @@ function showMessage(message, type) {
 Ogni configurazione richiede 3 export:
 
 ```javascript
-// === FUNZIONI API - CONFIGURAZIONI ===
+// === FUNZIONI API - SETTINGS ===
 export {
     getConfig[Name]Api,
     saveConfig[Name]Api
-} from "./api/config-[nome].js";
+} from "./api/settings-[nome].js";
 
-export { check[Name]Api } from "./api/checkConfig-[nome].js";
+export { checkSettings[Name]Api } from "./api/checkSettings-[nome].js";
 ```
 
 **Esempio concreto (SMTP):**
@@ -550,9 +557,9 @@ export { check[Name]Api } from "./api/checkConfig-[nome].js";
 export {
     getConfigSmtpApi,
     saveConfigSmtpApi
-} from "./api/config-smtp.js";
+} from "./api/settings-smtp.js";
 
-export { checkSmtpApi } from "./api/checkConfig-smtp.js";
+export { checkSmtpApi } from "./api/checkSettings-smtp.js";
 ```
 
 ---
@@ -561,7 +568,7 @@ export { checkSmtpApi } from "./api/checkConfig-smtp.js";
 
 ### 1. Backend API Config
 
-**File:** `functions/api/config-database.js`
+**File:** `functions/api/settings-database.js`
 
 ```javascript
 import { onCall, HttpsError } from "firebase-functions/v2/https";
@@ -597,7 +604,7 @@ export const getConfigDatabaseApi = onCall(
   async (request) => {
     await requireAdmin(request);
     const db = admin.firestore();
-    const docSnap = await db.collection("configurazioni").doc("database").get();
+    const docSnap = await db.collection("settings").doc("database").get();
     if (!docSnap.exists) {
       return { exists: false, data: null };
     }
@@ -613,10 +620,10 @@ export const saveConfigDatabaseApi = onCall(
     const db = admin.firestore();
     const now = new Date().toISOString();
 
-    await db.collection("configurazioni").doc("database").set(
+    await db.collection("settings").doc("database").set(
       {
         ...sanitized,
-        updatedAt: now,
+        changed: now,
         updatedBy: request.auth.uid,
         updatedByEmail: request.auth?.token?.email || null
       },
@@ -630,7 +637,7 @@ export const saveConfigDatabaseApi = onCall(
 
 ### 2. Backend API Check
 
-**File:** `functions/api/checkConfig-database.js`
+**File:** `functions/api/checkSettings-database.js`
 
 ```javascript
 import { onCall } from "firebase-functions/v2/https";
@@ -651,7 +658,7 @@ export const checkDatabaseApi = onCall(
 
     try {
         const db = admin.firestore();
-        const configDoc = await db.collection("configurazioni").doc("database").get();
+        const configDoc = await db.collection("settings").doc("database").get();
 
         if (!configDoc.exists) {
             throw new Error("❌ Configurazione Database non trovata.");
@@ -705,9 +712,9 @@ export const checkDatabaseApi = onCall(
 export {
     getConfigDatabaseApi,
     saveConfigDatabaseApi
-} from "./api/config-database.js";
+} from "./api/settings-database.js";
 
-export { checkDatabaseApi } from "./api/checkConfig-database.js";
+export { checkDatabaseApi } from "./api/checkSettings-database.js";
 ```
 
 ---
@@ -715,12 +722,12 @@ export { checkDatabaseApi } from "./api/checkConfig-database.js";
 ## ✅ Best Practices Configurazioni
 
 1. **Secrets sempre in Firestore:** Non hardcodare mai API keys o password
-2. **Superuser per scrittura:** Solo superuser possono modificare configurazioni
-3. **Admin per lettura:** Admin e superuser possono leggere configurazioni
+2. **Superuser per scrittura:** Solo superuser possono modificare settings
+3. **Admin per lettura:** Admin e superuser possono leggere settings
 4. **Test funzionali:** Sempre fornire una funzione `check[Nome]Api` per testare
 5. **Validazione strict:** Valida tutti i campi obbligatori
 6. **Error handling dettagliato:** Fornisci messaggi di errore specifici
-7. **Audit trail:** Salva sempre `updatedAt`, `updatedBy`, `updatedByEmail`
+7. **Audit trail:** Salva sempre `changed`, `updatedBy`, `updatedByEmail`
 8. **Form read-only:** Se l'utente non è superuser, mostra form in sola lettura
 9. **Messaggi uniformi:** Usa la funzione `showMessage(message, type)` standard
 10. **CORS configurato:** Usa sempre `corsOrigins` da `config.js`
@@ -730,16 +737,16 @@ export { checkDatabaseApi } from "./api/checkConfig-database.js";
 ## 🚀 Convenzioni di Naming
 
 ### Configurazioni
-- **API Config File:** `functions/api/config-[nome].js`
-- **API Check File:** `functions/api/checkConfig-[nome].js`
-- **Frontend Script:** `src/scripts/config-[nome].js`
-- **Frontend Page:** `src/pages/config-[nome].astro`
-- **Firestore Document:** `configurazioni/[nome]`
+- **API Config File:** `functions/api/settings-[nome].js`
+- **API Check File:** `functions/api/checkSettings-[nome].js`
+- **Frontend Script:** `src/scripts/settings-[nome].js`
+- **Frontend Page:** `src/pages/settings-[nome].astro`
+- **Firestore Document:** `settings/[nome]`
 
 ### Funzioni
 - **GET Function:** `getConfig[Name]Api`
 - **SAVE Function:** `saveConfig[Name]Api`
-- **CHECK Function:** `check[Name]Api`
+- **CHECK Function:** `checkSettings[Name]Api`
 - **Init Function:** `initConfig[Name]Page()`
 
 ---
@@ -750,7 +757,7 @@ Per aggiungere una nuova configurazione:
 1. Copia i pattern SMTP o AI (in base alle esigenze)
 2. Sostituisci `[nome]` e `[Name]` con il nome della tua configurazione
 3. Definisci i campi specifici necessari
-4. Implementa la funzione di test in `checkConfig-[nome].js`
+4. Implementa la funzione di test in `checkSettings-[nome].js`
 5. Aggiungi gli export in `functions/index.js`
 6. Testa la configurazione dal frontend
 

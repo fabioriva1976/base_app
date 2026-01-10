@@ -1,9 +1,5 @@
 ---
 import ProfileLayout from '../layouts/ProfileLayout.astro';
-import { getRoleLabel } from '../lib/roles';
-
-const { user } = Astro.locals;
-const roleLabel = getRoleLabel(user?.ruolo);
 ---
 
 <ProfileLayout title="Il Mio Profilo">
@@ -48,7 +44,7 @@ const roleLabel = getRoleLabel(user?.ruolo);
                 <div class="form-row">
                     <div class="form-group">
                         <label for="profile-ruolo">Ruolo</label>
-                        <input type="text" id="profile-ruolo" value={roleLabel} disabled>
+                        <input type="text" id="profile-ruolo" value="" disabled>
                     </div>
                 </div>
 
@@ -64,6 +60,7 @@ const roleLabel = getRoleLabel(user?.ruolo);
                 <div class="form-actions">
                     <button type="submit" class="btn btn-primary">Salva Modifiche</button>
                     <span id="profile-save-message" class="save-message"></span>
+                    <span id="profile-error-message" class="error-message" style="display: none; color: #dc2626; margin-left: 1rem;"></span>
                 </div>
             </form>
         </div>

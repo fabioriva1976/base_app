@@ -120,7 +120,7 @@ Tre Cloud Functions con validazione completa:
 - Verifica che l'utente assegnato esista
 
 // Campo clientId (opzionale)
-- Se presente, deve esistere in anagrafica_clienti
+- Se presente, deve esistere in clienti
 ```
 
 #### 2. `updateRecordApi` - Modifica Record
@@ -132,7 +132,7 @@ Tre Cloud Functions con validazione completa:
 - ✅ Validazione campi modificati
 - ✅ Controllo permessi per riassegnazione
 - ✅ Sanitizzazione
-- ✅ Audit trail (updatedBy, updatedAt)
+- ✅ Audit trail (lastModifiedBy, changed)
 
 **Business Rules:**
 ```javascript
@@ -201,9 +201,9 @@ Tre Cloud Functions con validazione completa:
        caseId: "PR-2024-001",
        assegnataA: currentUserId,
        userId: currentUserId,
-       createdAt: serverTimestamp,
-       createdBy: currentUserId,
-       createdByEmail: "user@example.com"
+       created: serverTimestamp,
+       lastModifiedBy: currentUserId,
+       lastModifiedByEmail: "user@example.com"
    }
 
 6. Client riceve ID record creata
@@ -251,7 +251,7 @@ Tre Cloud Functions con validazione completa:
    {
        assegnataA: operatoreUserId,
        userId: adminUserId,  // Creatore
-       createdBy: adminUserId
+       lastModifiedBy: adminUserId
    }
 ```
 
@@ -426,7 +426,7 @@ await createRecordApi({
 ### Data Integrity
 - ✅ **Dati consistenti**: Validazione garantita
 - ✅ **Formati corretti**: Lunghezze, tipi controllati
-- ✅ **Referential integrity**: Verifica esistenza clienti/utenti
+- ✅ **Referential integrity**: Verifica esistenza clienti/users
 
 ### Compliance
 - ✅ **GDPR ready**: Audit log per modifiche
@@ -436,7 +436,7 @@ await createRecordApi({
 ## Prossimi Passi
 
 ### Alta Priorità
-1. **Clienti**: Stessa validazione per anagrafica_clienti
+1. **Clienti**: Stessa validazione per clienti
 2. **Documenti**: Validazione upload e metadata
 3. **Unit Tests**: Test automatizzati per Cloud Functions
 
