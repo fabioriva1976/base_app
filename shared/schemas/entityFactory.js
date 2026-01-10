@@ -65,7 +65,7 @@ export function createCliente({
   cap = null,
   provincia = null,
   note = null,
-  stato = true,
+  status = true,
   createdBy = null,
   createdByEmail = null
 } = {}) {
@@ -92,8 +92,7 @@ export function createCliente({
     cap: cap ? String(cap) : null,
     provincia: provincia ? String(provincia) : null,
     note: note ? String(note) : null,
-    stato: Boolean(stato),
-    status: Boolean(stato),
+    status: Boolean(status),
     created: timestamp,
     changed: timestamp,
     lastModifiedBy: createdByValue,

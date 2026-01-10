@@ -90,7 +90,7 @@ async function saveEntity(e) {
         indirizzo: document.getElementById('indirizzo').value,
         citta: document.getElementById('citta').value,
         cap: document.getElementById('cap').value,
-        stato: document.getElementById('toggle-stato').checked
+        status: document.getElementById('toggle-stato').checked
     };
     let normalized;
     try {
@@ -178,7 +178,7 @@ const editEntity = async (id) => {
     document.getElementById('indirizzo').value = data.indirizzo || '';
     document.getElementById('citta').value = data.citta || '';
     document.getElementById('cap').value = data.cap || '';
-    document.getElementById('toggle-stato').checked = data.stato || false;
+    document.getElementById('toggle-stato').checked = data.status || false;
     
     showTabsForExistingEntity();
     attachmentUtils.listenForAttachments(id);

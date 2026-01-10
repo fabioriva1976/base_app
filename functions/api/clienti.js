@@ -159,9 +159,6 @@ export const updateClienteApi = onCall({
             createdBy: FieldValue.delete(),
             createdByEmail: FieldValue.delete()
         };
-        if (updateData.stato !== undefined) {
-            dataToUpdate.status = Boolean(updateData.stato);
-        }
 
         await clienteRef.update(dataToUpdate);
 

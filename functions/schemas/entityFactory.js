@@ -1,11 +1,17 @@
 /**
- * Factory functions condivise per creare entità con struttura consistente.
- * Fonte unica per frontend e backend (copiata in functions/schemas tramite script di sync).
+ * Factory functions per creare entità con struttura consistente
+ *
+ * NOTA: Questo file è AUTO-GENERATO da /shared/schemas/entityFactory.js
+ * Non modificare direttamente questo file! Modifica il file sorgente e riesegui:
+ * npm run sync-factories
+ *
+ * Mantiene la stessa logica ma usa CommonJS (module.exports) invece di ES6 modules (export)
+ * per compatibilità con le Cloud Functions Node.js.
  */
 
 const nowIso = () => new Date().toISOString();
 
-export function createAttachment({
+function createAttachment({
   nome,
   tipo,
   storagePath,
@@ -37,7 +43,7 @@ export function createAttachment({
   };
 }
 
-export function createAttachmentMetadata({
+function createAttachmentMetadata({
   entityId = null,
   entityCollection = null,
   url = '',
@@ -53,7 +59,7 @@ export function createAttachmentMetadata({
   };
 }
 
-export function createCliente({
+function createCliente({
   ragione_sociale,
   codice,
   email = null,
@@ -65,7 +71,7 @@ export function createCliente({
   cap = null,
   provincia = null,
   note = null,
-  stato = true,
+  status = true,
   createdBy = null,
   createdByEmail = null
 } = {}) {
@@ -92,8 +98,7 @@ export function createCliente({
     cap: cap ? String(cap) : null,
     provincia: provincia ? String(provincia) : null,
     note: note ? String(note) : null,
-    stato: Boolean(stato),
-    status: Boolean(stato),
+    status: Boolean(status),
     created: timestamp,
     changed: timestamp,
     lastModifiedBy: createdByValue,
@@ -101,7 +106,7 @@ export function createCliente({
   };
 }
 
-export function createUtente({
+function createUtente({
   uid,
   email,
   ruolo = 'operatore',
@@ -133,7 +138,7 @@ export function createUtente({
   };
 }
 
-export function createComment({
+function createComment({
   text,
   entityId,
   entityCollection,
@@ -155,3 +160,11 @@ export function createComment({
     createdByEmail: createdByEmail ? String(createdByEmail) : null
   };
 }
+
+module.exports = {
+  createAttachment,
+  createAttachmentMetadata,
+  createCliente,
+  createUtente,
+  createComment,
+};
