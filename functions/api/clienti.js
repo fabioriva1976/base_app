@@ -96,6 +96,9 @@ export const createClienteApi = onCall({
         // 4. DATABASE: Salva il nuovo cliente in Firestore
         const docRef = await db.collection(COLLECTION_NAME).add(nuovoCliente);
 
+        const newDoc = await docRef.get();
+        const newData = newDoc.exists ? newDoc.data() : nuovoCliente;
+
         // 5. AUDIT LOG: Registra azione per tracciabilità
         await logAudit({
             entityType: COLLECTIONS.CLIENTI,
@@ -103,7 +106,7 @@ export const createClienteApi = onCall({
             action: AuditAction.CREATE,
             userId: uid,
             userEmail: token.email,
-            newData: nuovoCliente,
+            newData: newData,
             source: 'web'
         });
 
@@ -161,6 +164,8 @@ export const updateClienteApi = onCall({
         };
 
         await clienteRef.update(dataToUpdate);
+        const newDoc = await clienteRef.get();
+        const newData = newDoc.exists ? newDoc.data() : dataToUpdate;
 
         // AUDIT LOG: Registra modifica con dati before/after
         await logAudit({
@@ -170,7 +175,7 @@ export const updateClienteApi = onCall({
             userId: uid,
             userEmail: request.auth.token.email,
             oldData: oldData,
-            newData: dataToUpdate,
+            newData: newData,
             source: 'web'
         });
 

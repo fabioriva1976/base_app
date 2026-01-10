@@ -42,6 +42,10 @@ function hasActualChanges(beforeData, afterData) {
 // Trigger per anagrafica_clienti
 export const onAnagraficaClientiCreate = onDocumentCreated({ region, document: `${COLLECTIONS.CLIENTI}/{docId}`, ...runtimeOpts }, async (event) => {
     const afterData = event.data.data();
+    if (afterData?.lastModifiedBy) {
+        console.log(`Audit log già registrato dalle API per cliente ${event.params.docId}, trigger skip`);
+        return;
+    }
     await logAudit({
         entityType: COLLECTIONS.CLIENTI,
         entityId: event.params.docId,
@@ -63,6 +67,11 @@ export const onAnagraficaClientiUpdate = onDocumentUpdated({ region, document: `
         return;
     }
 
+    if (afterData?.lastModifiedBy) {
+        console.log(`Audit log già registrato dalle API per cliente ${event.params.docId}, trigger skip`);
+        return;
+    }
+
     await logAudit({
         entityType: COLLECTIONS.CLIENTI,
         entityId: event.params.docId,
@@ -77,6 +86,10 @@ export const onAnagraficaClientiUpdate = onDocumentUpdated({ region, document: `
 
 export const onAnagraficaClientiDelete = onDocumentDeleted({ region, document: `${COLLECTIONS.CLIENTI}/{docId}`, ...runtimeOpts }, async (event) => {
     const beforeData = event.data.data();
+    if (beforeData?.lastModifiedBy) {
+        console.log(`Audit log già registrato dalle API per cliente ${event.params.docId}, trigger skip`);
+        return;
+    }
     await logAudit({
         entityType: COLLECTIONS.CLIENTI,
         entityId: event.params.docId,
@@ -91,6 +104,10 @@ export const onAnagraficaClientiDelete = onDocumentDeleted({ region, document: `
 // Trigger per attachments
 export const onAttachmentsCreate = onDocumentCreated({ region, document: `${COLLECTIONS.ATTACHMENTS}/{docId}`, ...runtimeOpts }, async (event) => {
     const afterData = event.data.data();
+    if (afterData?.lastModifiedBy) {
+        console.log(`Audit log già registrato dalle API per attachment ${event.params.docId}, trigger skip`);
+        return;
+    }
     await logAudit({
         entityType: COLLECTIONS.ATTACHMENTS,
         entityId: event.params.docId,
@@ -112,6 +129,11 @@ export const onAttachmentsUpdate = onDocumentUpdated({ region, document: `${COLL
         return;
     }
 
+    if (afterData?.lastModifiedBy) {
+        console.log(`Audit log già registrato dalle API per attachment ${event.params.docId}, trigger skip`);
+        return;
+    }
+
     await logAudit({
         entityType: COLLECTIONS.ATTACHMENTS,
         entityId: event.params.docId,
@@ -126,6 +148,10 @@ export const onAttachmentsUpdate = onDocumentUpdated({ region, document: `${COLL
 
 export const onAttachmentsDelete = onDocumentDeleted({ region, document: `${COLLECTIONS.ATTACHMENTS}/{docId}`, ...runtimeOpts }, async (event) => {
     const beforeData = event.data.data();
+    if (beforeData?.lastModifiedBy) {
+        console.log(`Audit log già registrato dalle API per attachment ${event.params.docId}, trigger skip`);
+        return;
+    }
     await logAudit({
         entityType: COLLECTIONS.ATTACHMENTS,
         entityId: event.params.docId,
