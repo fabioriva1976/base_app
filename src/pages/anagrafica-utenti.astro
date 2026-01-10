@@ -9,7 +9,7 @@ const { user } = Astro.locals;
 const showCreateButton = canManageUsers(user);
 ---
 
-<ProfileLayout title="Utenti - AI Legal Assistant">
+<ProfileLayout title="Utenti">
   <div class="container" data-can-manage={showCreateButton ? 'true' : 'false'}>
     <div class="header">
         <h1>Utenti</h1>

@@ -3,8 +3,11 @@ interface Props {
   title?: string;
 }
 
-const { title = 'AI Legal Assistant' } = Astro.props;
+import { buildTitle } from '../lib/site';
+
+const { title } = Astro.props;
 const user = Astro.locals.user;
+const pageTitle = buildTitle(title);
 
 // Genera l'avatar URL lato server per evitare il flash
 const displayName = user?.email?.split('@')[0] || 'User';
@@ -16,7 +19,7 @@ const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(display
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{title}</title>
+    <title>{pageTitle}</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css" rel="stylesheet" type="text/css">
