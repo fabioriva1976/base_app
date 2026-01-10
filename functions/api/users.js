@@ -308,6 +308,8 @@ export const userUpdateApi = onCall({ region, cors: corsOrigins, ...runtimeOpts 
     const oldDoc = await userDocRef.get();
     const oldData = oldDoc.exists ? oldDoc.data() : null;
     await userDocRef.set(profileUpdates, { merge: true });
+    const newDoc = await userDocRef.get();
+    const newData = newDoc.exists ? newDoc.data() : profileUpdates;
 
     await logAudit({
       entityType: COLLECTION_NAME,
@@ -316,7 +318,7 @@ export const userUpdateApi = onCall({ region, cors: corsOrigins, ...runtimeOpts 
       userId: request.auth.uid,
       userEmail: request.auth.token?.email || null,
       oldData,
-      newData: profileUpdates,
+      newData,
       source: 'web'
     });
 
@@ -414,6 +416,8 @@ export const userSelfUpdateApi = onCall({ region, cors: corsOrigins, ...runtimeO
     }
 
     await userDocRef.set(profileUpdates, { merge: true });
+    const newDoc = await userDocRef.get();
+    const newData = newDoc.exists ? newDoc.data() : profileUpdates;
 
     await logAudit({
       entityType: COLLECTION_NAME,
@@ -422,7 +426,7 @@ export const userSelfUpdateApi = onCall({ region, cors: corsOrigins, ...runtimeO
       userId: uid,
       userEmail: request.auth.token?.email || null,
       oldData,
-      newData: profileUpdates,
+      newData,
       source: 'web'
     });
 

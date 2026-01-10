@@ -67,6 +67,12 @@ export const onUtentiChange = onDocumentWritten(
         const modifiedByUid = afterData?.lastModifiedBy || beforeData?.lastModifiedBy || null;
         const modifiedByEmail = afterData?.lastModifiedByEmail || beforeData?.lastModifiedByEmail || null;
 
+        // Evita duplicati: le modifiche manuali sono già tracciate dalle API
+        if (modifiedByUid) {
+            console.log(`Audit log già registrato dalle API per utente ${userId}, trigger skip`);
+            return null;
+        }
+
         // Determina se l'azione è manuale o automatica
         // Se abbiamo lastModifiedBy, è un'azione manuale, altrimenti è automatica (cron/sistema)
         const isManual = modifiedByUid !== null;
