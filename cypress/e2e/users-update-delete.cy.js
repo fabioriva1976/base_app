@@ -1,4 +1,4 @@
-describe('Anagrafica Utenti - update e delete', () => {
+describe('Users - update e delete', () => {
   const apiKey = 'AIzaSyD8Wqok8hADg9bipYln3KpQbQ99nHVI-4s';
   const projectId = Cypress.env('FIREBASE_PROJECT_ID') || 'base-app-12108';
   const authEmulatorUrl = 'http://localhost:9099';
@@ -31,15 +31,34 @@ describe('Anagrafica Utenti - update e delete', () => {
     }));
   }
 
-  function setUserRole(uid, role, idToken) {
+  function setUserRole(uid, role, idToken, email) {
+    const now = new Date().toISOString();
     return cy.request({
       method: 'POST',
-      url: `${firestoreEmulatorUrl}/v1/projects/${projectId}/databases/(default)/documents/utenti?documentId=${uid}`,
+      url: `${firestoreEmulatorUrl}/v1/projects/${projectId}/databases/(default)/documents/users?documentId=${uid}`,
       headers: {
         Authorization: `Bearer ${idToken}`
       },
       body: {
         fields: {
+          email: {
+            stringValue: email
+          },
+          status: {
+            booleanValue: true
+          },
+          created: {
+            stringValue: now
+          },
+          changed: {
+            stringValue: now
+          },
+          lastModifiedBy: {
+            stringValue: uid
+          },
+          lastModifiedByEmail: {
+            stringValue: email
+          },
           ruolo: {
             arrayValue: {
               values: [{ stringValue: role }]
@@ -63,13 +82,12 @@ describe('Anagrafica Utenti - update e delete', () => {
     const adminEmail = `admin.update.${Date.now()}@test.local`;
     const adminPassword = 'AdminPass123!';
 
-    createAuthUser(adminEmail, adminPassword).then(({ uid, idToken }) => {
-      setUserRole(uid, 'admin', idToken);
-    });
+    createAuthUser(adminEmail, adminPassword)
+      .then(({ uid, idToken }) => setUserRole(uid, 'admin', idToken, adminEmail));
 
     login(adminEmail, adminPassword);
 
-    cy.visit('/anagrafica-utenti', { failOnStatusCode: false });
+    cy.visit('/users', { failOnStatusCode: false });
     cy.get('#new-entity-btn').click();
 
     const userEmail = `operatore.update.${Date.now()}@test.local`;
@@ -91,7 +109,7 @@ describe('Anagrafica Utenti - update e delete', () => {
     cy.get('#save-message', { timeout: 10000 }).should('be.visible');
     cy.get('#close-sidebar-btn').click();
     cy.reload();
-    cy.location('pathname', { timeout: 10000 }).should('eq', '/anagrafica-utenti');
+    cy.location('pathname', { timeout: 10000 }).should('eq', '/users');
     findRowByEmail(userEmail);
     cy.get('#data-table').contains('td', userEmail).closest('tr').within(() => {
       cy.get('.btn-edit').click();
@@ -106,7 +124,7 @@ describe('Anagrafica Utenti - update e delete', () => {
     // Riapri per caricare lo storico azioni aggiornato
     cy.get('#close-sidebar-btn').click();
     cy.reload();
-    cy.location('pathname', { timeout: 10000 }).should('eq', '/anagrafica-utenti');
+    cy.location('pathname', { timeout: 10000 }).should('eq', '/users');
     findRowByEmail(userEmail);
     cy.get('#data-table').contains('td', userEmail).closest('tr').within(() => {
       cy.get('.btn-edit').click();
@@ -120,13 +138,12 @@ describe('Anagrafica Utenti - update e delete', () => {
     const adminEmail = `admin.delete.${Date.now()}@test.local`;
     const adminPassword = 'AdminPass123!';
 
-    createAuthUser(adminEmail, adminPassword).then(({ uid, idToken }) => {
-      setUserRole(uid, 'admin', idToken);
-    });
+    createAuthUser(adminEmail, adminPassword)
+      .then(({ uid, idToken }) => setUserRole(uid, 'admin', idToken, adminEmail));
 
     login(adminEmail, adminPassword);
 
-    cy.visit('/anagrafica-utenti', { failOnStatusCode: false });
+    cy.visit('/users', { failOnStatusCode: false });
     cy.get('#new-entity-btn').click();
 
     const userEmail = `operatore.delete.${Date.now()}@test.local`;
@@ -142,7 +159,7 @@ describe('Anagrafica Utenti - update e delete', () => {
     cy.get('#save-message', { timeout: 10000 }).should('be.visible');
     cy.get('#close-sidebar-btn').click();
     cy.reload();
-    cy.location('pathname', { timeout: 10000 }).should('eq', '/anagrafica-utenti');
+    cy.location('pathname', { timeout: 10000 }).should('eq', '/users');
     findRowByEmail(userEmail);
     cy.get('#data-table').contains('td', userEmail).closest('tr').within(() => {
       cy.get('.btn-delete').click();

@@ -56,7 +56,8 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 /* --- 4. SIDEBAR DI NAVIGAZIONE --- */
 .sidebar { background: var(--sidebar-bg); color: var(--sidebar-text); display: flex; flex-direction: column; height: 100vh; transition: var(--transition-normal); overflow-y: auto; overflow-x: hidden; }
 .sidebar-header { display: flex; align-items: center; justify-content: center; height: var(--header-height); flex-shrink: 0; }
-.logo { font-size: 1.5rem; font-weight: 700; color: #fff; white-space: nowrap; }
+.logo { font-size: 1rem; font-weight: 700; color: #fff; white-space: nowrap; display: inline-flex; align-items: center; justify-content: center; gap: 0.25rem; }
+.logo-short { display: none; font-size: 1rem; line-height: 1; }
 .nav-menu { list-style: none; padding: 1rem 0.75rem; }
 .nav-section-title { padding: 0.5rem 1.75rem; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: var(--text-color-secondary); opacity: 0.7; margin-top: 1rem; letter-spacing: 0.5px; }
 .app-wrapper.sidebar-collapsed .nav-section-title { opacity: 0; visibility: hidden; height: 0; padding: 0; margin: 0; }
@@ -66,7 +67,8 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .app-wrapper.sidebar-collapsed .nav-menu a:hover { transform: scale(1.1); }
 .nav-menu li.active > a { background-color: var(--sidebar-active-bg); color: #fff; font-weight: 500; }
 .nav-icon { width: 20px; height: 20px; margin-right: 1rem; flex-shrink: 0; }
-.app-wrapper.sidebar-collapsed .logo, .app-wrapper.sidebar-collapsed .nav-menu span { opacity: 0; visibility: hidden; width: 0; }
+.app-wrapper.sidebar-collapsed .logo-full, .app-wrapper.sidebar-collapsed .nav-menu span { opacity: 0; visibility: hidden; width: 0; }
+.app-wrapper.sidebar-collapsed .logo-short { display: inline-block; opacity: 1; visibility: visible; width: auto; }
 .app-wrapper.sidebar-collapsed .nav-menu a { justify-content: center; }
 .app-wrapper.sidebar-collapsed .nav-icon { margin: 0; }
 

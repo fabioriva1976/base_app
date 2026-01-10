@@ -1,7 +1,7 @@
 import { auth, functions } from '../lib/firebase-client';
 import { httpsCallable } from "firebase/functions";
 
-export function initConfigAiPage() {
+export function initSettingsAiPage() {
     const form = document.getElementById('ai-config-form');
     const canModify = form?.dataset.canModify === 'true';
 
@@ -153,7 +153,7 @@ async function testAI() {
     btn.innerHTML = '<span class="btn-loader"></span>Test in corso...';
 
     try {
-        const testAi = httpsCallable(functions, 'checkAiApi');
+        const testAi = httpsCallable(functions, 'checkSettingsAiApi');
         const result = await testAi({});
 
         if (result.data.success) {
@@ -223,8 +223,9 @@ function updateStatus(data) {
         maxTokensElement.textContent = data.maxTokens || '-';
     }
 
-    if (updatedAtElement && data.updatedAt) {
-        const date = data.updatedAt.toDate ? data.updatedAt.toDate() : new Date(data.updatedAt);
+    const changedValue = data.changed || data.updatedAt;
+    if (updatedAtElement && changedValue) {
+        const date = changedValue.toDate ? changedValue.toDate() : new Date(changedValue);
         updatedAtElement.textContent = date.toLocaleDateString('it-IT', {
             year: 'numeric',
             month: 'long',

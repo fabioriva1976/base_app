@@ -1,7 +1,12 @@
-import { describe, it, beforeAll, afterEach, afterAll, jest } from '@jest/globals';
+import { describe, it, beforeAll, beforeEach, afterEach, afterAll, jest } from '@jest/globals';
 import { expect } from 'chai';
 import fft from 'firebase-functions-test';
 import admin from 'firebase-admin';
+import { COLLECTIONS } from '../../shared/constants/collections.js';
+import { clearAllEmulatorData } from '../helpers/cleanup.js';
+import { seedUserProfile } from '../helpers/userProfile.js';
+
+const { USERS, CONFIG } = COLLECTIONS;
 
 const TEST_PROJECT_ID = process.env.TEST_PROJECT_ID || 'base-app-12108';
 process.env.FIREBASE_PROJECT_ID = TEST_PROJECT_ID;
@@ -20,25 +25,14 @@ describe('API Configurazioni', () => {
     jest.setTimeout(30000);
 
     let db;
-    let clearCollections;
-
     beforeAll(async () => {
         if (admin.apps.length > 0) {
             await Promise.all(admin.apps.map(app => app.delete()));
         }
         admin.initializeApp({ projectId: TEST_PROJECT_ID });
         db = admin.firestore();
-        ({ getConfigAiApi, saveConfigAiApi } = await import('./api/config-ai.js'));
-        ({ getConfigSmtpApi, saveConfigSmtpApi } = await import('./api/config-smtp.js'));
-        clearCollections = async () => {
-            const utentiSnap = await db.collection('utenti').get();
-            const configSnap = await db.collection('configurazioni').get();
-            const deletePromises = [];
-            utentiSnap.forEach(doc => deletePromises.push(doc.ref.delete()));
-            configSnap.forEach(doc => deletePromises.push(doc.ref.delete()));
-            await Promise.all(deletePromises);
-        };
-        await clearCollections();
+        ({ getConfigAiApi, saveConfigAiApi } = await import('../../functions/api/settings-ai.js'));
+        ({ getConfigSmtpApi, saveConfigSmtpApi } = await import('../../functions/api/settings-smtp.js'));
     });
 
     afterAll(async () => {
@@ -51,18 +45,20 @@ describe('API Configurazioni', () => {
         }
     });
 
+    beforeEach(async () => {
+        await clearAllEmulatorData({ db });
+    });
+
     afterEach(async () => {
         await test.cleanup();
-        if (clearCollections) {
-            await clearCollections();
-        }
+        await clearAllEmulatorData({ db });
     });
 
     it('dovrebbe restituire configurazione AI assente', async () => {
         const wrapped = test.wrap(getConfigAiApi);
         const adminUser = { uid: 'admin-ai', token: { email: 'admin-ai@test.com' } };
 
-        await db.collection('utenti').doc(adminUser.uid).set({ ruolo: ['admin'] });
+        await seedUserProfile(db, { uid: adminUser.uid, email: adminUser.token.email, role: 'admin' });
 
         const result = await wrapped({ data: {}, auth: adminUser });
 
@@ -85,7 +81,7 @@ describe('API Configurazioni', () => {
         const wrapped = test.wrap(getConfigAiApi);
         const operatorUser = { uid: 'operatore-ai', token: { email: 'operatore-ai@test.com' } };
 
-        await db.collection('utenti').doc(operatorUser.uid).set({ ruolo: ['operatore'] });
+        await seedUserProfile(db, { uid: operatorUser.uid, email: operatorUser.token.email, role: 'operatore' });
 
         try {
             await wrapped({ data: {}, auth: operatorUser });
@@ -99,7 +95,7 @@ describe('API Configurazioni', () => {
         const wrapped = test.wrap(saveConfigAiApi);
         const adminUser = { uid: 'admin-ai-save', token: { email: 'admin-ai-save@test.com' } };
 
-        await db.collection('utenti').doc(adminUser.uid).set({ ruolo: ['admin'] });
+        await seedUserProfile(db, { uid: adminUser.uid, email: adminUser.token.email, role: 'admin' });
 
         try {
             await wrapped({ data: { data: { provider: 'google', apiKey: 'x', model: 'm' } }, auth: adminUser });
@@ -124,7 +120,7 @@ describe('API Configurazioni', () => {
         const wrapped = test.wrap(saveConfigAiApi);
         const operatorUser = { uid: 'operatore-ai-save', token: { email: 'operatore-ai-save@test.com' } };
 
-        await db.collection('utenti').doc(operatorUser.uid).set({ ruolo: ['operatore'] });
+        await seedUserProfile(db, { uid: operatorUser.uid, email: operatorUser.token.email, role: 'operatore' });
 
         try {
             await wrapped({ data: { data: { provider: 'google', apiKey: 'k', model: 'm' } }, auth: operatorUser });
@@ -138,7 +134,7 @@ describe('API Configurazioni', () => {
         const wrapped = test.wrap(saveConfigAiApi);
         const superUser = { uid: 'super-ai', token: { email: 'super-ai@test.com' } };
 
-        await db.collection('utenti').doc(superUser.uid).set({ ruolo: ['superuser'] });
+        await seedUserProfile(db, { uid: superUser.uid, email: superUser.token.email, role: 'superuser' });
 
         try {
             await wrapped({ data: { data: { provider: 'google' } }, auth: superUser });
@@ -152,7 +148,7 @@ describe('API Configurazioni', () => {
         const wrapped = test.wrap(saveConfigAiApi);
         const superUser = { uid: 'super-ai-defaults', token: { email: 'super-ai-defaults@test.com' } };
 
-        await db.collection('utenti').doc(superUser.uid).set({ ruolo: ['superuser'] });
+        await seedUserProfile(db, { uid: superUser.uid, email: superUser.token.email, role: 'superuser' });
 
         const result = await wrapped({
             data: { data: { provider: 'google', apiKey: 'key', model: 'gemini-1.5-pro' } },
@@ -161,7 +157,7 @@ describe('API Configurazioni', () => {
 
         expect(result.success).to.equal(true);
 
-        const doc = await db.collection('configurazioni').doc('ai').get();
+        const doc = await db.collection(CONFIG).doc('ai').get();
         expect(doc.exists).to.equal(true);
         expect(doc.data().temperature).to.equal(0.7);
         expect(doc.data().maxTokens).to.equal(2048);
@@ -174,7 +170,7 @@ describe('API Configurazioni', () => {
         const wrapped = test.wrap(saveConfigAiApi);
         const superUser = { uid: 'super-ai-save', token: { email: 'super-ai-save@test.com' } };
 
-        await db.collection('utenti').doc(superUser.uid).set({ ruolo: ['superuser'] });
+        await seedUserProfile(db, { uid: superUser.uid, email: superUser.token.email, role: 'superuser' });
 
         const result = await wrapped({
             data: { data: { provider: 'google', apiKey: 'key', model: 'gemini-1.5-pro' } },
@@ -183,7 +179,7 @@ describe('API Configurazioni', () => {
 
         expect(result.success).to.equal(true);
 
-        const doc = await db.collection('configurazioni').doc('ai').get();
+        const doc = await db.collection(CONFIG).doc('ai').get();
         expect(doc.exists).to.equal(true);
         expect(doc.data().provider).to.equal('google');
         expect(doc.data().updatedBy).to.equal(superUser.uid);
@@ -193,8 +189,8 @@ describe('API Configurazioni', () => {
         const wrapped = test.wrap(getConfigAiApi);
         const adminUser = { uid: 'admin-ai-existing', token: { email: 'admin-ai-existing@test.com' } };
 
-        await db.collection('utenti').doc(adminUser.uid).set({ ruolo: ['admin'] });
-        await db.collection('configurazioni').doc('ai').set({ provider: 'google', apiKey: 'k', model: 'm' });
+        await seedUserProfile(db, { uid: adminUser.uid, email: adminUser.token.email, role: 'admin' });
+        await db.collection(CONFIG).doc('ai').set({ provider: 'google', apiKey: 'k', model: 'm' });
 
         const result = await wrapped({ data: {}, auth: adminUser });
 
@@ -206,7 +202,7 @@ describe('API Configurazioni', () => {
         const wrapped = test.wrap(getConfigSmtpApi);
         const adminUser = { uid: 'admin-smtp', token: { email: 'admin-smtp@test.com' } };
 
-        await db.collection('utenti').doc(adminUser.uid).set({ ruolo: ['admin'] });
+        await seedUserProfile(db, { uid: adminUser.uid, email: adminUser.token.email, role: 'admin' });
 
         const result = await wrapped({ data: {}, auth: adminUser });
 
@@ -229,7 +225,7 @@ describe('API Configurazioni', () => {
         const wrapped = test.wrap(getConfigSmtpApi);
         const operatorUser = { uid: 'operatore-smtp', token: { email: 'operatore-smtp@test.com' } };
 
-        await db.collection('utenti').doc(operatorUser.uid).set({ ruolo: ['operatore'] });
+        await seedUserProfile(db, { uid: operatorUser.uid, email: operatorUser.token.email, role: 'operatore' });
 
         try {
             await wrapped({ data: {}, auth: operatorUser });
@@ -243,7 +239,7 @@ describe('API Configurazioni', () => {
         const wrapped = test.wrap(saveConfigSmtpApi);
         const adminUser = { uid: 'admin-smtp-save', token: { email: 'admin-smtp-save@test.com' } };
 
-        await db.collection('utenti').doc(adminUser.uid).set({ ruolo: ['admin'] });
+        await seedUserProfile(db, { uid: adminUser.uid, email: adminUser.token.email, role: 'admin' });
 
         try {
             await wrapped({
@@ -273,7 +269,7 @@ describe('API Configurazioni', () => {
         const wrapped = test.wrap(saveConfigSmtpApi);
         const operatorUser = { uid: 'operatore-smtp-save', token: { email: 'operatore-smtp-save@test.com' } };
 
-        await db.collection('utenti').doc(operatorUser.uid).set({ ruolo: ['operatore'] });
+        await seedUserProfile(db, { uid: operatorUser.uid, email: operatorUser.token.email, role: 'operatore' });
 
         try {
             await wrapped({
@@ -290,7 +286,7 @@ describe('API Configurazioni', () => {
         const wrapped = test.wrap(saveConfigSmtpApi);
         const superUser = { uid: 'super-smtp-validate', token: { email: 'super-smtp-validate@test.com' } };
 
-        await db.collection('utenti').doc(superUser.uid).set({ ruolo: ['superuser'] });
+        await seedUserProfile(db, { uid: superUser.uid, email: superUser.token.email, role: 'superuser' });
 
         try {
             await wrapped({ data: { data: { host: 'smtp.test' } }, auth: superUser });
@@ -304,7 +300,7 @@ describe('API Configurazioni', () => {
         const wrapped = test.wrap(saveConfigSmtpApi);
         const superUser = { uid: 'super-smtp-default', token: { email: 'super-smtp-default@test.com' } };
 
-        await db.collection('utenti').doc(superUser.uid).set({ ruolo: ['superuser'] });
+        await seedUserProfile(db, { uid: superUser.uid, email: superUser.token.email, role: 'superuser' });
 
         const result = await wrapped({
             data: {
@@ -322,7 +318,7 @@ describe('API Configurazioni', () => {
 
         expect(result.success).to.equal(true);
 
-        const doc = await db.collection('configurazioni').doc('smtp').get();
+        const doc = await db.collection(CONFIG).doc('smtp').get();
         expect(doc.exists).to.equal(true);
         expect(doc.data().secure).to.equal(false);
     });
@@ -331,7 +327,7 @@ describe('API Configurazioni', () => {
         const wrapped = test.wrap(saveConfigSmtpApi);
         const superUser = { uid: 'super-smtp-save', token: { email: 'super-smtp-save@test.com' } };
 
-        await db.collection('utenti').doc(superUser.uid).set({ ruolo: ['superuser'] });
+        await seedUserProfile(db, { uid: superUser.uid, email: superUser.token.email, role: 'superuser' });
 
         const result = await wrapped({
             data: {
@@ -350,7 +346,7 @@ describe('API Configurazioni', () => {
 
         expect(result.success).to.equal(true);
 
-        const doc = await db.collection('configurazioni').doc('smtp').get();
+        const doc = await db.collection(CONFIG).doc('smtp').get();
         expect(doc.exists).to.equal(true);
         expect(doc.data().host).to.equal('smtp.test');
         expect(doc.data().updatedBy).to.equal(superUser.uid);
@@ -360,8 +356,8 @@ describe('API Configurazioni', () => {
         const wrapped = test.wrap(getConfigSmtpApi);
         const adminUser = { uid: 'admin-smtp-existing', token: { email: 'admin-smtp-existing@test.com' } };
 
-        await db.collection('utenti').doc(adminUser.uid).set({ ruolo: ['admin'] });
-        await db.collection('configurazioni').doc('smtp').set({ host: 'smtp.test', port: 25, user: 'u', password: 'p', from: 'a', fromName: 'b' });
+        await seedUserProfile(db, { uid: adminUser.uid, email: adminUser.token.email, role: 'admin' });
+        await db.collection(CONFIG).doc('smtp').set({ host: 'smtp.test', port: 25, user: 'u', password: 'p', from: 'a', fromName: 'b' });
 
         const result = await wrapped({ data: {}, auth: adminUser });
 

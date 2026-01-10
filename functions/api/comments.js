@@ -19,6 +19,7 @@ import { region, corsOrigins, runtimeOpts } from "../config.js";
 import { requireAuth, requireAdmin } from "../utils/authHelpers.js";
 import { createComment } from "../../shared/schemas/entityFactory.js";
 import { logAudit, AuditAction } from "../utils/auditLogger.js";
+import { COLLECTIONS } from "../../shared/constants/collections.js";
 
 // 🔧 Inizializza Firebase Admin (singleton pattern)
 if (admin.apps.length === 0) {
@@ -28,7 +29,7 @@ if (admin.apps.length === 0) {
 const db = admin.firestore();
 
 // 📝 CONFIGURAZIONE: Nome collection in Firestore
-const COLLECTION_NAME = 'comments';
+const COLLECTION_NAME = COLLECTIONS.COMMENTS;
 
 /**
  * 🎯 STEP 1: VALIDAZIONE
@@ -211,7 +212,7 @@ export const deleteCommentApi = onCall({
 
         // 4. LOGGING: Registra eliminazione
         await logAudit({
-            entityType: oldData.entityCollection || 'comments',
+            entityType: oldData.entityCollection || COLLECTIONS.COMMENTS,
             entityId: oldData.entityId || commentId,
             action: AuditAction.DELETE,
             userId: uid,

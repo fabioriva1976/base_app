@@ -1,6 +1,7 @@
 // functions/utils/auditLogger.js
 
 import admin from "firebase-admin";
+import { COLLECTIONS } from "../../shared/constants/collections.js";
 
 // Lazy initialization - ottiene Firestore solo quando serve
 function getDb() {
@@ -21,7 +22,7 @@ export const AuditAction = {
  * Registra un'azione di audit nel database Firestore
  *
  * @param {Object} params - Parametri per il log di audit
- * @param {string} params.entityType - Tipo di entità (es: 'utenti', 'documenti', 'configurazioni')
+ * @param {string} params.entityType - Tipo di entità (es: 'users', 'documenti', 'settings')
  * @param {string} params.entityId - ID dell'entità modificata
  * @param {string} params.action - Tipo di azione: 'create', 'update', 'delete', 'read'
  * @param {string|null} params.userId - UID dell'utente che ha effettuato l'azione
@@ -69,7 +70,7 @@ export async function logAudit({
         };
 
         // Salva nel database nella collection 'audit_logs'
-        const docRef = await getDb().collection("audit_logs").add(auditLog);
+        const docRef = await getDb().collection(COLLECTIONS.AUDIT_LOGS).add(auditLog);
 
         console.log(`Audit log creato: ${docRef.id} - ${action} su ${entityType}/${entityId}`);
         return docRef.id;
@@ -145,7 +146,7 @@ function sanitizeData(data) {
  */
 export async function getAuditLogs(entityType, entityId, limit = 50) {
     try {
-        const snapshot = await getDb().collection("audit_logs")
+        const snapshot = await getDb().collection(COLLECTIONS.AUDIT_LOGS)
             .where("entityType", "==", entityType)
             .where("entityId", "==", entityId)
             .orderBy("timestamp", "desc")
@@ -176,7 +177,7 @@ export async function getAuditLogs(entityType, entityId, limit = 50) {
  */
 export async function getAuditLogsByUser(userId, limit = 50) {
     try {
-        const snapshot = await getDb().collection("audit_logs")
+        const snapshot = await getDb().collection(COLLECTIONS.AUDIT_LOGS)
             .where("userId", "==", userId)
             .orderBy("timestamp", "desc")
             .limit(limit)
@@ -211,7 +212,7 @@ export async function getAuditLogsByUser(userId, limit = 50) {
  */
 export async function getAuditLogsWithFilters(filters = {}) {
     try {
-        let query = getDb().collection("audit_logs");
+        let query = getDb().collection(COLLECTIONS.AUDIT_LOGS);
 
         if (filters.entityType) {
             query = query.where("entityType", "==", filters.entityType);
@@ -265,7 +266,7 @@ export async function cleanOldAuditLogs(daysToKeep = 90) {
         const cutoffDate = new Date();
         cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
 
-        const snapshot = await getDb().collection("audit_logs")
+        const snapshot = await getDb().collection(COLLECTIONS.AUDIT_LOGS)
             .where("timestamp", "<", cutoffDate)
             .get();
 

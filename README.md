@@ -36,47 +36,21 @@ Se ti serve una shell (es. per comandi firebase manuali):
 ## 🧪 Testing
 
 ### Test API (Backend)
-```bash
 # Tutti i test
-docker exec firebase_base_app npm test
+`docker exec firebase_base_app npm test`
 
 # Solo test unitari
-docker exec firebase_base_app npm run test:unit
-```
-Note: per default i test usano `base-app-12108-test`. Se vuoi cambiare projectId:
-```bash
-docker exec firebase_base_app env TEST_PROJECT_ID=nome-progetto-test npm test
-```
+`docker exec firebase_base_app npm run test:unit`
 
-### Test E2E (Frontend)
-```bash
+### Test UX (Frontend)
 # Test Cypress headless
-docker exec cypress_ui npm run test:e2e
+`docker exec cypress_ui npm run test:e2e`
+
+# Test unitari Cypress headless
+`docker exec cypress_ui npx cypress run --spec "cypress/e2e/anagrafica-clienti-create.cy.js"`
 
 # Test Cypress UI (VNC)
-# Accedi a: http://localhost:7900/vnc.html
-```
-Per isolare i dati E2E, avvia l'ambiente con un projectId di test e riavvia i container:
-```bash
-FIREBASE_PROJECT_ID=base-app-12108-test docker compose up -d
-```
-
-## 📐 Aggiungere Nuove Entità
-
-Questo progetto segue pattern standardizzati per facilitare l'aggiunta di nuove entità.
-
-**Per creare una nuova entità (es: "prodotti"):**
-
-1. Leggi [PATTERNS.md](PATTERNS.md) - Guida completa ai pattern
-2. Aggiungi factory in `shared/schemas/entityFactory.js`
-3. Crea API in `functions/api/prodotti.js` (usa `functions/api/clienti.js` come template)
-4. Crea test in `functions/prodotti.test.js` (usa `functions/clienti.test.js` come template)
-5. Esegui `npm test` per verificare
-
-**File di riferimento:**
-- 📄 Template API: `functions/api/clienti.js` (commentato per AI)
-- 🏗️ Factory: `shared/schemas/entityFactory.js`
-- 🧪 Test: `functions/clienti.test.js`
+Accedi a: http://localhost:7900/vnc.html
 
 
 ## Sincronizzare Indici Firestore in Locale
@@ -119,3 +93,21 @@ Devi essere autenticato con Firebase CLI (puoi farlo anche nel container con `fi
 
 ## Log produzione di function
 `docker compose exec firebase-cli firebase functions:log --only astroSSR`
+
+
+## 📐 Aggiungere Nuove Entità
+
+Questo progetto segue pattern standardizzati per facilitare l'aggiunta di nuove entità.
+
+**Per creare una nuova entità (es: "prodotti"):**
+
+1. Leggi [PATTERNS.md](PATTERNS.md) - Guida completa ai pattern
+2. Aggiungi factory in `shared/schemas/entityFactory.js`
+3. Crea API in `functions/api/prodotti.js` (usa `functions/api/clienti.js` come template)
+4. Crea test in `functions/prodotti.test.js` (usa `functions/clienti.test.js` come template)
+5. Esegui `npm test` per verificare
+
+**File di riferimento:**
+- 📄 Template API: `functions/api/clienti.js` (commentato per AI)
+- 🏗️ Factory: `shared/schemas/entityFactory.js`
+- 🧪 Test: `functions/clienti.test.js`

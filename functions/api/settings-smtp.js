@@ -2,6 +2,7 @@ import { onCall, HttpsError } from "firebase-functions/v2/https";
 import admin from "firebase-admin";
 import { region, corsOrigins, runtimeOpts } from "../config.js";
 import { requireSuperUser, requireAdmin } from "../utils/authHelpers.js";
+import { COLLECTIONS } from "../../shared/constants/collections.js";
 
 if (admin.apps.length === 0) {
   admin.initializeApp();
@@ -33,7 +34,7 @@ export const getConfigSmtpApi = onCall(
     await requireAdmin(request);
 
     const db = admin.firestore();
-    const docSnap = await db.collection("configurazioni").doc("smtp").get();
+    const docSnap = await db.collection(COLLECTIONS.CONFIG).doc("smtp").get();
     if (!docSnap.exists) {
       return { exists: false, data: null };
     }
@@ -53,10 +54,15 @@ export const saveConfigSmtpApi = onCall(
     const now = new Date().toISOString();
     const userEmail = request.auth?.token?.email || null;
 
-    await db.collection("configurazioni").doc("smtp").set(
+    const docRef = db.collection(COLLECTIONS.CONFIG).doc("smtp");
+    const existing = await docRef.get();
+    const created = existing.exists ? existing.data()?.created || now : now;
+
+    await docRef.set(
       {
         ...sanitized,
-        updatedAt: now,
+        created,
+        changed: now,
         updatedBy: request.auth.uid,
         updatedByEmail: userEmail
       },

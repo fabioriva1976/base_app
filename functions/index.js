@@ -18,16 +18,16 @@ if (admin.apps.length === 0) {
 // NOTA IMPORTANTE: MIGRAZIONE A FIRESTORE COMPLETATA
 // ============================================================================
 // Tutte le configurazioni (SMTP, AI) sono ora gestite
-// dinamicamente in Firestore nella collezione 'configurazioni'.
+// dinamicamente in Firestore nella collezione 'settings'.
 //
 // Documenti disponibili:
-// - configurazioni/smtp: {host, port, user, password, from, fromName, secure}
-// - configurazioni/ai: {provider, apiKey, model, temperature, maxTokens, timeout, systemPrompt, enableContext, enableSafety}
+// - settings/smtp: {host, port, user, password, from, fromName, secure}
+// - settings/ai: {provider, apiKey, model, temperature, maxTokens, timeout, systemPrompt, enableContext, enableSafety}
 //
 // VANTAGGI:
 // ✅ Configurazioni modificabili tramite UI web senza redeploy
 // ✅ Nessun valore hardcoded o secret necessari
-// ✅ Audit trail completo (updatedBy, updatedAt, updatedByEmail)
+// ✅ Audit trail completo (updatedBy, changed, updatedByEmail)
 // ✅ Gestione centralizzata e sicura con Firestore Security Rules
 // ============================================================================
 
@@ -41,11 +41,12 @@ export {
     userListApi,
     userCreateApi,
     userUpdateApi,
+    userSelfUpdateApi,
     userDeleteApi
 } from "./api/users.js";
 
 // === FUNZIONE API - INIZIALIZZAZIONE PRIMO UTENTE ===
-export { initializeFirstUserApi } from "./api/initialize-first-user.js";
+export { initializeFirstUserApi } from "./api/usersFirstInitializa.js";
 
 // === FUNZIONI API - AUDIT LOGS ===
 export {
@@ -76,20 +77,20 @@ export {
     deleteCommentApi
 } from "./api/comments.js";
 
-// === FUNZIONI API - CONFIGURAZIONI ===
+// === FUNZIONI API - SETTINGS ===
 export {
     getConfigSmtpApi,
     saveConfigSmtpApi
-} from "./api/config-smtp.js";
+} from "./api/settings-smtp.js";
 
 export {
     getConfigAiApi,
     saveConfigAiApi
-} from "./api/config-ai.js";
+} from "./api/settings-ai.js";
 
-export { checkSmtpApi } from "./api/checkConfig-smtp.js";
+export { checkSettingsSmtpApi } from "./api/checkSettings-smtp.js";
 
-export { checkAiApi } from "./api/checkConfig-ai.js";
+export { checkSettingsAiApi } from "./api/checkSettings-ai.js";
 
 // Triggers Firestore
 export { onUtentiChange } from "./triggers/onUtentiChange.js";

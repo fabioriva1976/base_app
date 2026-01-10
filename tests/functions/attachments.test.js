@@ -1,7 +1,12 @@
-import { describe, it, beforeAll, afterEach, afterAll, jest } from '@jest/globals';
+import { describe, it, beforeAll, beforeEach, afterEach, afterAll, jest } from '@jest/globals';
 import { expect } from 'chai';
 import fft from 'firebase-functions-test';
 import admin from 'firebase-admin';
+import { COLLECTIONS } from '../../shared/constants/collections.js';
+import { clearAllEmulatorData } from '../helpers/cleanup.js';
+import { seedUserProfile } from '../helpers/userProfile.js';
+
+const { USERS, ATTACHMENTS, AUDIT_LOGS, CLIENTI } = COLLECTIONS;
 
 const TEST_PROJECT_ID = process.env.TEST_PROJECT_ID || 'base-app-12108';
 process.env.FIREBASE_PROJECT_ID = TEST_PROJECT_ID;
@@ -20,6 +25,7 @@ describe('API Attachments', () => {
     jest.setTimeout(30000);
 
     let db;
+    let storage;
 
     beforeAll(async () => {
         if (admin.apps.length > 0) {
@@ -30,7 +36,8 @@ describe('API Attachments', () => {
             storageBucket: `${TEST_PROJECT_ID}.appspot.com`
         });
         db = admin.firestore();
-        ({ createAttachmentRecordApi, updateAttachmentApi, deleteAttachmentApi } = await import('./api/attachments.js'));
+        storage = admin.storage();
+        ({ createAttachmentRecordApi, updateAttachmentApi, deleteAttachmentApi } = await import('../../functions/api/attachments.js'));
     });
 
     afterAll(async () => {
@@ -43,17 +50,13 @@ describe('API Attachments', () => {
         }
     });
 
+    beforeEach(async () => {
+        await clearAllEmulatorData({ db, storage });
+    });
+
     afterEach(async () => {
         await test.cleanup();
-
-        const attachmentsSnap = await db.collection('attachments').get();
-        const utentiSnap = await db.collection('utenti').get();
-        const auditSnap = await db.collection('audit_logs').get();
-        const deletePromises = [];
-        attachmentsSnap.forEach(doc => deletePromises.push(doc.ref.delete()));
-        utentiSnap.forEach(doc => deletePromises.push(doc.ref.delete()));
-        auditSnap.forEach(doc => deletePromises.push(doc.ref.delete()));
-        await Promise.all(deletePromises);
+        await clearAllEmulatorData({ db, storage });
     });
 
     describe('createAttachmentRecordApi', () => {
@@ -88,7 +91,7 @@ describe('API Attachments', () => {
                 tipo: 'application/pdf',
                 storagePath: 'attachments/clienti/file.pdf',
                 metadata: {
-                    entityCollection: 'clienti',
+                    entityCollection: CLIENTI,
                     entityId: 'cliente-1'
                 }
             };
@@ -98,17 +101,19 @@ describe('API Attachments', () => {
             expect(result.success).to.equal(true);
             expect(result.id).to.be.a('string');
 
-            const doc = await db.collection('attachments').doc(result.id).get();
+            const doc = await db.collection(ATTACHMENTS).doc(result.id).get();
             expect(doc.exists).to.equal(true);
             expect(doc.data().nome).to.equal('file.pdf');
 
-            const auditSnap = await db.collection('audit_logs')
-                .where('entityType', '==', 'clienti')
+            const auditSnap = await db.collection(AUDIT_LOGS)
+                .where('entityType', '==', CLIENTI)
                 .where('entityId', '==', 'cliente-1')
                 .where('action', '==', 'create')
                 .limit(1)
                 .get();
             expect(auditSnap.empty).to.equal(false);
+            const auditDoc = auditSnap.docs[0]?.data();
+            expect(auditDoc?.newData?.attachmentName).to.equal('file.pdf');
         });
     });
 
@@ -117,7 +122,7 @@ describe('API Attachments', () => {
             const wrapped = test.wrap(updateAttachmentApi);
             const user = { uid: 'operatore-attach-update', token: { email: 'op-attach-update@test.com' } };
 
-            await db.collection('utenti').doc(user.uid).set({ ruolo: ['operatore'] });
+            await seedUserProfile(db, { uid: user.uid, email: user.token.email, role: 'operatore' });
 
             try {
                 await wrapped({ data: { id: 'attachment-id', nome: 'Nuovo Nome' }, auth: user });
@@ -131,7 +136,7 @@ describe('API Attachments', () => {
             const wrapped = test.wrap(updateAttachmentApi);
             const adminUser = { uid: 'admin-attach-update-missing', token: { email: 'admin-attach-update-missing@test.com' } };
 
-            await db.collection('utenti').doc(adminUser.uid).set({ ruolo: ['admin'] });
+            await seedUserProfile(db, { uid: adminUser.uid, email: adminUser.token.email, role: 'admin' });
 
             try {
                 await wrapped({ data: { nome: 'Nuovo Nome' }, auth: adminUser });
@@ -147,14 +152,14 @@ describe('API Attachments', () => {
             const user = { uid: 'user-attach-update', token: { email: 'user-attach-update@test.com' } };
             const adminUser = { uid: 'admin-attach-update', token: { email: 'admin-attach-update@test.com' } };
 
-            await db.collection('utenti').doc(adminUser.uid).set({ ruolo: ['admin'] });
+            await seedUserProfile(db, { uid: adminUser.uid, email: adminUser.token.email, role: 'admin' });
 
             const created = await createWrapped({
                 data: {
                     nome: 'file-update.pdf',
                     tipo: 'application/pdf',
                     storagePath: 'attachments/clienti/file-update.pdf',
-                    metadata: { entityCollection: 'clienti', entityId: 'cliente-2' }
+                    metadata: { entityCollection: CLIENTI, entityId: 'cliente-2' }
                 },
                 auth: user
             });
@@ -166,16 +171,18 @@ describe('API Attachments', () => {
 
             expect(result.message).to.equal('Documento aggiornato con successo.');
 
-            const updatedDoc = await db.collection('attachments').doc(created.id).get();
+            const updatedDoc = await db.collection(ATTACHMENTS).doc(created.id).get();
             expect(updatedDoc.data().nome).to.equal('file-update-new.pdf');
 
-            const auditSnap = await db.collection('audit_logs')
-                .where('entityType', '==', 'attachments')
+            const auditSnap = await db.collection(AUDIT_LOGS)
+                .where('entityType', '==', ATTACHMENTS)
                 .where('entityId', '==', created.id)
                 .where('action', '==', 'update')
                 .limit(1)
                 .get();
             expect(auditSnap.empty).to.equal(false);
+            const auditDoc = auditSnap.docs[0]?.data();
+            expect(auditDoc?.newData?.nome).to.equal('file-update-new.pdf');
         });
     });
 
@@ -184,7 +191,7 @@ describe('API Attachments', () => {
             const wrapped = test.wrap(deleteAttachmentApi);
             const user = { uid: 'operatore-attach-delete', token: { email: 'op-attach-delete@test.com' } };
 
-            await db.collection('utenti').doc(user.uid).set({ ruolo: ['operatore'] });
+            await seedUserProfile(db, { uid: user.uid, email: user.token.email, role: 'operatore' });
 
             try {
                 await wrapped({ data: { docId: 'attachment-id', storagePath: 'attachments/x.pdf' }, auth: user });
@@ -198,7 +205,7 @@ describe('API Attachments', () => {
             const wrapped = test.wrap(deleteAttachmentApi);
             const adminUser = { uid: 'admin-attach-delete-missing', token: { email: 'admin-attach-delete-missing@test.com' } };
 
-            await db.collection('utenti').doc(adminUser.uid).set({ ruolo: ['admin'] });
+            await seedUserProfile(db, { uid: adminUser.uid, email: adminUser.token.email, role: 'admin' });
 
             try {
                 await wrapped({ data: { docId: 'attachment-id' }, auth: adminUser });
@@ -214,14 +221,14 @@ describe('API Attachments', () => {
             const user = { uid: 'user-attach-delete', token: { email: 'user-attach-delete@test.com' } };
             const adminUser = { uid: 'admin-attach-delete', token: { email: 'admin-attach-delete@test.com' } };
 
-            await db.collection('utenti').doc(adminUser.uid).set({ ruolo: ['admin'] });
+            await seedUserProfile(db, { uid: adminUser.uid, email: adminUser.token.email, role: 'admin' });
 
             const created = await createWrapped({
                 data: {
                     nome: 'file-delete.pdf',
                     tipo: 'application/pdf',
                     storagePath: 'attachments/clienti/file-delete.pdf',
-                    metadata: { entityCollection: 'clienti', entityId: 'cliente-3' }
+                    metadata: { entityCollection: CLIENTI, entityId: 'cliente-3' }
                 },
                 auth: user
             });
@@ -233,16 +240,18 @@ describe('API Attachments', () => {
 
             expect(result.success).to.equal(true);
 
-            const deletedDoc = await db.collection('attachments').doc(created.id).get();
+            const deletedDoc = await db.collection(ATTACHMENTS).doc(created.id).get();
             expect(deletedDoc.exists).to.equal(false);
 
-            const auditSnap = await db.collection('audit_logs')
-                .where('entityType', '==', 'clienti')
+            const auditSnap = await db.collection(AUDIT_LOGS)
+                .where('entityType', '==', CLIENTI)
                 .where('entityId', '==', 'cliente-3')
                 .where('action', '==', 'delete')
                 .limit(1)
                 .get();
             expect(auditSnap.empty).to.equal(false);
+            const auditDoc = auditSnap.docs[0]?.data();
+            expect(auditDoc?.oldData?.attachmentName).to.equal('file-delete.pdf');
         });
     });
 });

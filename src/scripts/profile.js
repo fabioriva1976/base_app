@@ -3,7 +3,7 @@ import { doc, getDoc } from "firebase/firestore";
 import { updatePassword } from "firebase/auth";
 import { httpsCallable } from "firebase/functions";
 
-const collection_name = 'utenti';
+const collection_name = 'users';
 let currentUserId = null;
 
 export function initProfilePage() {
@@ -124,11 +124,10 @@ async function saveProfile(e) {
                 saveMessage = 'Profilo creato. ATTENZIONE: Esegui logout e login per attivare i permessi SUPERUSER.';
             }
         } else {
-            // Aggiorna utente esistente tramite Cloud Function userUpdateApi
-            const userUpdateApi = httpsCallable(functions, 'userUpdateApi');
+            // Aggiorna solo il proprio profilo
+            const userUpdateApi = httpsCallable(functions, 'userSelfUpdateApi');
 
             const updateData = {
-                uid: currentUserId,
                 displayName: displayName,
                 nome: nome,
                 cognome: cognome,

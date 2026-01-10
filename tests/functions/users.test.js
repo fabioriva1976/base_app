@@ -1,7 +1,12 @@
-import { describe, it, beforeAll, afterEach, afterAll, jest } from '@jest/globals';
+import { describe, it, beforeAll, beforeEach, afterEach, afterAll, jest } from '@jest/globals';
 import { expect } from 'chai';
 import fft from 'firebase-functions-test';
 import admin from 'firebase-admin';
+import { COLLECTIONS } from '../../shared/constants/collections.js';
+import { seedUserProfile } from '../helpers/userProfile.js';
+import { clearAllEmulatorData } from '../helpers/cleanup.js';
+
+const { USERS, AUDIT_LOGS } = COLLECTIONS;
 
 const TEST_PROJECT_ID = process.env.TEST_PROJECT_ID || 'base-app-12108';
 process.env.FIREBASE_PROJECT_ID = TEST_PROJECT_ID;
@@ -15,6 +20,7 @@ let userListApi;
 let userCreateApi;
 let userUpdateApi;
 let userDeleteApi;
+let userSelfUpdateApi;
 
 describe('API Utenti', () => {
     // Imposta un timeout più ampio per gli hook che interagiscono con gli emulatori.
@@ -23,8 +29,8 @@ describe('API Utenti', () => {
     let db;
     let auth;
 
-    async function seedUserRole(uid, role) {
-        await db.collection('utenti').doc(uid).set({ ruolo: [role] });
+    async function seedUserRole(uid, role, email) {
+        await seedUserProfile(db, { uid, role, email });
     }
 
     function makeAuthContext(uid, email) {
@@ -37,7 +43,7 @@ describe('API Utenti', () => {
         }
         db = admin.firestore();
         auth = admin.auth();
-        ({ userListApi, userCreateApi, userUpdateApi, userDeleteApi } = await import('./api/users.js'));
+        ({ userListApi, userCreateApi, userUpdateApi, userDeleteApi, userSelfUpdateApi } = await import('../../functions/api/users.js'));
     });
 
     afterAll(async () => {
@@ -50,19 +56,13 @@ describe('API Utenti', () => {
         }
     });
 
+    beforeEach(async () => {
+        await clearAllEmulatorData({ db, auth });
+    });
+
     afterEach(async () => {
-        const utentiSnap = await db.collection('utenti').get();
-        const deletePromises = [];
-        utentiSnap.forEach(doc => deletePromises.push(doc.ref.delete()));
-        await Promise.all(deletePromises);
-
-        const auditSnap = await db.collection('audit_logs').get();
-        const auditDeletes = [];
-        auditSnap.forEach(doc => auditDeletes.push(doc.ref.delete()));
-        await Promise.all(auditDeletes);
-
-        const userRecords = await auth.listUsers(1000);
-        await Promise.all(userRecords.users.map(user => auth.deleteUser(user.uid)));
+        await test.cleanup();
+        await clearAllEmulatorData({ db, auth });
     });
 
     it('dovrebbe negare userListApi senza autenticazione', async () => {
@@ -77,11 +77,11 @@ describe('API Utenti', () => {
     });
 
     it('dovrebbe negare userListApi a un utente non admin', async () => {
-        // Verifica che un operatore autenticato non possa listare utenti.
+        // Verifica che un operatore autenticato non possa listare users.
         const wrapped = test.wrap(userListApi);
         const operatorUser = makeAuthContext('operatore-list', 'operatore-list@test.com');
 
-        await seedUserRole(operatorUser.uid, 'operatore');
+        await seedUserRole(operatorUser.uid, 'operatore', operatorUser.token.email);
 
         try {
             await wrapped({ data: {}, auth: operatorUser });
@@ -91,12 +91,12 @@ describe('API Utenti', () => {
         }
     });
 
-    it('dovrebbe permettere a un admin di listare gli utenti', async () => {
+    it('dovrebbe permettere a un admin di listare gli users', async () => {
         // Verifica il caso happy-path per admin.
         const wrapped = test.wrap(userListApi);
         const adminUser = makeAuthContext('admin-list', 'admin-list@test.com');
 
-        await seedUserRole(adminUser.uid, 'admin');
+        await seedUserRole(adminUser.uid, 'admin', adminUser.token.email);
         await auth.createUser({ uid: 'user-1', email: 'user1@test.com', password: 'password1' });
 
         const result = await wrapped({ data: {}, auth: adminUser });
@@ -106,7 +106,7 @@ describe('API Utenti', () => {
     });
 
     it('dovrebbe negare userCreateApi a un utente non admin', async () => {
-        // Verifica che solo admin possano creare utenti.
+        // Verifica che solo admin possano creare users.
         const wrapped = test.wrap(userCreateApi);
         const operatorUser = makeAuthContext('operatore-create', 'operatore-create@test.com');
         const payload = {
@@ -116,7 +116,7 @@ describe('API Utenti', () => {
             ruolo: 'operatore'
         };
 
-        await seedUserRole(operatorUser.uid, 'operatore');
+        await seedUserRole(operatorUser.uid, 'operatore', operatorUser.token.email);
 
         try {
             await wrapped({ data: payload, auth: operatorUser });
@@ -137,7 +137,7 @@ describe('API Utenti', () => {
             ruolo: 'operatore'
         };
 
-        await seedUserRole(adminUser.uid, 'admin');
+        await seedUserRole(adminUser.uid, 'admin', adminUser.token.email);
 
         const result = await wrapped({ data: payload, auth: adminUser });
 
@@ -148,14 +148,17 @@ describe('API Utenti', () => {
         expect(created.displayName).to.equal(payload.displayName);
 
         // Verifica audit log per creazione.
-        const auditSnap = await db.collection('audit_logs')
-            .where('entityType', '==', 'utenti')
+        const auditSnap = await db.collection(AUDIT_LOGS)
+            .where('entityType', '==', USERS)
             .where('entityId', '==', result.uid)
             .where('action', '==', 'create')
             .limit(1)
             .get();
 
         expect(auditSnap.empty).to.equal(false);
+        const auditDoc = auditSnap.docs[0]?.data();
+        expect(auditDoc?.newData?.email).to.equal(payload.email);
+        expect(auditDoc?.newData?.ruolo?.[0]).to.equal('operatore');
     });
 
     it('dovrebbe negare ad un admin la creazione di un ruolo superiore', async () => {
@@ -169,7 +172,7 @@ describe('API Utenti', () => {
             ruolo: 'admin'
         };
 
-        await seedUserRole(adminUser.uid, 'admin');
+        await seedUserRole(adminUser.uid, 'admin', adminUser.token.email);
 
         try {
             await wrapped({ data: payload, auth: adminUser });
@@ -184,7 +187,7 @@ describe('API Utenti', () => {
         const wrapped = test.wrap(userCreateApi);
         const adminUser = makeAuthContext('admin-create-invalid', 'admin-create-invalid@test.com');
 
-        await seedUserRole(adminUser.uid, 'admin');
+        await seedUserRole(adminUser.uid, 'admin', adminUser.token.email);
 
         try {
             await wrapped({ data: { email: 'not-an-email', ruolo: 'operatore' }, auth: adminUser });
@@ -205,7 +208,7 @@ describe('API Utenti', () => {
             ruolo: 'operatore'
         };
 
-        await seedUserRole(adminUser.uid, 'admin');
+        await seedUserRole(adminUser.uid, 'admin', adminUser.token.email);
         await auth.createUser({ email: payload.email, password: 'oldpassword', displayName: 'Old Name' });
 
         const result = await wrapped({ data: payload, auth: adminUser });
@@ -215,22 +218,24 @@ describe('API Utenti', () => {
         expect(updated.displayName).to.equal(payload.displayName);
 
         // Verifica audit log per update (sync).
-        const auditSnap = await db.collection('audit_logs')
-            .where('entityType', '==', 'utenti')
+        const auditSnap = await db.collection(AUDIT_LOGS)
+            .where('entityType', '==', USERS)
             .where('entityId', '==', result.uid)
             .where('action', '==', 'update')
             .limit(1)
             .get();
 
         expect(auditSnap.empty).to.equal(false);
+        const auditDoc = auditSnap.docs[0]?.data();
+        expect(auditDoc?.newData?.email).to.equal(payload.email);
     });
 
     it('dovrebbe negare userUpdateApi a un utente non admin', async () => {
-        // Verifica che solo admin possano aggiornare utenti.
+        // Verifica che solo admin possano aggiornare users.
         const wrapped = test.wrap(userUpdateApi);
         const operatorUser = makeAuthContext('operatore-update', 'operatore-update@test.com');
 
-        await seedUserRole(operatorUser.uid, 'operatore');
+        await seedUserRole(operatorUser.uid, 'operatore', operatorUser.token.email);
 
         try {
             await wrapped({ data: { uid: 'target-id', displayName: 'Test' }, auth: operatorUser });
@@ -245,7 +250,7 @@ describe('API Utenti', () => {
         const wrapped = test.wrap(userUpdateApi);
         const adminUser = makeAuthContext('admin-update', 'admin-update@test.com');
 
-        await seedUserRole(adminUser.uid, 'admin');
+        await seedUserRole(adminUser.uid, 'admin', adminUser.token.email);
 
         const target = await auth.createUser({
             uid: 'operatore-update',
@@ -253,7 +258,7 @@ describe('API Utenti', () => {
             password: 'password123',
             displayName: 'Operatore Old'
         });
-        await db.collection('utenti').doc(target.uid).set({ ruolo: ['operatore'] });
+        await seedUserProfile(db, { uid: target.uid, email: target.email, role: 'operatore' });
 
         const result = await wrapped({
             data: { uid: target.uid, displayName: 'Operatore New' },
@@ -266,14 +271,17 @@ describe('API Utenti', () => {
         expect(updated.displayName).to.equal('Operatore New');
 
         // Verifica audit log per update.
-        const auditSnap = await db.collection('audit_logs')
-            .where('entityType', '==', 'utenti')
+        const auditSnap = await db.collection(AUDIT_LOGS)
+            .where('entityType', '==', USERS)
             .where('entityId', '==', target.uid)
             .where('action', '==', 'update')
             .limit(1)
             .get();
 
         expect(auditSnap.empty).to.equal(false);
+        const auditDoc = auditSnap.docs[0]?.data();
+        expect(auditDoc?.newData?.lastModifiedBy).to.equal(adminUser.uid);
+        expect(auditDoc?.newData?.changed).to.be.a('string');
     });
 
     it('dovrebbe negare ad un admin il cambio ruolo a admin/superuser', async () => {
@@ -281,14 +289,14 @@ describe('API Utenti', () => {
         const wrapped = test.wrap(userUpdateApi);
         const adminUser = makeAuthContext('admin-update-denied', 'admin-update-denied@test.com');
 
-        await seedUserRole(adminUser.uid, 'admin');
+        await seedUserRole(adminUser.uid, 'admin', adminUser.token.email);
 
         const target = await auth.createUser({
             uid: 'operatore-role-change',
             email: 'operatore-role-change@test.com',
             password: 'password123'
         });
-        await db.collection('utenti').doc(target.uid).set({ ruolo: ['operatore'] });
+        await seedUserProfile(db, { uid: target.uid, email: target.email, role: 'operatore' });
 
         try {
             await wrapped({ data: { uid: target.uid, ruolo: 'admin' }, auth: adminUser });
@@ -303,14 +311,14 @@ describe('API Utenti', () => {
         const wrapped = test.wrap(userUpdateApi);
         const adminUser = makeAuthContext('admin-update-invalid', 'admin-update-invalid@test.com');
 
-        await seedUserRole(adminUser.uid, 'admin');
+        await seedUserRole(adminUser.uid, 'admin', adminUser.token.email);
 
         const target = await auth.createUser({
             uid: 'operatore-update-invalid',
             email: 'operatore-update-invalid@test.com',
             password: 'password123'
         });
-        await db.collection('utenti').doc(target.uid).set({ ruolo: ['operatore'] });
+        await seedUserProfile(db, { uid: target.uid, email: target.email, role: 'operatore' });
 
         try {
             await wrapped({ data: { uid: target.uid, email: 'not-an-email' }, auth: adminUser });
@@ -325,7 +333,7 @@ describe('API Utenti', () => {
         const wrapped = test.wrap(userUpdateApi);
         const superUser = makeAuthContext('superuser-update', 'superuser-update@test.com');
 
-        await seedUserRole(superUser.uid, 'superuser');
+        await seedUserRole(superUser.uid, 'superuser', superUser.token.email);
 
         await auth.createUser({
             uid: 'missing-profile',
@@ -340,26 +348,29 @@ describe('API Utenti', () => {
 
         expect(result.message).to.equal('Utente aggiornato con successo!');
 
-        const profileSnap = await db.collection('utenti').doc('missing-profile').get();
+        const profileSnap = await db.collection(USERS).doc('missing-profile').get();
         expect(profileSnap.exists).to.equal(true);
 
         // Verifica audit log per update su profilo creato.
-        const auditSnap = await db.collection('audit_logs')
-            .where('entityType', '==', 'utenti')
+        const auditSnap = await db.collection(AUDIT_LOGS)
+            .where('entityType', '==', USERS)
             .where('entityId', '==', 'missing-profile')
             .where('action', '==', 'update')
             .limit(1)
             .get();
 
         expect(auditSnap.empty).to.equal(false);
+        const auditDoc = auditSnap.docs[0]?.data();
+        expect(auditDoc?.newData?.lastModifiedBy).to.equal(superUser.uid);
+        expect(auditDoc?.newData?.changed).to.be.a('string');
     });
 
     it('dovrebbe negare userDeleteApi a un utente non admin', async () => {
-        // Verifica che solo admin possano eliminare utenti.
+        // Verifica che solo admin possano eliminare users.
         const wrapped = test.wrap(userDeleteApi);
         const operatorUser = makeAuthContext('operatore-delete', 'operatore-delete@test.com');
 
-        await seedUserRole(operatorUser.uid, 'operatore');
+        await seedUserRole(operatorUser.uid, 'operatore', operatorUser.token.email);
 
         try {
             await wrapped({ data: { uid: 'target-delete' }, auth: operatorUser });
@@ -374,9 +385,9 @@ describe('API Utenti', () => {
         const wrapped = test.wrap(userDeleteApi);
         const adminUser = makeAuthContext('admin-delete', 'admin-delete@test.com');
 
-        await seedUserRole(adminUser.uid, 'admin');
+        await seedUserRole(adminUser.uid, 'admin', adminUser.token.email);
         // Assicurati che il documento admin sia stato scritto
-        const adminDoc = await db.collection('utenti').doc(adminUser.uid).get();
+        const adminDoc = await db.collection(USERS).doc(adminUser.uid).get();
         expect(adminDoc.exists).to.equal(true);
 
         const target = await auth.createUser({
@@ -384,7 +395,7 @@ describe('API Utenti', () => {
             email: 'operatore-delete@test.com',
             password: 'password123'
         });
-        await db.collection('utenti').doc(target.uid).set({ ruolo: ['operatore'] });
+        await seedUserProfile(db, { uid: target.uid, email: target.email, role: 'operatore' });
 
         const result = await wrapped({ data: { uid: target.uid }, auth: adminUser });
 
@@ -398,14 +409,16 @@ describe('API Utenti', () => {
         }
 
         // Verifica audit log per delete.
-        const auditSnap = await db.collection('audit_logs')
-            .where('entityType', '==', 'utenti')
+        const auditSnap = await db.collection(AUDIT_LOGS)
+            .where('entityType', '==', USERS)
             .where('entityId', '==', target.uid)
             .where('action', '==', 'delete')
             .limit(1)
             .get();
 
         expect(auditSnap.empty).to.equal(false);
+        const auditDoc = auditSnap.docs[0]?.data();
+        expect(auditDoc?.oldData).to.be.an('object');
     });
 
     it('dovrebbe negare la cancellazione del proprio account', async () => {
@@ -413,9 +426,9 @@ describe('API Utenti', () => {
         const wrapped = test.wrap(userDeleteApi);
         const adminUser = makeAuthContext('admin-self-delete', 'admin-self-delete@test.com');
 
-        await seedUserRole(adminUser.uid, 'admin');
+        await seedUserRole(adminUser.uid, 'admin', adminUser.token.email);
         await auth.createUser({ uid: adminUser.uid, email: adminUser.token.email, password: 'password123' });
-        await db.collection('utenti').doc(adminUser.uid).set({ ruolo: ['admin'] });
+        await seedUserProfile(db, { uid: adminUser.uid, email: adminUser.token.email, role: 'admin' });
 
         try {
             await wrapped({ data: { uid: adminUser.uid }, auth: adminUser });
@@ -430,7 +443,7 @@ describe('API Utenti', () => {
         const wrapped = test.wrap(userDeleteApi);
         const adminUser = makeAuthContext('admin-delete-missing', 'admin-delete-missing@test.com');
 
-        await seedUserRole(adminUser.uid, 'admin');
+        await seedUserRole(adminUser.uid, 'admin', adminUser.token.email);
 
         try {
             await wrapped({ data: { uid: 'missing-firestore' }, auth: adminUser });
@@ -445,23 +458,71 @@ describe('API Utenti', () => {
         const wrapped = test.wrap(userDeleteApi);
         const adminUser = makeAuthContext('admin-delete-firestore-only', 'admin-delete-firestore-only@test.com');
 
-        await seedUserRole(adminUser.uid, 'admin');
-        await db.collection('utenti').doc('firestore-only').set({ ruolo: ['operatore'] });
+        await seedUserRole(adminUser.uid, 'admin', adminUser.token.email);
+        await seedUserProfile(db, { uid: 'firestore-only', email: 'firestore-only@test.com', role: 'operatore' });
 
         const result = await wrapped({ data: { uid: 'firestore-only' }, auth: adminUser });
         expect(result.wasInAuth).to.equal(false);
 
-        const deletedSnap = await db.collection('utenti').doc('firestore-only').get();
+        const deletedSnap = await db.collection(USERS).doc('firestore-only').get();
         expect(deletedSnap.exists).to.equal(false);
 
         // Verifica audit log per delete su utente solo Firestore.
-        const auditSnap = await db.collection('audit_logs')
-            .where('entityType', '==', 'utenti')
+        const auditSnap = await db.collection(AUDIT_LOGS)
+            .where('entityType', '==', USERS)
             .where('entityId', '==', 'firestore-only')
             .where('action', '==', 'delete')
             .limit(1)
             .get();
 
         expect(auditSnap.empty).to.equal(false);
+        const auditDoc = auditSnap.docs[0]?.data();
+        expect(auditDoc?.oldData).to.be.an('object');
+    });
+
+    it('dovrebbe negare userSelfUpdateApi senza autenticazione', async () => {
+        const wrapped = test.wrap(userSelfUpdateApi);
+
+        try {
+            await wrapped({ data: { nome: 'Test' } });
+            expect.fail('La funzione non ha lanciato un errore per utente non autenticato');
+        } catch (error) {
+            expect(error.code).to.equal('unauthenticated');
+        }
+    });
+
+    it('dovrebbe aggiornare solo il proprio profilo', async () => {
+        const wrapped = test.wrap(userSelfUpdateApi);
+        const selfUser = makeAuthContext('self-user', 'self-user@test.com');
+        const otherUser = makeAuthContext('other-user', 'other-user@test.com');
+
+        await auth.createUser({ uid: selfUser.uid, email: selfUser.token.email, password: 'password123' });
+        await auth.createUser({ uid: otherUser.uid, email: otherUser.token.email, password: 'password123' });
+
+        await seedUserProfile(db, { uid: selfUser.uid, email: selfUser.token.email, role: 'operatore' });
+        await seedUserProfile(db, { uid: otherUser.uid, email: otherUser.token.email, role: 'operatore' });
+
+        await wrapped({
+            data: {
+                nome: 'Giulia',
+                cognome: 'Verdi',
+                telefono: '+39 333 4444444',
+                email: 'self-user@test.com',
+                displayName: 'Giulia Verdi',
+                uid: otherUser.uid
+            },
+            auth: selfUser
+        });
+
+        const selfDoc = await db.collection(USERS).doc(selfUser.uid).get();
+        expect(selfDoc.exists).to.equal(true);
+        expect(selfDoc.data().nome).to.equal('Giulia');
+        expect(selfDoc.data().cognome).to.equal('Verdi');
+        expect(selfDoc.data().telefono).to.equal('+39 333 4444444');
+
+        const otherDoc = await db.collection(USERS).doc(otherUser.uid).get();
+        expect(otherDoc.exists).to.equal(true);
+        expect(otherDoc.data().nome || '').to.equal('');
+        expect(otherDoc.data().cognome || '').to.equal('');
     });
 });

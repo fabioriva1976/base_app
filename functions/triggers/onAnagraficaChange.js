@@ -1,6 +1,7 @@
 import { onDocumentCreated, onDocumentUpdated, onDocumentDeleted } from "firebase-functions/v2/firestore";
 import { logAudit, AuditAction } from "../utils/auditLogger.js";
 import { region, runtimeOpts } from "../config.js";
+import { COLLECTIONS } from "../../shared/constants/collections.js";
 
 /**
  * Controlla se ci sono effettivamente cambiamenti nei dati, escludendo campi di sistema
@@ -39,10 +40,10 @@ function hasActualChanges(beforeData, afterData) {
 // per evitare duplicati negli audit logs
 
 // Trigger per anagrafica_clienti
-export const onAnagraficaClientiCreate = onDocumentCreated({ region, document: "anagrafica_clienti/{docId}", ...runtimeOpts }, async (event) => {
+export const onAnagraficaClientiCreate = onDocumentCreated({ region, document: `${COLLECTIONS.CLIENTI}/{docId}`, ...runtimeOpts }, async (event) => {
     const afterData = event.data.data();
     await logAudit({
-        entityType: 'anagrafica_clienti',
+        entityType: COLLECTIONS.CLIENTI,
         entityId: event.params.docId,
         action: AuditAction.CREATE,
         userId: afterData?.lastModifiedBy || null,
@@ -52,7 +53,7 @@ export const onAnagraficaClientiCreate = onDocumentCreated({ region, document: "
     });
 });
 
-export const onAnagraficaClientiUpdate = onDocumentUpdated({ region, document: "anagrafica_clienti/{docId}", ...runtimeOpts }, async (event) => {
+export const onAnagraficaClientiUpdate = onDocumentUpdated({ region, document: `${COLLECTIONS.CLIENTI}/{docId}`, ...runtimeOpts }, async (event) => {
     const beforeData = event.data.before.data();
     const afterData = event.data.after.data();
 
@@ -63,7 +64,7 @@ export const onAnagraficaClientiUpdate = onDocumentUpdated({ region, document: "
     }
 
     await logAudit({
-        entityType: 'anagrafica_clienti',
+        entityType: COLLECTIONS.CLIENTI,
         entityId: event.params.docId,
         action: AuditAction.UPDATE,
         userId: afterData?.lastModifiedBy || null,
@@ -74,10 +75,10 @@ export const onAnagraficaClientiUpdate = onDocumentUpdated({ region, document: "
     });
 });
 
-export const onAnagraficaClientiDelete = onDocumentDeleted({ region, document: "anagrafica_clienti/{docId}", ...runtimeOpts }, async (event) => {
+export const onAnagraficaClientiDelete = onDocumentDeleted({ region, document: `${COLLECTIONS.CLIENTI}/{docId}`, ...runtimeOpts }, async (event) => {
     const beforeData = event.data.data();
     await logAudit({
-        entityType: 'anagrafica_clienti',
+        entityType: COLLECTIONS.CLIENTI,
         entityId: event.params.docId,
         action: AuditAction.DELETE,
         userId: beforeData?.lastModifiedBy || null,
@@ -88,10 +89,10 @@ export const onAnagraficaClientiDelete = onDocumentDeleted({ region, document: "
 });
 
 // Trigger per attachments
-export const onAttachmentsCreate = onDocumentCreated({ region, document: "attachments/{docId}", ...runtimeOpts }, async (event) => {
+export const onAttachmentsCreate = onDocumentCreated({ region, document: `${COLLECTIONS.ATTACHMENTS}/{docId}`, ...runtimeOpts }, async (event) => {
     const afterData = event.data.data();
     await logAudit({
-        entityType: 'attachments',
+        entityType: COLLECTIONS.ATTACHMENTS,
         entityId: event.params.docId,
         action: AuditAction.CREATE,
         userId: afterData?.lastModifiedBy || null,
@@ -101,7 +102,7 @@ export const onAttachmentsCreate = onDocumentCreated({ region, document: "attach
     });
 });
 
-export const onAttachmentsUpdate = onDocumentUpdated({ region, document: "attachments/{docId}", ...runtimeOpts }, async (event) => {
+export const onAttachmentsUpdate = onDocumentUpdated({ region, document: `${COLLECTIONS.ATTACHMENTS}/{docId}`, ...runtimeOpts }, async (event) => {
     const beforeData = event.data.before.data();
     const afterData = event.data.after.data();
 
@@ -112,7 +113,7 @@ export const onAttachmentsUpdate = onDocumentUpdated({ region, document: "attach
     }
 
     await logAudit({
-        entityType: 'attachments',
+        entityType: COLLECTIONS.ATTACHMENTS,
         entityId: event.params.docId,
         action: AuditAction.UPDATE,
         userId: afterData?.lastModifiedBy || null,
@@ -123,10 +124,10 @@ export const onAttachmentsUpdate = onDocumentUpdated({ region, document: "attach
     });
 });
 
-export const onAttachmentsDelete = onDocumentDeleted({ region, document: "attachments/{docId}", ...runtimeOpts }, async (event) => {
+export const onAttachmentsDelete = onDocumentDeleted({ region, document: `${COLLECTIONS.ATTACHMENTS}/{docId}`, ...runtimeOpts }, async (event) => {
     const beforeData = event.data.data();
     await logAudit({
-        entityType: 'attachments',
+        entityType: COLLECTIONS.ATTACHMENTS,
         entityId: event.params.docId,
         action: AuditAction.DELETE,
         userId: beforeData?.lastModifiedBy || null,

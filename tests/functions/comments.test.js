@@ -1,7 +1,11 @@
-import { describe, it, beforeAll, afterEach, afterAll, jest } from '@jest/globals';
+import { describe, it, beforeAll, beforeEach, afterEach, afterAll, jest } from '@jest/globals';
 import { expect } from 'chai';
 import fft from 'firebase-functions-test';
 import admin from 'firebase-admin';
+import { COLLECTIONS } from '../../shared/constants/collections.js';
+import { clearAllEmulatorData } from '../helpers/cleanup.js';
+
+const { COMMENTS, AUDIT_LOGS, CLIENTI } = COLLECTIONS;
 
 const TEST_PROJECT_ID = process.env.TEST_PROJECT_ID || 'base-app-12108';
 process.env.FIREBASE_PROJECT_ID = TEST_PROJECT_ID;
@@ -26,7 +30,7 @@ describe('API Comments', () => {
         }
         admin.initializeApp({ projectId: TEST_PROJECT_ID });
         db = admin.firestore();
-        ({ createCommentApi, getEntityCommentsApi, deleteCommentApi } = await import('./api/comments.js'));
+        ({ createCommentApi, getEntityCommentsApi, deleteCommentApi } = await import('../../functions/api/comments.js'));
     });
 
     afterAll(async () => {
@@ -39,15 +43,13 @@ describe('API Comments', () => {
         }
     });
 
+    beforeEach(async () => {
+        await clearAllEmulatorData({ db });
+    });
+
     afterEach(async () => {
         await test.cleanup();
-
-        const commentsSnap = await db.collection('comments').get();
-        const auditSnap = await db.collection('audit_logs').get();
-        const deletePromises = [];
-        commentsSnap.forEach(doc => deletePromises.push(doc.ref.delete()));
-        auditSnap.forEach(doc => deletePromises.push(doc.ref.delete()));
-        await Promise.all(deletePromises);
+        await clearAllEmulatorData({ db });
     });
 
     describe('createCommentApi', () => {
@@ -67,7 +69,7 @@ describe('API Comments', () => {
             const user = { uid: 'user-comment', token: { email: 'user-comment@test.com' } };
 
             try {
-                await wrapped({ data: { entityId: 'cliente-1', entityCollection: 'clienti' }, auth: user });
+                await wrapped({ data: { entityId: 'cliente-1', entityCollection: CLIENTI }, auth: user });
                 expect.fail('La funzione non ha validato i campi obbligatori');
             } catch (error) {
                 expect(error.code).to.equal('invalid-argument');
@@ -77,24 +79,26 @@ describe('API Comments', () => {
         it('dovrebbe creare un commento e registrare l\'audit log', async () => {
             const wrapped = test.wrap(createCommentApi);
             const user = { uid: 'user-comment-create', token: { email: 'user-comment-create@test.com' } };
-            const payload = { text: 'Nota di test', entityId: 'cliente-1', entityCollection: 'clienti' };
+            const payload = { text: 'Nota di test', entityId: 'cliente-1', entityCollection: CLIENTI };
 
             const result = await wrapped({ data: payload, auth: user });
 
             expect(result.success).to.equal(true);
             expect(result.id).to.be.a('string');
 
-            const doc = await db.collection('comments').doc(result.id).get();
+            const doc = await db.collection(COMMENTS).doc(result.id).get();
             expect(doc.exists).to.equal(true);
             expect(doc.data().text).to.equal('Nota di test');
 
-            const auditSnap = await db.collection('audit_logs')
-                .where('entityType', '==', 'clienti')
+            const auditSnap = await db.collection(AUDIT_LOGS)
+                .where('entityType', '==', CLIENTI)
                 .where('entityId', '==', 'cliente-1')
                 .where('action', '==', 'create')
                 .limit(1)
                 .get();
             expect(auditSnap.empty).to.equal(false);
+            const auditDoc = auditSnap.docs[0]?.data();
+            expect(auditDoc?.newData?.commentText).to.equal('Nota di test');
         });
     });
 
@@ -103,7 +107,7 @@ describe('API Comments', () => {
             const wrapped = test.wrap(getEntityCommentsApi);
 
             try {
-                await wrapped({ data: { entityId: 'cliente-1', entityCollection: 'clienti' } });
+                await wrapped({ data: { entityId: 'cliente-1', entityCollection: CLIENTI } });
                 expect.fail('La funzione non ha lanciato un errore per utente non autenticato');
             } catch (error) {
                 expect(error.code).to.equal('unauthenticated');
@@ -128,16 +132,16 @@ describe('API Comments', () => {
             const user = { uid: 'user-comment-list2', token: { email: 'user-comment-list2@test.com' } };
 
             await createWrapped({
-                data: { text: 'Nota 1', entityId: 'cliente-2', entityCollection: 'clienti' },
+                data: { text: 'Nota 1', entityId: 'cliente-2', entityCollection: CLIENTI },
                 auth: user
             });
             await createWrapped({
-                data: { text: 'Nota 2', entityId: 'cliente-2', entityCollection: 'clienti' },
+                data: { text: 'Nota 2', entityId: 'cliente-2', entityCollection: CLIENTI },
                 auth: user
             });
 
             const result = await listWrapped({
-                data: { entityId: 'cliente-2', entityCollection: 'clienti' },
+                data: { entityId: 'cliente-2', entityCollection: CLIENTI },
                 auth: user
             });
 
@@ -166,7 +170,7 @@ describe('API Comments', () => {
             const other = { uid: 'user-comment-other', token: { email: 'other@test.com' } };
 
             const created = await createWrapped({
-                data: { text: 'Nota da autore', entityId: 'cliente-3', entityCollection: 'clienti' },
+                data: { text: 'Nota da autore', entityId: 'cliente-3', entityCollection: CLIENTI },
                 auth: author
             });
 
@@ -184,23 +188,25 @@ describe('API Comments', () => {
             const user = { uid: 'user-comment-delete', token: { email: 'user-comment-delete@test.com' } };
 
             const created = await createWrapped({
-                data: { text: 'Nota eliminabile', entityId: 'cliente-4', entityCollection: 'clienti' },
+                data: { text: 'Nota eliminabile', entityId: 'cliente-4', entityCollection: CLIENTI },
                 auth: user
             });
 
             const result = await deleteWrapped({ data: { commentId: created.id }, auth: user });
             expect(result.success).to.equal(true);
 
-            const doc = await db.collection('comments').doc(created.id).get();
+            const doc = await db.collection(COMMENTS).doc(created.id).get();
             expect(doc.exists).to.equal(false);
 
-            const auditSnap = await db.collection('audit_logs')
-                .where('entityType', '==', 'clienti')
+            const auditSnap = await db.collection(AUDIT_LOGS)
+                .where('entityType', '==', CLIENTI)
                 .where('entityId', '==', 'cliente-4')
                 .where('action', '==', 'delete')
                 .limit(1)
                 .get();
             expect(auditSnap.empty).to.equal(false);
+            const auditDoc = auditSnap.docs[0]?.data();
+            expect(auditDoc?.oldData?.commentText).to.equal('Nota eliminabile');
         });
 
         it('dovrebbe permettere a un admin di eliminare il commento', async () => {
@@ -210,7 +216,7 @@ describe('API Comments', () => {
             const adminUser = { uid: 'admin-comment-delete', token: { email: 'admin-comment-delete@test.com', admin: true } };
 
             const created = await createWrapped({
-                data: { text: 'Nota admin', entityId: 'cliente-5', entityCollection: 'clienti' },
+                data: { text: 'Nota admin', entityId: 'cliente-5', entityCollection: CLIENTI },
                 auth: author
             });
 

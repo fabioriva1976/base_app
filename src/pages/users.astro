@@ -94,10 +94,10 @@ const showCreateButton = canManageUsers(user);
 </ProfileLayout>
 
 <script>
-  import { initPageAnagraficaUtentiPage } from '../scripts/anagrafica-utenti.js';
+  import { initUsersPage } from '../scripts/users.js';
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initPageAnagraficaUtentiPage);
+    document.addEventListener('DOMContentLoaded', initUsersPage);
   } else {
-    initPageAnagraficaUtentiPage();
+    initUsersPage();
   }
 </script>

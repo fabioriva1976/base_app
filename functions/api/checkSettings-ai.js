@@ -1,4 +1,4 @@
-// functions/api/checkConfig-ai.js
+// functions/api/checkSettings-ai.js
 
 import { onCall } from "firebase-functions/v2/https";
 import admin from "firebase-admin";
@@ -6,6 +6,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import axios from "axios";
 import { region, corsOrigins, runtimeOpts } from "../config.js";
 import { requireSuperUser } from "../utils/authHelpers.js";
+import { COLLECTIONS } from "../../shared/constants/collections.js";
 
 if (admin.apps.length === 0) {
     admin.initializeApp();
@@ -15,8 +16,8 @@ if (admin.apps.length === 0) {
  * Test configurazione AI - SOLO SUPERUSER
  * Solo i superuser possono testare la configurazione AI per sicurezza
  */
-export const checkAiApi = onCall({ region, cors: corsOrigins, ...runtimeOpts }, async (request) => {
-    console.log("🔍 checkAiApi chiamata");
+export const checkSettingsAiApi = onCall({ region, cors: corsOrigins, ...runtimeOpts }, async (request) => {
+    console.log("🔍 checkSettingsAiApi chiamata");
 
     // ✅ SECURITY: Richiede ruolo superuser
     await requireSuperUser(request);
@@ -26,7 +27,7 @@ export const checkAiApi = onCall({ region, cors: corsOrigins, ...runtimeOpts }, 
 
         // Carica la configurazione AI da Firestore
         console.log("📋 Caricamento configurazione AI da Firestore...");
-        const aiConfigDoc = await db.collection("configurazioni").doc("ai").get();
+        const aiConfigDoc = await db.collection(COLLECTIONS.CONFIG).doc("ai").get();
 
         if (!aiConfigDoc.exists) {
             console.error("❌ Documento configurazione AI non trovato");

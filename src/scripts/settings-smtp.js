@@ -1,7 +1,7 @@
 import { auth, functions } from '../lib/firebase-client';
 import { httpsCallable } from "firebase/functions";
 
-export function initConfigSmtpPage() {
+export function initSettingsSmtpPage() {
     const form = document.getElementById('smtp-config-form');
     const canModify = form?.dataset.canModify === 'true';
 
@@ -193,7 +193,7 @@ async function sendTestEmail() {
         }
 
         // Chiama la Cloud Function per testare SMTP
-        const testSmtp = httpsCallable(functions, 'checkSmtpApi');
+        const testSmtp = httpsCallable(functions, 'checkSettingsSmtpApi');
         const result = await testSmtp({ testEmail });
 
         console.log('Test SMTP result:', result.data);
@@ -269,8 +269,9 @@ function updateStatus(data) {
         secureElement.className = data.secure ? 'status-value configured' : 'status-value';
     }
 
-    if (updatedAtElement && data.updatedAt) {
-        const date = data.updatedAt.toDate ? data.updatedAt.toDate() : new Date(data.updatedAt);
+    const changedValue = data.changed || data.updatedAt;
+    if (updatedAtElement && changedValue) {
+        const date = changedValue.toDate ? changedValue.toDate() : new Date(changedValue);
         updatedAtElement.textContent = date.toLocaleDateString('it-IT', {
             year: 'numeric',
             month: 'long',

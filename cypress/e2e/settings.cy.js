@@ -1,4 +1,4 @@
-describe('Configurazioni - AI e SMTP', () => {
+describe('Settings - AI e SMTP', () => {
   const apiKey = 'AIzaSyD8Wqok8hADg9bipYln3KpQbQ99nHVI-4s';
   const projectId = Cypress.env('FIREBASE_PROJECT_ID') || 'base-app-12108';
   const authEmulatorUrl = 'http://localhost:9099';
@@ -20,15 +20,34 @@ describe('Configurazioni - AI e SMTP', () => {
     }));
   }
 
-  function setUserRole(uid, role, idToken) {
+  function setUserRole(uid, role, idToken, email) {
+    const now = new Date().toISOString();
     return cy.request({
       method: 'POST',
-      url: `${firestoreEmulatorUrl}/v1/projects/${projectId}/databases/(default)/documents/utenti?documentId=${uid}`,
+      url: `${firestoreEmulatorUrl}/v1/projects/${projectId}/databases/(default)/documents/users?documentId=${uid}`,
       headers: {
         Authorization: `Bearer ${idToken}`
       },
       body: {
         fields: {
+          email: {
+            stringValue: email
+          },
+          status: {
+            booleanValue: true
+          },
+          created: {
+            stringValue: now
+          },
+          changed: {
+            stringValue: now
+          },
+          lastModifiedBy: {
+            stringValue: uid
+          },
+          lastModifiedByEmail: {
+            stringValue: email
+          },
           ruolo: {
             arrayValue: {
               values: [{ stringValue: role }]
@@ -47,7 +66,7 @@ describe('Configurazioni - AI e SMTP', () => {
 
   before(() => {
     createAuthUser(credentials.email, credentials.password)
-      .then(({ uid, idToken }) => setUserRole(uid, 'superuser', idToken));
+      .then(({ uid, idToken }) => setUserRole(uid, 'superuser', idToken, credentials.email));
   });
 
   function login() {
@@ -62,7 +81,7 @@ describe('Configurazioni - AI e SMTP', () => {
     login();
 
     cy.intercept('POST', '**/getConfigAiApi').as('getConfigAi');
-    cy.visit('/config-ai', { failOnStatusCode: false });
+    cy.visit('/settings-ai', { failOnStatusCode: false });
     cy.wait('@getConfigAi');
 
     const aiConfig = {
@@ -109,7 +128,7 @@ describe('Configurazioni - AI e SMTP', () => {
     login();
 
     cy.intercept('POST', '**/getConfigSmtpApi').as('getConfigSmtp');
-    cy.visit('/config-smtp', { failOnStatusCode: false });
+    cy.visit('/settings-smtp', { failOnStatusCode: false });
     cy.wait('@getConfigSmtp');
 
     const smtpConfig = {

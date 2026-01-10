@@ -1,4 +1,5 @@
 import { sequence, defineMiddleware } from 'astro:middleware';
+import { COLLECTIONS } from '../../shared/constants/collections.js';
 
 const publicPaths = ['/login', '/api/'];
 const assetPaths = ['/assets/', '/favicon', '/_astro/'];
@@ -70,7 +71,7 @@ const authMiddleware = defineMiddleware(async (context, next) => {
     // Recupera il ruolo dell'utente da Firestore
     let userRole = undefined;
     try {
-      const userDoc = await adminDb.collection('utenti').doc(decodedToken.uid).get();
+      const userDoc = await adminDb.collection(COLLECTIONS.USERS).doc(decodedToken.uid).get();
       if (userDoc.exists) {
         userRole = userDoc.data()?.ruolo;
       }

@@ -163,11 +163,11 @@ const canModify = canAccessConfig(user);
 </ProfileLayout>
 
 <script>
-  import { initConfigAiPage } from '../scripts/config-ai.js';
+  import { initSettingsAiPage } from '../scripts/settings-ai.js';
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initConfigAiPage);
+    document.addEventListener('DOMContentLoaded', initSettingsAiPage);
   } else {
-    initConfigAiPage();
+    initSettingsAiPage();
   }
 </script>
 

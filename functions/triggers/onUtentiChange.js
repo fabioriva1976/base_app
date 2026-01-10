@@ -3,13 +3,14 @@
 import { onDocumentWritten } from "firebase-functions/v2/firestore";
 import { logAudit, AuditAction } from "../utils/auditLogger.js";
 import { runtimeOpts, region } from "../config.js";
+import { COLLECTIONS } from "../../shared/constants/collections.js";
 
 /**
- * Trigger che si attiva quando un documento nella collezione 'utenti' viene creato, modificato o eliminato
+ * Trigger che si attiva quando un documento nella collezione users viene creato, modificato o eliminato
  */
 export const onUtentiChange = onDocumentWritten(
     {
-        document: "utenti/{userId}",
+        document: `${COLLECTIONS.USERS}/{userId}`,
         region: "europe-west1",
         ...runtimeOpts
     },
@@ -73,7 +74,7 @@ export const onUtentiChange = onDocumentWritten(
 
         // Registra l'azione nell'audit log
         await logAudit({
-            entityType: "utenti",
+            entityType: COLLECTIONS.USERS,
             entityId: userId,
             action: action,
             userId: modifiedByUid,

@@ -55,9 +55,9 @@ export function createAttachmentMetadata({
 
 export function createCliente({
   ragione_sociale,
+  codice,
   email = null,
   telefono = null,
-  codice = null,
   partita_iva = null,
   codice_fiscale = null,
   indirizzo = null,
@@ -72,14 +72,19 @@ export function createCliente({
   if (!ragione_sociale) {
     throw new Error('ragione_sociale è obbligatorio');
   }
+  if (!codice) {
+    throw new Error('codice è obbligatorio');
+  }
 
   const timestamp = nowIso();
+  const createdByValue = createdBy ? String(createdBy) : null;
+  const createdByEmailValue = createdByEmail ? String(createdByEmail).toLowerCase() : null;
 
   return {
     ragione_sociale: String(ragione_sociale),
+    codice: String(codice),
     email: email ? String(email).toLowerCase() : null,
     telefono: telefono ? String(telefono) : null,
-    codice: codice ? String(codice) : null,
     partita_iva: partita_iva ? String(partita_iva) : null,
     codice_fiscale: codice_fiscale ? String(codice_fiscale).toUpperCase() : null,
     indirizzo: indirizzo ? String(indirizzo) : null,
@@ -88,10 +93,11 @@ export function createCliente({
     provincia: provincia ? String(provincia) : null,
     note: note ? String(note) : null,
     stato: Boolean(stato),
-    createdAt: timestamp,
-    updatedAt: timestamp,
-    createdBy: createdBy ? String(createdBy) : null,
-    createdByEmail: createdByEmail ? String(createdByEmail).toLowerCase() : null
+    status: Boolean(stato),
+    created: timestamp,
+    changed: timestamp,
+    lastModifiedBy: createdByValue,
+    lastModifiedByEmail: createdByEmailValue
   };
 }
 

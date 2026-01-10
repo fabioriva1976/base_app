@@ -7,7 +7,7 @@ import { getAvailableRoles, getRoleLabel } from '../lib/roles.ts';
 import * as ui from './utils/uiUtils.js';
 
 let entities = [];
-let collection_name = 'utenti';
+let collection_name = 'users';
 let currentEntityId = null;
 let dataTable = null;
 let ruoloMultiselect = null;
@@ -15,7 +15,7 @@ let ruoloMultiselect = null;
 const labelNewEntity = 'Nuovo Utente';
 
 
-export function initPageAnagraficaUtentiPage() {
+export function initUsersPage() {
     actionUtils.setup({ db, auth, functions, entityCollection: collection_name });
     const availableRoles = getAvailableRoles();
     ruoloMultiselect = new Multiselect({

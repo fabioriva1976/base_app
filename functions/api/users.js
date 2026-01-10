@@ -22,14 +22,17 @@
 
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import admin from "firebase-admin";
+import { FieldValue } from "firebase-admin/firestore";
 import { region, corsOrigins, runtimeOpts } from "../config.js";
 import {
   requireAdmin,
   canManageUser,
   getUserRole,
-  isSuperUser
+  isSuperUser,
+  requireAuth
 } from "../utils/authHelpers.js";
 import { logAudit, AuditAction } from "../utils/auditLogger.js";
+import { COLLECTIONS } from "../../shared/constants/collections.js";
 
 // 🔧 Inizializza Firebase Admin (singleton pattern)
 if (admin.apps.length === 0) {
@@ -42,7 +45,7 @@ const db = admin.firestore();
 // 📝 CONFIGURAZIONE: Nome collection in Firestore
 // NOTA: Gli utenti sono principalmente in Firebase Auth,
 // ma i metadati (ruolo, etc.) sono in Firestore
-const COLLECTION_NAME = 'utenti';
+const COLLECTION_NAME = COLLECTIONS.USERS;
 
 /**
  * 🎯 STEP 1: VALIDAZIONE
@@ -173,7 +176,7 @@ export const userCreateApi = onCall({ region, cors: corsOrigins, ...runtimeOpts 
     }
 
     // 6. RESPONSE: Ritorna dati salvati
-    const userDocRef = db.collection('utenti').doc(userRecord.uid);
+    const userDocRef = db.collection(COLLECTION_NAME).doc(userRecord.uid);
     let existingProfile = null;
     let createdAt = now;
     if (wasExisting) {
@@ -196,7 +199,9 @@ export const userCreateApi = onCall({ region, cors: corsOrigins, ...runtimeOpts 
       status: status,
       changed: now,
       lastModifiedBy: request.auth.uid,
-      lastModifiedByEmail: request.auth.token.email || null
+      lastModifiedByEmail: request.auth.token.email || null,
+      createdAt: FieldValue.delete(),
+      updatedAt: FieldValue.delete()
     };
     if (createdAt) {
       profileData.created = createdAt;
@@ -206,7 +211,7 @@ export const userCreateApi = onCall({ region, cors: corsOrigins, ...runtimeOpts 
 
     const auditAction = wasExisting ? AuditAction.UPDATE : AuditAction.CREATE;
     await logAudit({
-      entityType: 'utenti',
+      entityType: COLLECTION_NAME,
       entityId: userRecord.uid,
       action: auditAction,
       userId: request.auth.uid,
@@ -287,7 +292,9 @@ export const userUpdateApi = onCall({ region, cors: corsOrigins, ...runtimeOpts 
     const profileUpdates = {
       changed: now,
       lastModifiedBy: request.auth.uid,
-      lastModifiedByEmail: request.auth.token.email || null
+      lastModifiedByEmail: request.auth.token.email || null,
+      createdAt: FieldValue.delete(),
+      updatedAt: FieldValue.delete()
     };
 
     if (data.nome !== undefined) profileUpdates.nome = data.nome;
@@ -297,13 +304,13 @@ export const userUpdateApi = onCall({ region, cors: corsOrigins, ...runtimeOpts 
     if (data.status !== undefined) profileUpdates.status = Boolean(data.status);
     if (targetRole) profileUpdates.ruolo = [targetRole];
 
-    const userDocRef = db.collection('utenti').doc(uid);
+    const userDocRef = db.collection(COLLECTION_NAME).doc(uid);
     const oldDoc = await userDocRef.get();
     const oldData = oldDoc.exists ? oldDoc.data() : null;
     await userDocRef.set(profileUpdates, { merge: true });
 
     await logAudit({
-      entityType: 'utenti',
+      entityType: COLLECTION_NAME,
       entityId: uid,
       action: AuditAction.UPDATE,
       userId: request.auth.uid,
@@ -318,6 +325,80 @@ export const userUpdateApi = onCall({ region, cors: corsOrigins, ...runtimeOpts 
     return { message: "Utente aggiornato con successo!" };
   } catch (error) {
     console.error("Errore nell'aggiornamento utente:", error);
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", error.message);
+  }
+});
+
+/**
+ * 🎯 SELF UPDATE API: Aggiorna il proprio profilo
+ *
+ * Permessi richiesti: UTENTE AUTENTICATO (solo se stesso)
+ * Input: { displayName?, nome?, cognome?, telefono?, email? }
+ * Output: { message }
+ */
+export const userSelfUpdateApi = onCall({ region, cors: corsOrigins, ...runtimeOpts }, async (request) => {
+  requireAuth(request);
+
+  const uid = request.auth.uid;
+  const data = request.data || {};
+  const updateData = {
+    displayName: data.displayName,
+    nome: data.nome,
+    cognome: data.cognome,
+    telefono: data.telefono,
+    email: data.email
+  };
+
+  try {
+    validateUserUpdateData(updateData);
+
+    const authUpdate = {};
+    if (updateData.displayName !== undefined) authUpdate.displayName = updateData.displayName;
+    if (updateData.email !== undefined) authUpdate.email = updateData.email;
+
+    if (Object.keys(authUpdate).length > 0) {
+      await auth.updateUser(uid, authUpdate);
+    }
+
+    const now = new Date().toISOString();
+    const userDocRef = db.collection(COLLECTION_NAME).doc(uid);
+    const oldDoc = await userDocRef.get();
+    const oldData = oldDoc.exists ? oldDoc.data() : null;
+    const created = oldData?.created || now;
+
+    const profileUpdates = {
+      changed: now,
+      created,
+      lastModifiedBy: uid,
+      lastModifiedByEmail: request.auth.token.email || null,
+      createdAt: FieldValue.delete(),
+      updatedAt: FieldValue.delete()
+    };
+
+    if (updateData.nome !== undefined) profileUpdates.nome = updateData.nome;
+    if (updateData.cognome !== undefined) profileUpdates.cognome = updateData.cognome;
+    if (updateData.email !== undefined) profileUpdates.email = updateData.email;
+    if (updateData.telefono !== undefined) profileUpdates.telefono = updateData.telefono;
+
+    await userDocRef.set(profileUpdates, { merge: true });
+
+    await logAudit({
+      entityType: COLLECTION_NAME,
+      entityId: uid,
+      action: AuditAction.UPDATE,
+      userId: uid,
+      userEmail: request.auth.token?.email || null,
+      oldData,
+      newData: profileUpdates,
+      source: 'web'
+    });
+
+    return { message: "Profilo aggiornato con successo!" };
+  } catch (error) {
+    console.error("Errore nell'aggiornamento profilo:", error);
     if (error instanceof HttpsError) {
       throw error;
     }
@@ -378,13 +459,13 @@ export const userDeleteApi = onCall({ region, cors: corsOrigins, ...runtimeOpts 
       console.log("Utente non presente in Auth, elimino solo Firestore");
     }
 
-    const userDocRef = db.collection('utenti').doc(data.uid);
+    const userDocRef = db.collection(COLLECTION_NAME).doc(data.uid);
     const oldDoc = await userDocRef.get();
     const oldData = oldDoc.exists ? oldDoc.data() : null;
     await userDocRef.delete();
 
     await logAudit({
-      entityType: 'utenti',
+      entityType: COLLECTION_NAME,
       entityId: data.uid,
       action: AuditAction.DELETE,
       userId: request.auth.uid,

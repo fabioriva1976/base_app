@@ -1,10 +1,11 @@
-// functions/api/checkConfig-smtp.js
+// functions/api/checkSettings-smtp.js
 
 import { onCall } from "firebase-functions/v2/https";
 import admin from "firebase-admin";
 import nodemailer from "nodemailer";
 import { region, corsOrigins, runtimeOpts } from "../config.js";
 import { requireSuperUser } from "../utils/authHelpers.js";
+import { COLLECTIONS } from "../../shared/constants/collections.js";
 
 if (admin.apps.length === 0) {
     admin.initializeApp();
@@ -14,8 +15,8 @@ if (admin.apps.length === 0) {
  * Test configurazione SMTP - SOLO SUPERUSER
  * Solo i superuser possono testare la configurazione SMTP per sicurezza
  */
-export const checkSmtpApi = onCall({ region, cors: corsOrigins, ...runtimeOpts }, async (request) => {
-    console.log("🔍 checkSmtpApi chiamata con request.data:", request.data);
+export const checkSettingsSmtpApi = onCall({ region, cors: corsOrigins, ...runtimeOpts }, async (request) => {
+    console.log("🔍 checkSettingsSmtpApi chiamata con request.data:", request.data);
 
     // ✅ SECURITY: Richiede ruolo superuser
     await requireSuperUser(request);
@@ -28,7 +29,7 @@ export const checkSmtpApi = onCall({ region, cors: corsOrigins, ...runtimeOpts }
 
         // Carica la configurazione SMTP da Firestore
         console.log("📋 Caricamento configurazione SMTP da Firestore...");
-        const smtpConfigDoc = await db.collection("configurazioni").doc("smtp").get();
+        const smtpConfigDoc = await db.collection(COLLECTIONS.CONFIG).doc("smtp").get();
 
         if (!smtpConfigDoc.exists) {
             console.error("❌ Documento configurazione SMTP non trovato");

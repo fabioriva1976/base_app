@@ -1,5 +1,6 @@
 import { HttpsError } from "firebase-functions/v2/https";
 import admin from "firebase-admin";
+import { COLLECTIONS } from "../../shared/constants/collections.js";
 
 // Normalizza il campo ruolo (può essere string o array) in un array di stringhe
 export function normalizeRoles(ruoloField) {
@@ -21,10 +22,10 @@ export function normalizeRoles(ruoloField) {
 export async function getUserRole(uid) {
     try {
         const db = admin.firestore();
-        const userDoc = await db.collection('utenti').doc(uid).get();
+        const userDoc = await db.collection(COLLECTIONS.USERS).doc(uid).get();
 
         if (!userDoc.exists) {
-            console.warn(`Utente ${uid} non trovato in collezione utenti`);
+            console.warn(`Utente ${uid} non trovato in collezione users`);
             return null;
         }
 

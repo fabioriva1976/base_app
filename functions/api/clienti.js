@@ -25,6 +25,7 @@ import { requireAdmin, requireOperator } from "../utils/authHelpers.js";
 import { createCliente } from "../../shared/schemas/entityFactory.js";
 import { region, corsOrigins } from "../config.js";
 import { logAudit, AuditAction } from "../utils/auditLogger.js";
+import { COLLECTIONS } from "../../shared/constants/collections.js";
 
 // 🔧 Inizializza Firebase Admin (singleton pattern)
 if (getApps().length === 0) {
@@ -33,7 +34,7 @@ if (getApps().length === 0) {
 const db = getFirestore();
 
 // 📝 CONFIGURAZIONE: Nome collection in Firestore
-const COLLECTION_NAME = 'anagrafica_clienti';
+const COLLECTION_NAME = COLLECTIONS.CLIENTI;
 
 /**
  * 🎯 STEP 1: VALIDAZIONE
@@ -47,6 +48,9 @@ const COLLECTION_NAME = 'anagrafica_clienti';
 function validateClienteData(data) {
     if (!data.ragione_sociale || typeof data.ragione_sociale !== 'string' || data.ragione_sociale.trim() === '') {
         throw new HttpsError('invalid-argument', 'La ragione sociale è obbligatoria.');
+    }
+    if (!data.codice || typeof data.codice !== 'string' || data.codice.trim() === '') {
+        throw new HttpsError('invalid-argument', 'Il codice cliente è obbligatorio.');
     }
     if (data.email && (typeof data.email !== 'string' || !data.email.includes('@'))) {
         throw new HttpsError('invalid-argument', 'L\'email fornita non è valida.');
@@ -94,7 +98,7 @@ export const createClienteApi = onCall({
 
         // 5. AUDIT LOG: Registra azione per tracciabilità
         await logAudit({
-            entityType: 'clienti',
+            entityType: COLLECTIONS.CLIENTI,
             entityId: docRef.id,
             action: AuditAction.CREATE,
             userId: uid,
@@ -143,16 +147,27 @@ export const updateClienteApi = onCall({
         const oldData = oldDoc.exists ? oldDoc.data() : null;
 
         // Aggiunge il timestamp di aggiornamento
+        const now = new Date().toISOString();
         const dataToUpdate = {
             ...updateData,
             updatedAt: FieldValue.serverTimestamp(),
+            changed: now,
+            lastModifiedBy: uid,
+            lastModifiedByEmail: request.auth.token.email,
+            createdAt: FieldValue.delete(),
+            updatedAt: FieldValue.delete(),
+            createdBy: FieldValue.delete(),
+            createdByEmail: FieldValue.delete()
         };
+        if (updateData.stato !== undefined) {
+            dataToUpdate.status = Boolean(updateData.stato);
+        }
 
         await clienteRef.update(dataToUpdate);
 
         // AUDIT LOG: Registra modifica con dati before/after
         await logAudit({
-            entityType: 'clienti',
+            entityType: COLLECTIONS.CLIENTI,
             entityId: id,
             action: AuditAction.UPDATE,
             userId: uid,
@@ -202,7 +217,7 @@ export const deleteClienteApi = onCall({
 
         // AUDIT LOG: Registra eliminazione con dati rimossi
         await logAudit({
-            entityType: 'clienti',
+            entityType: COLLECTIONS.CLIENTI,
             entityId: id,
             action: AuditAction.DELETE,
             userId: uid,

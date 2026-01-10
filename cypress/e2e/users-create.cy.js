@@ -1,4 +1,4 @@
-describe('Anagrafica Utenti - creazione', () => {
+describe('Users - creazione', () => {
   const apiKey = 'AIzaSyD8Wqok8hADg9bipYln3KpQbQ99nHVI-4s';
   const projectId = Cypress.env('FIREBASE_PROJECT_ID') || 'base-app-12108';
   const authEmulatorUrl = 'http://localhost:9099';
@@ -20,15 +20,34 @@ describe('Anagrafica Utenti - creazione', () => {
     }));
   }
 
-  function setUserRole(uid, role, idToken) {
+  function setUserRole(uid, role, idToken, email) {
+    const now = new Date().toISOString();
     return cy.request({
       method: 'POST',
-      url: `${firestoreEmulatorUrl}/v1/projects/${projectId}/databases/(default)/documents/utenti?documentId=${uid}`,
+      url: `${firestoreEmulatorUrl}/v1/projects/${projectId}/databases/(default)/documents/users?documentId=${uid}`,
       headers: {
         Authorization: `Bearer ${idToken}`
       },
       body: {
         fields: {
+          email: {
+            stringValue: email
+          },
+          status: {
+            booleanValue: true
+          },
+          created: {
+            stringValue: now
+          },
+          changed: {
+            stringValue: now
+          },
+          lastModifiedBy: {
+            stringValue: uid
+          },
+          lastModifiedByEmail: {
+            stringValue: email
+          },
           ruolo: {
             arrayValue: {
               values: [{ stringValue: role }]
@@ -40,13 +59,23 @@ describe('Anagrafica Utenti - creazione', () => {
     });
   }
 
+  function findRowByEmail(email) {
+    cy.get('input[type="search"], .datatable-input, .dataTable-input', { timeout: 10000 })
+      .first()
+      .clear()
+      .type(email);
+    cy.get('#data-table', { timeout: 20000 })
+      .contains('td', email)
+      .should('be.visible')
+      .scrollIntoView();
+  }
+
   it('dovrebbe creare un nuovo utente operatore', () => {
     const adminEmail = `admin.${Date.now()}@test.local`;
     const adminPassword = 'AdminPass123!';
 
-    createAuthUser(adminEmail, adminPassword).then(({ uid, idToken }) => {
-      setUserRole(uid, 'admin', idToken);
-    });
+    createAuthUser(adminEmail, adminPassword)
+      .then(({ uid, idToken }) => setUserRole(uid, 'admin', idToken, adminEmail));
 
     cy.visit('/login', { failOnStatusCode: false });
 
@@ -56,7 +85,7 @@ describe('Anagrafica Utenti - creazione', () => {
 
     cy.location('pathname', { timeout: 10000 }).should('eq', '/dashboard');
 
-    cy.visit('/anagrafica-utenti', { failOnStatusCode: false });
+    cy.visit('/users', { failOnStatusCode: false });
 
     cy.get('#new-entity-btn').click();
 
@@ -73,7 +102,9 @@ describe('Anagrafica Utenti - creazione', () => {
     cy.get('button[type="submit"][form="entity-form"]').scrollIntoView().click({ force: true });
 
     cy.get('#entity-id', { timeout: 10000 }).invoke('val').should('match', /.+/);
+    cy.get('#save-message', { timeout: 10000 }).should('be.visible');
+    cy.get('#close-sidebar-btn').click();
 
-    cy.get('#data-table', { timeout: 10000 }).contains(userEmail).should('be.visible');
+    findRowByEmail(userEmail);
   });
 });

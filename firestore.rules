@@ -8,14 +8,14 @@ service cloud.firestore {
 
     // Verifica se il documento utente esiste
     function userDocExists() {
-      return exists(/databases/$(database)/documents/utenti/$(request.auth.uid));
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid));
     }
 
-    // Ottiene il ruolo dell'utente corrente dalla collezione utenti
+    // Ottiene il ruolo dell'utente corrente dalla collezione users
     // Restituisce un array vuoto se il documento non esiste
     function getUserRole() {
       return userDocExists()
-        ? get(/databases/$(database)/documents/utenti/$(request.auth.uid)).data.ruolo
+        ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.ruolo
         : [];
     }
 
@@ -39,12 +39,28 @@ service cloud.firestore {
       return request.auth != null && userDocExists() && getUserRole().hasAny(['operatore', 'admin', 'superuser']);
     }
 
+    // Verifica che l'email sia presente e valida nel documento utente
+    function hasValidUserEmail() {
+      return request.resource.data.email is string
+        && request.resource.data.email.size() > 0
+        && request.resource.data.email.matches('^.+@.+\\..+$');
+    }
+
+    function hasUserSystemFields() {
+      return request.resource.data.status is bool
+        && request.resource.data.created is string
+        && request.resource.data.changed is string
+        && request.resource.data.lastModifiedBy is string
+        && request.resource.data.lastModifiedByEmail is string
+        && request.resource.data.lastModifiedByEmail.size() > 0;
+    }
+
     // ═══════════════════════════════════════════════════════════════════════
     // REGOLA DI FALLBACK - NEGA TUTTO IL RESTO
     // ═══════════════════════════════════════════════════════════════════════
     match /{document=**} {
       // COLLEZIONE UTENTI
-      match /utenti/{userId} {
+      match /users/{userId} {
         // Chiunque sia autenticato può leggere il profilo di un altro utente (necessario per funzioni come getUserRole).
         allow get: if request.auth != null;
 
@@ -54,16 +70,18 @@ service cloud.firestore {
         // Un utente può creare/aggiornare solo il proprio profilo
         // Admin/Superuser possono creare/aggiornare qualsiasi profilo
         // IMPORTANTE: create permette self-registration senza controllare isAdmin()
-        allow create: if (request.auth != null && request.auth.uid == userId) || isAdmin();
-        allow update: if (request.auth != null && request.auth.uid == userId) || isAdmin();
+        allow create: if ((request.auth != null && request.auth.uid == userId)
+          || isAdmin()) && hasValidUserEmail() && hasUserSystemFields();
+        allow update: if ((request.auth != null && request.auth.uid == userId)
+          || isAdmin()) && hasValidUserEmail() && hasUserSystemFields();
 
         // Solo admin può eliminare
         allow delete: if isAdmin();
       }
 
-      // COLLEZIONE CONFIGURAZIONI (SMTP, AI, ecc.)
+      // COLLEZIONE SETTINGS (SMTP, AI, ecc.)
       // ⚠️ CONTIENE DATI SENSIBILI: API keys, password SMTP, secrets
-      match /configurazioni/{configId} {
+      match /settings/{configId} {
         // Lettura: SOLO superuser (non admin, non operatori)
         // Le Cloud Functions hanno accesso admin e possono sempre leggere
         allow read: if isSuperUser();
@@ -105,7 +123,7 @@ service cloud.firestore {
       }
 
       // COLLEZIONE AUDIT LOGS
-      match /auditLogs/{logId} {
+      match /audit_logs/{logId} {
         // Lettura: solo admin e superuser
         allow read: if isAdmin();
 

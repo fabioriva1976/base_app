@@ -136,11 +136,11 @@ const canModify = canAccessConfig(user);
 </ProfileLayout>
 
 <script>
-  import { initConfigSmtpPage } from '../scripts/config-smtp.js';
+  import { initSettingsSmtpPage } from '../scripts/settings-smtp.js';
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initConfigSmtpPage);
+    document.addEventListener('DOMContentLoaded', initSettingsSmtpPage);
   } else {
-    initConfigSmtpPage();
+    initSettingsSmtpPage();
   }
 </script>
 

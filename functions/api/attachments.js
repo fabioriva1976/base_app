@@ -21,6 +21,7 @@ import { region, corsOrigins, runtimeOpts } from "../config.js";
 import { requireAuth, requireAdmin } from "../utils/authHelpers.js";
 import { createAttachment } from "../../shared/schemas/entityFactory.js";
 import { logAudit, AuditAction } from "../utils/auditLogger.js";
+import { COLLECTIONS } from "../../shared/constants/collections.js";
 
 // 🔧 Inizializza Firebase Admin (singleton pattern)
 if (admin.apps.length === 0) {
@@ -31,7 +32,7 @@ const db = admin.firestore();
 const storage = admin.storage();
 
 // 📝 CONFIGURAZIONE: Nome collection in Firestore
-const COLLECTION_NAME = 'attachments';
+const COLLECTION_NAME = COLLECTIONS.ATTACHMENTS;
 
 /**
  * 🎯 STEP 1: VALIDAZIONE
@@ -102,7 +103,7 @@ export const createAttachmentRecordApi = onCall(
       // 5. AUDIT LOG: Registra creazione documento
       // Salva il log con riferimento all'entità parent per mostrarlo nel tab azioni
       await logAudit({
-        entityType: nuovoAttachment.metadata.entityCollection || 'attachments',
+        entityType: nuovoAttachment.metadata.entityCollection || COLLECTIONS.ATTACHMENTS,
         entityId: nuovoAttachment.metadata.entityId || docRef.id,
         action: AuditAction.CREATE,
         userId: user.uid,
@@ -182,7 +183,7 @@ export const deleteAttachmentApi = onCall(
     // AUDIT LOG: Registra eliminazione documento
     // Salva il log con riferimento all'entità parent per mostrarlo nel tab azioni
     await logAudit({
-      entityType: oldData?.metadata?.entityCollection || 'attachments',
+      entityType: oldData?.metadata?.entityCollection || COLLECTIONS.ATTACHMENTS,
       entityId: oldData?.metadata?.entityId || docId,
       action: AuditAction.DELETE,
       userId: uid,
@@ -238,7 +239,7 @@ export const updateAttachmentApi = onCall(
 
       // AUDIT LOG: Registra modifica documento
       await logAudit({
-        entityType: 'attachments',
+        entityType: COLLECTIONS.ATTACHMENTS,
         entityId: id,
         action: AuditAction.UPDATE,
         userId: uid,

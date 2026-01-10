@@ -1,7 +1,12 @@
-import { describe, it, beforeAll, afterEach, afterAll, jest } from '@jest/globals';
+import { describe, it, beforeAll, beforeEach, afterEach, afterAll, jest } from '@jest/globals';
 import { expect } from 'chai';
 import fft from 'firebase-functions-test';
 import admin from 'firebase-admin';
+import { COLLECTIONS } from '../../shared/constants/collections.js';
+import { clearAllEmulatorData } from '../helpers/cleanup.js';
+import { seedUserProfile } from '../helpers/userProfile.js';
+
+const { USERS, CLIENTI, AUDIT_LOGS } = COLLECTIONS;
 
 const TEST_PROJECT_ID = process.env.TEST_PROJECT_ID || 'base-app-12108';
 process.env.FIREBASE_PROJECT_ID = TEST_PROJECT_ID;
@@ -31,7 +36,7 @@ describe('API Clienti', () => {
         }
         admin.initializeApp({ projectId: TEST_PROJECT_ID });
         db = admin.firestore();
-        ({ listClientiApi, createClienteApi, updateClienteApi, deleteClienteApi } = await import('./api/clienti.js'));
+        ({ listClientiApi, createClienteApi, updateClienteApi, deleteClienteApi } = await import('../../functions/api/clienti.js'));
     });
 
     afterAll(async () => {
@@ -44,18 +49,13 @@ describe('API Clienti', () => {
         }
     });
 
-    // Dopo ogni test, puliamo il database per garantire l'isolamento
+    beforeEach(async () => {
+        await clearAllEmulatorData({ db });
+    });
+
     afterEach(async () => {
         await test.cleanup();
-        // Pulisci le collezioni usate nei test
-        const clientiSnap = await db.collection('anagrafica_clienti').get();
-        const utentiSnap = await db.collection('utenti').get();
-        const auditSnap = await db.collection('audit_logs').get();
-        const deletePromises = [];
-        clientiSnap.forEach(doc => deletePromises.push(doc.ref.delete()));
-        utentiSnap.forEach(doc => deletePromises.push(doc.ref.delete()));
-        auditSnap.forEach(doc => deletePromises.push(doc.ref.delete()));
-        await Promise.all(deletePromises);
+        await clearAllEmulatorData({ db });
     });
 
     describe('listClientiApi', () => {
@@ -87,8 +87,8 @@ describe('API Clienti', () => {
             const user = { uid: 'operatore-test', token: { email: 'op@test.com' } };
 
             // Crea l'utente e il cliente nel DB emulato
-            await db.collection('utenti').doc(user.uid).set({ ruolo: ['operatore'] });
-            await db.collection('anagrafica_clienti').add({ ragione_sociale: 'Cliente Test 1' });
+            await seedUserProfile(db, { uid: user.uid, email: user.token.email, role: 'operatore' });
+            await db.collection(CLIENTI).add({ ragione_sociale: 'Cliente Test 1' });
 
             const result = await wrapped({ data: {}, auth: user });
 
@@ -104,7 +104,7 @@ describe('API Clienti', () => {
             const clienteData = { ragione_sociale: 'Nuovo Cliente' };
 
             // Crea l'utente operatore nel DB emulato
-            await db.collection('utenti').doc(user.uid).set({ ruolo: ['operatore'] });
+            await seedUserProfile(db, { uid: user.uid, email: user.token.email, role: 'operatore' });
 
             try {
                 await wrapped({ data: clienteData, auth: user });
@@ -117,10 +117,10 @@ describe('API Clienti', () => {
         it('dovrebbe permettere a un admin di creare un cliente', async () => {
             const wrapped = test.wrap(createClienteApi);
             const user = { uid: 'admin-test', token: { email: 'admin@test.com' } };
-            const clienteData = { ragione_sociale: 'Nuovo Cliente da Admin', email: 'cliente@test.com' };
+            const clienteData = { ragione_sociale: 'Nuovo Cliente da Admin', codice: 'CL-001', email: 'cliente@test.com' };
 
             // Crea l'utente admin nel DB emulato
-            await db.collection('utenti').doc(user.uid).set({ ruolo: ['admin'] });
+            await seedUserProfile(db, { uid: user.uid, email: user.token.email, role: 'admin' });
 
             const result = await wrapped({ data: clienteData, auth: user });
 
@@ -128,26 +128,29 @@ describe('API Clienti', () => {
             expect(result.ragione_sociale).to.equal('Nuovo Cliente da Admin');
 
             // Verifica che il cliente sia stato effettivamente scritto nel database
-            const doc = await db.collection('anagrafica_clienti').doc(result.id).get();
+            const doc = await db.collection(CLIENTI).doc(result.id).get();
             expect(doc.exists).to.be.true;
             expect(doc.data().ragione_sociale).to.equal('Nuovo Cliente da Admin');
 
             // Verifica audit log di creazione
-            const auditSnap = await db.collection('audit_logs')
-                .where('entityType', '==', 'clienti')
+            const auditSnap = await db.collection(AUDIT_LOGS)
+                .where('entityType', '==', CLIENTI)
                 .where('entityId', '==', result.id)
                 .where('action', '==', 'create')
                 .limit(1)
                 .get();
             expect(auditSnap.empty).to.equal(false);
+            const auditDoc = auditSnap.docs[0]?.data();
+            expect(auditDoc?.newData?.ragione_sociale).to.equal('Nuovo Cliente da Admin');
+            expect(auditDoc?.newData?.codice).to.equal('CL-001');
         });
 
         it('dovrebbe lanciare un errore se la ragione sociale manca', async () => {
             const wrapped = test.wrap(createClienteApi);
             const user = { uid: 'admin-test', token: { email: 'admin@test.com' } };
-            const clienteData = { email: 'cliente@test.com' }; // Manca ragione_sociale
+            const clienteData = { codice: 'CL-ERR-01', email: 'cliente@test.com' }; // Manca ragione_sociale
 
-            await db.collection('utenti').doc(user.uid).set({ ruolo: ['admin'] });
+            await seedUserProfile(db, { uid: user.uid, email: user.token.email, role: 'admin' });
 
             try {
                 await wrapped({ data: clienteData, auth: user });
@@ -164,7 +167,7 @@ describe('API Clienti', () => {
             const wrapped = test.wrap(updateClienteApi);
             const user = { uid: 'operatore-update', token: { email: 'op-update@test.com' } };
 
-            await db.collection('utenti').doc(user.uid).set({ ruolo: ['operatore'] });
+            await seedUserProfile(db, { uid: user.uid, email: user.token.email, role: 'operatore' });
 
             try {
                 await wrapped({ data: { id: 'cliente-id', ragione_sociale: 'Aggiornato' }, auth: user });
@@ -178,7 +181,7 @@ describe('API Clienti', () => {
             const wrapped = test.wrap(updateClienteApi);
             const user = { uid: 'admin-update-missing', token: { email: 'admin-update-missing@test.com' } };
 
-            await db.collection('utenti').doc(user.uid).set({ ruolo: ['admin'] });
+            await seedUserProfile(db, { uid: user.uid, email: user.token.email, role: 'admin' });
 
             try {
                 await wrapped({ data: { ragione_sociale: 'Aggiornato' }, auth: user });
@@ -192,13 +195,13 @@ describe('API Clienti', () => {
             const wrapped = test.wrap(updateClienteApi);
             const user = { uid: 'admin-update-invalid', token: { email: 'admin-update-invalid@test.com' } };
 
-            await db.collection('utenti').doc(user.uid).set({ ruolo: ['admin'] });
+            await seedUserProfile(db, { uid: user.uid, email: user.token.email, role: 'admin' });
 
-            const docRef = await db.collection('anagrafica_clienti').add({ ragione_sociale: 'Cliente Old' });
+            const docRef = await db.collection(CLIENTI).add({ ragione_sociale: 'Cliente Old', codice: 'CL-OLD-01' });
 
             try {
                 await wrapped({
-                    data: { id: docRef.id, ragione_sociale: 'Cliente New', email: 'not-an-email' },
+                    data: { id: docRef.id, ragione_sociale: 'Cliente New', codice: 'CL-NEW-01', email: 'not-an-email' },
                     auth: user
                 });
                 expect.fail('La funzione non ha validato l\'email');
@@ -211,27 +214,30 @@ describe('API Clienti', () => {
             const wrapped = test.wrap(updateClienteApi);
             const user = { uid: 'admin-update', token: { email: 'admin-update@test.com' } };
 
-            await db.collection('utenti').doc(user.uid).set({ ruolo: ['admin'] });
+            await seedUserProfile(db, { uid: user.uid, email: user.token.email, role: 'admin' });
 
-            const docRef = await db.collection('anagrafica_clienti').add({ ragione_sociale: 'Cliente Old' });
+            const docRef = await db.collection(CLIENTI).add({ ragione_sociale: 'Cliente Old', codice: 'CL-OLD-02' });
 
             const result = await wrapped({
-                data: { id: docRef.id, ragione_sociale: 'Cliente New', email: 'cliente@update.com' },
+                data: { id: docRef.id, ragione_sociale: 'Cliente New', codice: 'CL-NEW-02', email: 'cliente@update.com' },
                 auth: user
             });
 
             expect(result.message).to.equal('Cliente aggiornato con successo.');
 
-            const updatedDoc = await db.collection('anagrafica_clienti').doc(docRef.id).get();
+            const updatedDoc = await db.collection(CLIENTI).doc(docRef.id).get();
             expect(updatedDoc.data().ragione_sociale).to.equal('Cliente New');
 
-            const auditSnap = await db.collection('audit_logs')
-                .where('entityType', '==', 'clienti')
+            const auditSnap = await db.collection(AUDIT_LOGS)
+                .where('entityType', '==', CLIENTI)
                 .where('entityId', '==', docRef.id)
                 .where('action', '==', 'update')
                 .limit(1)
                 .get();
             expect(auditSnap.empty).to.equal(false);
+            const auditDoc = auditSnap.docs[0]?.data();
+            expect(auditDoc?.newData?.ragione_sociale).to.equal('Cliente New');
+            expect(auditDoc?.newData?.codice).to.equal('CL-NEW-02');
         });
     });
 
@@ -240,7 +246,7 @@ describe('API Clienti', () => {
             const wrapped = test.wrap(deleteClienteApi);
             const user = { uid: 'operatore-delete', token: { email: 'op-delete@test.com' } };
 
-            await db.collection('utenti').doc(user.uid).set({ ruolo: ['operatore'] });
+            await seedUserProfile(db, { uid: user.uid, email: user.token.email, role: 'operatore' });
 
             try {
                 await wrapped({ data: { id: 'cliente-id' }, auth: user });
@@ -254,7 +260,7 @@ describe('API Clienti', () => {
             const wrapped = test.wrap(deleteClienteApi);
             const user = { uid: 'admin-delete-missing', token: { email: 'admin-delete-missing@test.com' } };
 
-            await db.collection('utenti').doc(user.uid).set({ ruolo: ['admin'] });
+            await seedUserProfile(db, { uid: user.uid, email: user.token.email, role: 'admin' });
 
             try {
                 await wrapped({ data: {}, auth: user });
@@ -268,24 +274,26 @@ describe('API Clienti', () => {
             const wrapped = test.wrap(deleteClienteApi);
             const user = { uid: 'admin-delete', token: { email: 'admin-delete@test.com' } };
 
-            await db.collection('utenti').doc(user.uid).set({ ruolo: ['admin'] });
+            await seedUserProfile(db, { uid: user.uid, email: user.token.email, role: 'admin' });
 
-            const docRef = await db.collection('anagrafica_clienti').add({ ragione_sociale: 'Cliente Delete' });
+            const docRef = await db.collection(CLIENTI).add({ ragione_sociale: 'Cliente Delete' });
 
             const result = await wrapped({ data: { id: docRef.id }, auth: user });
 
             expect(result.message).to.equal('Cliente eliminato con successo.');
 
-            const deletedDoc = await db.collection('anagrafica_clienti').doc(docRef.id).get();
+            const deletedDoc = await db.collection(CLIENTI).doc(docRef.id).get();
             expect(deletedDoc.exists).to.equal(false);
 
-            const auditSnap = await db.collection('audit_logs')
-                .where('entityType', '==', 'clienti')
+            const auditSnap = await db.collection(AUDIT_LOGS)
+                .where('entityType', '==', CLIENTI)
                 .where('entityId', '==', docRef.id)
                 .where('action', '==', 'delete')
                 .limit(1)
                 .get();
             expect(auditSnap.empty).to.equal(false);
+            const auditDoc = auditSnap.docs[0]?.data();
+            expect(auditDoc?.oldData?.ragione_sociale).to.equal('Cliente Delete');
         });
     });
 });
