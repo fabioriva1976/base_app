@@ -12,6 +12,9 @@ declare namespace Cypress {
     seedOperatore(email: string, password: string): Chainable<{ uid: string; idToken: string; email: string; role: string }>;
     seedSuperuser(email: string, password: string): Chainable<{ uid: string; idToken: string; email: string; role: string }>;
     clearAllUsers(): Chainable<void>;
+    clearAllAuthUsers(): Chainable<void>;
+    clearCollection(collection: string): Chainable<void>;
+    clearAllClienti(): Chainable<void>;
     login(email: string, password: string): Chainable<void>;
     searchDataTable(text: string): Chainable<void>;
     findDataTableRow(text: string, options?: { timeout?: number }): Chainable<JQuery<HTMLElement>>;

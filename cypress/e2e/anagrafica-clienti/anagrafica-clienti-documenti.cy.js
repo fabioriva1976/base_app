@@ -1,32 +1,39 @@
+import { AnagraficaClientiPage } from '../../pages/AnagraficaClientiPage.js';
+
 describe('Anagrafica Clienti - Documenti', () => {
+  const clientiPage = new AnagraficaClientiPage();
+
+  before(() => {
+    cy.clearAllClienti();
+  });
+
   it('dovrebbe caricare e visualizzare un documento allegato', () => {
     const adminEmail = `admin.docs.${Date.now()}@test.local`;
     const adminPassword = 'AdminPass123!';
 
     cy.seedAdmin(adminEmail, adminPassword);
     cy.login(adminEmail, adminPassword);
-    cy.visit('/anagrafica-clienti', { failOnStatusCode: false });
-
-    cy.get('#new-entity-btn').click();
+    clientiPage.visitPage();
+    clientiPage.openNewClientSidebar();
 
     const codiceCliente = `CLI-${Date.now()}`;
     const emailCliente = `cliente.docs.${Date.now()}@test.local`;
-    cy.typeInto('#codice', codiceCliente);
-    cy.typeInto('#ragione_sociale', 'Cliente Test Documenti SRL');
-    cy.typeInto('#email', emailCliente);
+    clientiPage.fillClientForm({
+      codice: codiceCliente,
+      ragioneSociale: 'Cliente Test Documenti SRL',
+      email: emailCliente
+    });
 
-    cy.get('button[type="submit"][form="entity-form"]').scrollIntoView().click({ force: true });
-    cy.get('#entity-id', { timeout: 10000 }).invoke('val').should('match', /.+/);
-
-    cy.get('[data-tab="attachments"]').click();
-    cy.get('#tab-attachments').should('be.visible');
+    clientiPage.submitForm();
+    clientiPage.waitForSaveComplete();
+    clientiPage.switchTab('attachments');
 
     const fileName = 'test-document.txt';
     const fileContent = 'Contenuto del documento di test';
 
     cy.get('#document-upload').selectFile({
       contents: Cypress.Buffer.from(fileContent),
-      fileName: fileName,
+      fileName,
       mimeType: 'text/plain'
     }, { force: true });
 
@@ -37,7 +44,7 @@ describe('Anagrafica Clienti - Documenti', () => {
     cy.get('.file-preview-item.existing-file', { timeout: 10000 }).should('be.visible');
     cy.get('.file-name-link').should('contain', fileName);
 
-    cy.get('[data-tab="azioni"]').click();
+    clientiPage.switchTab('azioni');
     cy.get('#action-list', { timeout: 20000 }).should('be.visible');
   });
 
@@ -47,25 +54,25 @@ describe('Anagrafica Clienti - Documenti', () => {
 
     cy.seedAdmin(adminEmail, adminPassword);
     cy.login(adminEmail, adminPassword);
-    cy.visit('/anagrafica-clienti', { failOnStatusCode: false });
-
-    cy.get('#new-entity-btn').click();
+    clientiPage.visitPage();
+    clientiPage.openNewClientSidebar();
 
     const codiceCliente = `CLI-${Date.now()}`;
     const emailCliente = `cliente.deletedoc.${Date.now()}@test.local`;
-    cy.typeInto('#codice', codiceCliente);
-    cy.typeInto('#ragione_sociale', 'Cliente Test Delete Doc SRL');
-    cy.typeInto('#email', emailCliente);
+    clientiPage.fillClientForm({
+      codice: codiceCliente,
+      ragioneSociale: 'Cliente Test Delete Doc SRL',
+      email: emailCliente
+    });
 
-    cy.get('button[type="submit"][form="entity-form"]').scrollIntoView().click({ force: true });
-    cy.get('#entity-id', { timeout: 10000 }).invoke('val').should('match', /.+/);
-
-    cy.get('[data-tab="attachments"]').click();
+    clientiPage.submitForm();
+    clientiPage.waitForSaveComplete();
+    clientiPage.switchTab('attachments');
 
     const fileName = 'document-to-delete.txt';
     cy.get('#document-upload').selectFile({
       contents: Cypress.Buffer.from('Da eliminare'),
-      fileName: fileName,
+      fileName,
       mimeType: 'text/plain'
     }, { force: true });
 
@@ -79,7 +86,7 @@ describe('Anagrafica Clienti - Documenti', () => {
     cy.get('.file-preview-item', { timeout: 10000 }).should('not.exist');
     cy.get('.empty-state').should('be.visible');
 
-    cy.get('[data-tab="azioni"]').click();
+    clientiPage.switchTab('azioni');
     cy.get('#action-list', { timeout: 20000 }).should('be.visible');
   });
 
@@ -89,27 +96,27 @@ describe('Anagrafica Clienti - Documenti', () => {
 
     cy.seedAdmin(adminEmail, adminPassword);
     cy.login(adminEmail, adminPassword);
-    cy.visit('/anagrafica-clienti', { failOnStatusCode: false });
-
-    cy.get('#new-entity-btn').click();
+    clientiPage.visitPage();
+    clientiPage.openNewClientSidebar();
 
     const codiceCliente = `CLI-${Date.now()}`;
     const emailCliente = `cliente.docdesc.${Date.now()}@test.local`;
-    cy.typeInto('#codice', codiceCliente);
-    cy.typeInto('#ragione_sociale', 'Cliente Test Descrizione SRL');
-    cy.typeInto('#email', emailCliente);
+    clientiPage.fillClientForm({
+      codice: codiceCliente,
+      ragioneSociale: 'Cliente Test Descrizione SRL',
+      email: emailCliente
+    });
 
-    cy.get('button[type="submit"][form="entity-form"]').scrollIntoView().click({ force: true });
-    cy.get('#entity-id', { timeout: 10000 }).invoke('val').should('match', /.+/);
-
-    cy.get('[data-tab="attachments"]').click();
+    clientiPage.submitForm();
+    clientiPage.waitForSaveComplete();
+    clientiPage.switchTab('attachments');
 
     const fileName = 'contract.pdf';
     const description = 'Contratto di fornitura 2026';
 
     cy.get('#document-upload').selectFile({
       contents: Cypress.Buffer.from('PDF content'),
-      fileName: fileName,
+      fileName,
       mimeType: 'application/pdf'
     }, { force: true });
 
@@ -126,21 +133,21 @@ describe('Anagrafica Clienti - Documenti', () => {
 
     cy.seedAdmin(adminEmail, adminPassword);
     cy.login(adminEmail, adminPassword);
-    cy.visit('/anagrafica-clienti', { failOnStatusCode: false });
-
-    cy.get('#new-entity-btn').click();
+    clientiPage.visitPage();
+    clientiPage.openNewClientSidebar();
 
     const codiceCliente = `CLI-${Date.now()}`;
     const emailCliente = `cliente.viewdocs.${Date.now()}@test.local`;
-    cy.typeInto('#codice', codiceCliente);
-    cy.typeInto('#ragione_sociale', 'Cliente Test View SRL');
-    cy.typeInto('#piva', '55667788990');
-    cy.typeInto('#email', emailCliente);
+    clientiPage.fillClientForm({
+      codice: codiceCliente,
+      ragioneSociale: 'Cliente Test View SRL',
+      piva: '55667788990',
+      email: emailCliente
+    });
 
-    cy.get('button[type="submit"][form="entity-form"]').scrollIntoView().click({ force: true });
-    cy.get('#entity-id', { timeout: 10000 }).invoke('val').should('match', /.+/);
-
-    cy.get('[data-tab="attachments"]').click();
+    clientiPage.submitForm();
+    clientiPage.waitForSaveComplete();
+    clientiPage.switchTab('attachments');
 
     cy.get('#document-upload').selectFile({
       contents: Cypress.Buffer.from('Doc 1'),
@@ -159,13 +166,9 @@ describe('Anagrafica Clienti - Documenti', () => {
 
     cy.get('.file-preview-item.existing-file').should('have.length', 2);
 
-    cy.get('#close-sidebar-btn').click();
-    cy.searchDataTable(codiceCliente);
-    cy.get('#data-table').contains('td', codiceCliente).closest('tr').within(() => {
-      cy.get('.btn-edit').click();
-    });
-
-    cy.get('[data-tab="attachments"]').click();
+    clientiPage.closeSidebar();
+    clientiPage.editClient(codiceCliente);
+    clientiPage.switchTab('attachments');
     cy.get('.file-preview-item.existing-file', { timeout: 10000 }).should('have.length', 2);
     cy.get('.file-name-link').first().should('contain', 'documento');
   });

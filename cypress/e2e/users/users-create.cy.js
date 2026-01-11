@@ -1,35 +1,43 @@
-describe('Users - creazione', () => {
+import { UsersPage } from '../../pages/UsersPage.js';
+
+/**
+ * Test di esempio usando Page Objects
+ * Questo test mostra come utilizzare i Page Objects per creare test più leggibili e manutenibili
+ */
+describe('Users - creazione (con Page Objects)', () => {
+  const usersPage = new UsersPage();
+
+  before(() => {
+    cy.clearAllUsers();
+  });
+
   it('dovrebbe creare un nuovo utente operatore', () => {
     const adminEmail = `admin.${Date.now()}@test.local`;
     const adminPassword = 'AdminPass123!';
 
     cy.seedAdmin(adminEmail, adminPassword);
-
     cy.login(adminEmail, adminPassword);
 
-    cy.visit('/users', { failOnStatusCode: false });
-
-    cy.get('#new-entity-btn').click();
-
-    // Attendi che la sidebar sia completamente aperta
-    cy.get('#entity-form-sidebar').should('have.class', 'open');
+    // Usa il Page Object per navigare e interagire con la pagina
+    usersPage.visitPage();
+    usersPage.openNewUserSidebar();
 
     const userEmail = `operatore.${Date.now()}@test.local`;
 
-    // Usa invoke('val') per evitare problemi con re-render
-    cy.get('#nome').invoke('val', 'Mario');
-    cy.get('#cognome').invoke('val', 'Rossi');
-    cy.get('#email').invoke('val', userEmail);
-    cy.get('#password').invoke('val', 'Password123!');
+    // Usa il Page Object per compilare il form
+    usersPage.fillUserForm({
+      nome: 'Mario',
+      cognome: 'Rossi',
+      email: userEmail,
+      password: 'Password123!',
+      ruolo: 'operatore'
+    });
 
-    cy.get('#ruolo-multiselect-hidden').select('operatore', { force: true });
-    cy.get('#ruolo-multiselect-hidden').should('have.value', 'operatore');
+    usersPage.submitForm();
+    usersPage.waitForSaveComplete();
+    usersPage.closeSidebar();
 
-    cy.get('button[type="submit"][form="entity-form"]').scrollIntoView().click({ force: true });
-
-    cy.get('#entity-id', { timeout: 10000 }).invoke('val').should('match', /.+/);
-    cy.get('#close-sidebar-btn').click();
-
-    cy.waitForTableSync(userEmail, { exists: true });
+    // Usa il Page Object per verificare nella tabella
+    usersPage.waitForTableSync(userEmail, { exists: true });
   });
 });

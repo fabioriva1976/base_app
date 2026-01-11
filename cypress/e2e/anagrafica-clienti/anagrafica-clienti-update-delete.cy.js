@@ -1,68 +1,58 @@
+import { AnagraficaClientiPage } from '../../pages/AnagraficaClientiPage.js';
+
 describe('Anagrafica Clienti - update e delete', () => {
+  const clientiPage = new AnagraficaClientiPage();
+
+  before(() => {
+    cy.clearAllClienti();
+  });
+
   it('dovrebbe aggiornare un cliente e mostrare le azioni', () => {
     const adminEmail = `admin.update.${Date.now()}@test.local`;
     const adminPassword = 'AdminPass123!';
 
     cy.seedAdmin(adminEmail, adminPassword);
-
     cy.login(adminEmail, adminPassword);
 
-    cy.visit('/anagrafica-clienti', { failOnStatusCode: false });
-    cy.get('#new-entity-btn').click();
+    clientiPage.visitPage();
+    clientiPage.openNewClientSidebar();
 
     const codiceCliente = `CLI-UPD-${Date.now()}`;
     const emailCliente = `cliente.update.${Date.now()}@test.local`;
 
-    cy.typeInto('#codice', codiceCliente);
-    cy.typeInto('#ragione_sociale', 'Azienda Originale SRL');
-    cy.typeInto('#email', emailCliente);
-    cy.typeInto('#piva', '11111111111');
-    cy.typeInto('#telefono', '+39 333 1111111');
-
-    cy.get('button[type="submit"][form="entity-form"]').scrollIntoView().click({ force: true });
-    cy.get('#entity-id', { timeout: 10000 }).invoke('val').should('match', /.+/);
-    cy.get('#save-message', { timeout: 10000 }).should('contain', 'Salvato');
-
-    // Verifica azioni dopo la creazione
-    cy.get('[data-tab="azioni"]').click();
-    cy.get('#action-list', { timeout: 10000 }).contains('Creazione').should('be.visible');
-
-    // Aggiorna dati cliente
-    cy.get('#close-sidebar-btn').click();
-    cy.waitForTableSync(codiceCliente, { exists: true });
-    cy.findDataTableRow(codiceCliente, { timeout: 20000 });
-    cy.get('#data-table').contains('td', codiceCliente).closest('tr').within(() => {
-      cy.get('.btn-edit').click();
+    clientiPage.fillClientForm({
+      codice: codiceCliente,
+      ragioneSociale: 'Azienda Originale SRL',
+      email: emailCliente,
+      piva: '11111111111',
+      telefono: '+39 333 1111111'
     });
 
-    cy.typeInto('#ragione_sociale', 'Azienda Modificata SRL');
-    cy.typeInto('#piva', '22222222222');
-    cy.typeInto('#telefono', '+39 333 2222222');
-    cy.typeInto('#indirizzo', 'Via Nuova 456');
-    cy.typeInto('#citta', 'Roma');
-    cy.typeInto('#cap', '00100');
+    clientiPage.submitForm();
+    clientiPage.waitForSaveComplete();
+    clientiPage.shouldShowSaveMessage();
 
-    cy.get('button[type="submit"][form="entity-form"]').scrollIntoView().click({ force: true });
-    cy.get('button[type="submit"][form="entity-form"]').should('be.disabled');
-    cy.get('button[type="submit"][form="entity-form"]', { timeout: 10000 }).should('not.be.disabled');
+    clientiPage.switchTab('azioni');
+    clientiPage.shouldHaveAction('Creazione');
 
-    // Riapri per caricare lo storico azioni aggiornato
-    cy.get('#close-sidebar-btn').click();
-    cy.findDataTableRow(codiceCliente, { timeout: 20000 });
-    cy.get('#data-table').contains('td', codiceCliente).closest('tr').within(() => {
-      cy.get('.btn-edit').click();
+    clientiPage.closeSidebar();
+    clientiPage.waitForTableSync(codiceCliente, { exists: true });
+    clientiPage.editClient(codiceCliente);
+
+    clientiPage.fillClientForm({
+      ragioneSociale: 'Azienda Modificata SRL',
+      piva: '22222222222',
+      telefono: '+39 333 2222222'
     });
 
-    // Verifica dati aggiornati
-    cy.get('#ragione_sociale').should('have.value', 'Azienda Modificata SRL');
-    cy.get('#piva').should('have.value', '22222222222');
-    cy.get('#telefono').should('have.value', '+39 333 2222222');
-    cy.get('#indirizzo').should('have.value', 'Via Nuova 456');
-    cy.get('#citta').should('have.value', 'Roma');
-    cy.get('#cap').should('have.value', '00100');
+    clientiPage.submitForm();
+    clientiPage.shouldSubmitBeDisabled();
+    clientiPage.shouldSubmitBeEnabled();
 
-    cy.get('[data-tab="azioni"]').click();
-    cy.get('#action-list').contains('Modifica', { timeout: 10000 }).should('be.visible');
+    clientiPage.closeSidebar();
+    clientiPage.editClient(codiceCliente);
+    clientiPage.switchTab('azioni');
+    clientiPage.shouldHaveAction('Modifica');
   });
 
   it('dovrebbe eliminare un cliente creato', () => {
@@ -70,30 +60,28 @@ describe('Anagrafica Clienti - update e delete', () => {
     const adminPassword = 'AdminPass123!';
 
     cy.seedAdmin(adminEmail, adminPassword);
-
     cy.login(adminEmail, adminPassword);
 
-    cy.visit('/anagrafica-clienti', { failOnStatusCode: false });
-    cy.get('#new-entity-btn').click();
+    clientiPage.visitPage();
+    clientiPage.openNewClientSidebar();
 
     const codiceCliente = `CLI-DEL-${Date.now()}`;
     const emailCliente = `cliente.delete.${Date.now()}@test.local`;
 
-    cy.typeInto('#codice', codiceCliente);
-    cy.typeInto('#ragione_sociale', 'Azienda da Eliminare SRL');
-    cy.typeInto('#email', emailCliente);
-
-    cy.get('button[type="submit"][form="entity-form"]').scrollIntoView().click({ force: true });
-    cy.get('#entity-id', { timeout: 10000 }).invoke('val').should('match', /.+/);
-    cy.get('#save-message', { timeout: 10000 }).should('contain', 'Salvato');
-    cy.get('#close-sidebar-btn').click();
-    cy.findDataTableRow(codiceCliente);
-    cy.get('#data-table').contains('td', codiceCliente).closest('tr').within(() => {
-      cy.get('.btn-delete').click();
+    clientiPage.fillClientForm({
+      codice: codiceCliente,
+      ragioneSociale: 'Azienda da Eliminare SRL',
+      email: emailCliente
     });
 
-    cy.get('.btn-confirm-yes').click();
-    cy.waitForTableSync(codiceCliente, { exists: false });
+    clientiPage.submitForm();
+    clientiPage.waitForSaveComplete();
+    clientiPage.shouldShowSaveMessage();
+    clientiPage.closeSidebar();
+
+    clientiPage.deleteClient(codiceCliente);
+    clientiPage.confirmDelete();
+    clientiPage.waitForTableSync(codiceCliente, { exists: false });
   });
 
   it('dovrebbe annullare la cancellazione di un cliente', () => {
@@ -101,30 +89,28 @@ describe('Anagrafica Clienti - update e delete', () => {
     const adminPassword = 'AdminPass123!';
 
     cy.seedAdmin(adminEmail, adminPassword);
-
     cy.login(adminEmail, adminPassword);
 
-    cy.visit('/anagrafica-clienti', { failOnStatusCode: false });
-    cy.get('#new-entity-btn').click();
+    clientiPage.visitPage();
+    clientiPage.openNewClientSidebar();
 
     const codiceCliente = `CLI-CANCEL-${Date.now()}`;
     const emailCliente = `cliente.cancel.${Date.now()}@test.local`;
 
-    cy.typeInto('#codice', codiceCliente);
-    cy.typeInto('#ragione_sociale', 'Azienda Non Eliminare SRL');
-    cy.typeInto('#email', emailCliente);
-
-    cy.get('button[type="submit"][form="entity-form"]').scrollIntoView().click({ force: true });
-    cy.get('#entity-id', { timeout: 10000 }).invoke('val').should('match', /.+/);
-    cy.get('#save-message', { timeout: 10000 }).should('contain', 'Salvato');
-    cy.get('#close-sidebar-btn').click();
-    cy.waitForTableSync(codiceCliente, { exists: true });
-    cy.findDataTableRow(codiceCliente, { timeout: 20000 });
-    cy.get('#data-table').contains('td', codiceCliente).closest('tr').within(() => {
-      cy.get('.btn-delete').click();
+    clientiPage.fillClientForm({
+      codice: codiceCliente,
+      ragioneSociale: 'Azienda Non Eliminare SRL',
+      email: emailCliente
     });
 
-    cy.get('.btn-confirm-no').click();
-    cy.waitForTableSync(codiceCliente, { exists: true });
+    clientiPage.submitForm();
+    clientiPage.waitForSaveComplete();
+    clientiPage.shouldShowSaveMessage();
+    clientiPage.closeSidebar();
+
+    clientiPage.waitForTableSync(codiceCliente, { exists: true });
+    clientiPage.deleteClient(codiceCliente);
+    clientiPage.cancelDelete();
+    clientiPage.waitForTableSync(codiceCliente, { exists: true });
   });
 });

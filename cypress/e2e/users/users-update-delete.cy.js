@@ -1,57 +1,53 @@
-describe('Users - update e delete', () => {
-  function setFieldValue(selector, value) {
-    cy.get(selector).invoke('val', value).trigger('input', { force: true });
-  }
+import { UsersPage } from '../../pages/UsersPage.js';
+
+describe('Users - update e delete (con Page Objects)', () => {
+  const usersPage = new UsersPage();
+
+  before(() => {
+    cy.clearAllUsers();
+  });
 
   it('dovrebbe aggiornare un utente e mostrare le azioni', () => {
     const adminEmail = `admin.update.${Date.now()}@test.local`;
     const adminPassword = 'AdminPass123!';
 
     cy.seedAdmin(adminEmail, adminPassword);
-
     cy.login(adminEmail, adminPassword);
 
-    cy.visit('/users', { failOnStatusCode: false });
-    cy.get('#new-entity-btn').click();
+    usersPage.visitPage();
+    usersPage.openNewUserSidebar();
 
     const userEmail = `operatore.update.${Date.now()}@test.local`;
 
-    setFieldValue('#nome', 'Mario');
-    setFieldValue('#cognome', 'Rossi');
-    setFieldValue('#email', userEmail);
-    setFieldValue('#password', 'Password123!');
-    cy.get('#ruolo-multiselect-hidden').select('operatore', { force: true });
-
-    cy.get('button[type="submit"][form="entity-form"]').scrollIntoView().click({ force: true });
-    cy.get('#entity-id', { timeout: 10000 }).invoke('val').should('match', /.+/);
-
-    // Verifica azioni dopo la creazione
-    cy.get('[data-tab="azioni"]').click();
-    cy.get('#action-list', { timeout: 10000 }).contains('Creazione').should('be.visible');
-
-    // Aggiorna dati utente
-    cy.get('#entity-id', { timeout: 10000 }).invoke('val').should('match', /.+/);
-    cy.get('#close-sidebar-btn').click();
-    cy.findDataTableRow(userEmail);
-    cy.get('#data-table').contains('td', userEmail).closest('tr').within(() => {
-      cy.get('.btn-edit').click();
+    usersPage.fillUserForm({
+      nome: 'Mario',
+      cognome: 'Rossi',
+      email: userEmail,
+      password: 'Password123!',
+      ruolo: 'operatore'
     });
 
-    setFieldValue('#nome', 'Luca');
-    setFieldValue('#cognome', 'Bianchi');
-    cy.get('button[type="submit"][form="entity-form"]').scrollIntoView().click({ force: true });
-    cy.get('button[type="submit"][form="entity-form"]').should('be.disabled');
-    cy.get('button[type="submit"][form="entity-form"]', { timeout: 10000 }).should('not.be.disabled');
+    usersPage.submitForm();
+    usersPage.waitForSaveComplete();
+    usersPage.openActionsTab();
+    usersPage.expectAction('Creazione');
 
-    // Riapri per caricare lo storico azioni aggiornato
-    cy.get('#close-sidebar-btn').click();
-    cy.findDataTableRow(userEmail);
-    cy.get('#data-table').contains('td', userEmail).closest('tr').within(() => {
-      cy.get('.btn-edit').click();
+    usersPage.closeSidebar();
+    usersPage.editUser(userEmail);
+
+    usersPage.fillUserForm({
+      nome: 'Luca',
+      cognome: 'Bianchi'
     });
 
-    cy.get('[data-tab="azioni"]').click();
-    cy.get('#action-list').contains('Modifica', { timeout: 10000 }).should('be.visible');
+    usersPage.submitForm();
+    usersPage.shouldSubmitBeDisabled();
+    usersPage.shouldSubmitBeEnabled();
+
+    usersPage.closeSidebar();
+    usersPage.editUser(userEmail);
+    usersPage.openActionsTab();
+    usersPage.expectAction('Modifica');
   });
 
   it('dovrebbe eliminare un utente creato', () => {
@@ -59,32 +55,28 @@ describe('Users - update e delete', () => {
     const adminPassword = 'AdminPass123!';
 
     cy.seedAdmin(adminEmail, adminPassword);
-
     cy.login(adminEmail, adminPassword);
 
-    cy.visit('/users', { failOnStatusCode: false });
-    cy.get('#new-entity-btn').click();
+    usersPage.visitPage();
+    usersPage.openNewUserSidebar();
 
     const userEmail = `operatore.delete.${Date.now()}@test.local`;
 
-    setFieldValue('#nome', 'Elisa');
-    setFieldValue('#cognome', 'Verdi');
-    setFieldValue('#email', userEmail);
-    setFieldValue('#password', 'Password123!');
-    cy.get('#ruolo-multiselect-hidden').select('operatore', { force: true });
-
-    cy.get('button[type="submit"][form="entity-form"]').scrollIntoView().click({ force: true });
-    cy.get('#entity-id', { timeout: 10000 }).invoke('val').should('match', /.+/);
-    cy.get('#entity-id', { timeout: 10000 }).invoke('val').should('match', /.+/);
-    cy.get('#close-sidebar-btn').click();
-    cy.findDataTableRow(userEmail);
-    cy.get('#data-table').contains('td', userEmail).closest('tr').within(() => {
-      cy.get('.btn-delete').click();
+    usersPage.fillUserForm({
+      nome: 'Elisa',
+      cognome: 'Verdi',
+      email: userEmail,
+      password: 'Password123!',
+      ruolo: 'operatore'
     });
 
-    cy.get('.btn-confirm-yes').click();
+    usersPage.submitForm();
+    usersPage.waitForSaveComplete();
+    usersPage.closeSidebar();
 
-    cy.searchDataTable(userEmail);
-    cy.get('#data-table', { timeout: 10000 }).should('not.contain', userEmail);
+    usersPage.deleteUser(userEmail);
+    usersPage.confirmDelete();
+
+    usersPage.waitForTableSync(userEmail, { exists: false });
   });
 });

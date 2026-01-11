@@ -1,26 +1,33 @@
+import { AnagraficaClientiPage } from '../../pages/AnagraficaClientiPage.js';
+
 describe('Anagrafica Clienti - Note', () => {
+  const clientiPage = new AnagraficaClientiPage();
+
+  before(() => {
+    cy.clearAllClienti();
+  });
+
   it('dovrebbe aggiungere una nota a un cliente', () => {
     const adminEmail = `admin.note.${Date.now()}@test.local`;
     const adminPassword = 'AdminPass123!';
 
     cy.seedAdmin(adminEmail, adminPassword);
     cy.login(adminEmail, adminPassword);
-    cy.visit('/anagrafica-clienti', { failOnStatusCode: false });
-
-    cy.get('#new-entity-btn').click();
+    clientiPage.visitPage();
+    clientiPage.openNewClientSidebar();
 
     const codiceCliente = `CLI-${Date.now()}`;
     const emailCliente = `note.${Date.now()}@test.local`;
-    cy.typeInto('#codice', codiceCliente);
-    cy.typeInto('#ragione_sociale', 'Cliente Test Note SRL');
-    cy.typeInto('#piva', '11111111111');
-    cy.typeInto('#email', emailCliente);
+    clientiPage.fillClientForm({
+      codice: codiceCliente,
+      ragioneSociale: 'Cliente Test Note SRL',
+      piva: '11111111111',
+      email: emailCliente
+    });
 
-    cy.get('button[type="submit"][form="entity-form"]').scrollIntoView().click({ force: true });
-    cy.get('#entity-id', { timeout: 10000 }).invoke('val').should('match', /.+/);
-
-    cy.get('[data-tab="note"]').click();
-    cy.get('#tab-note').should('be.visible');
+    clientiPage.submitForm();
+    clientiPage.waitForSaveComplete();
+    clientiPage.switchTab('note');
 
     const notaText = 'Cliente molto importante, richiamare entro fine mese';
     cy.typeInto('#comment-text', notaText);
@@ -31,7 +38,7 @@ describe('Anagrafica Clienti - Note', () => {
     cy.get('.comment-user').should('be.visible');
     cy.get('.comment-date').should('be.visible');
 
-    cy.get('[data-tab="azioni"]').click();
+    clientiPage.switchTab('azioni');
     cy.get('#action-list', { timeout: 20000 }).should('be.visible');
   });
 
@@ -41,21 +48,21 @@ describe('Anagrafica Clienti - Note', () => {
 
     cy.seedAdmin(adminEmail, adminPassword);
     cy.login(adminEmail, adminPassword);
-    cy.visit('/anagrafica-clienti', { failOnStatusCode: false });
-
-    cy.get('#new-entity-btn').click();
+    clientiPage.visitPage();
+    clientiPage.openNewClientSidebar();
 
     const codiceCliente = `CLI-${Date.now()}`;
     const emailCliente = `multinote.${Date.now()}@test.local`;
-    cy.typeInto('#codice', codiceCliente);
-    cy.typeInto('#ragione_sociale', 'Cliente Test Multi Note SRL');
-    cy.typeInto('#piva', '22222222222');
-    cy.typeInto('#email', emailCliente);
+    clientiPage.fillClientForm({
+      codice: codiceCliente,
+      ragioneSociale: 'Cliente Test Multi Note SRL',
+      piva: '22222222222',
+      email: emailCliente
+    });
 
-    cy.get('button[type="submit"][form="entity-form"]').scrollIntoView().click({ force: true });
-    cy.get('#entity-id', { timeout: 10000 }).invoke('val').should('match', /.+/);
-
-    cy.get('[data-tab="note"]').click();
+    clientiPage.submitForm();
+    clientiPage.waitForSaveComplete();
+    clientiPage.switchTab('note');
 
     const nota1 = 'Prima nota del cliente';
     cy.typeInto('#comment-text', nota1);
@@ -86,21 +93,22 @@ describe('Anagrafica Clienti - Note', () => {
 
     cy.seedAdmin(adminEmail, adminPassword);
     cy.login(adminEmail, adminPassword);
-    cy.visit('/anagrafica-clienti', { failOnStatusCode: false });
-
-    cy.get('#new-entity-btn').click();
+    clientiPage.visitPage();
+    clientiPage.openNewClientSidebar();
 
     const codiceCliente = `CLI-${Date.now()}`;
     const emailCliente = `emptynote.${Date.now()}@test.local`;
-    cy.typeInto('#codice', codiceCliente);
-    cy.typeInto('#ragione_sociale', 'Cliente Senza Note SRL');
-    cy.typeInto('#piva', '33333333333');
-    cy.typeInto('#email', emailCliente);
+    clientiPage.fillClientForm({
+      codice: codiceCliente,
+      ragioneSociale: 'Cliente Senza Note SRL',
+      piva: '33333333333',
+      email: emailCliente
+    });
 
-    cy.get('button[type="submit"][form="entity-form"]').scrollIntoView().click({ force: true });
-    cy.get('#entity-id', { timeout: 10000 }).invoke('val').should('match', /.+/);
+    clientiPage.submitForm();
+    clientiPage.waitForSaveComplete();
+    clientiPage.switchTab('note');
 
-    cy.get('[data-tab="note"]').click();
     cy.get('#comment-list').find('.empty-state').should('be.visible');
     cy.get('.comment-item').should('not.exist');
   });
@@ -111,36 +119,32 @@ describe('Anagrafica Clienti - Note', () => {
 
     cy.seedAdmin(adminEmail, adminPassword);
     cy.login(adminEmail, adminPassword);
-    cy.visit('/anagrafica-clienti', { failOnStatusCode: false });
-
-    cy.get('#new-entity-btn').click();
+    clientiPage.visitPage();
+    clientiPage.openNewClientSidebar();
 
     const codiceCliente = `CLI-${Date.now()}`;
     const emailCliente = `persistnote.${Date.now()}@test.local`;
-    cy.typeInto('#codice', codiceCliente);
-    cy.typeInto('#ragione_sociale', 'Cliente Persist Note SRL');
-    cy.typeInto('#piva', '44444444444');
-    cy.typeInto('#email', emailCliente);
+    clientiPage.fillClientForm({
+      codice: codiceCliente,
+      ragioneSociale: 'Cliente Persist Note SRL',
+      piva: '44444444444',
+      email: emailCliente
+    });
 
-    cy.get('button[type="submit"][form="entity-form"]').scrollIntoView().click({ force: true });
-    cy.get('#entity-id', { timeout: 10000 }).invoke('val').should('match', /.+/);
-
-    cy.get('[data-tab="note"]').click();
+    clientiPage.submitForm();
+    clientiPage.waitForSaveComplete();
+    clientiPage.switchTab('note');
 
     const notaText = 'Questa nota deve persistere';
     cy.typeInto('#comment-text', notaText);
     cy.get('#save-comment-btn').click();
-    cy.get('.comment-item', { timeout: 10000 }).should('be.visible');
+    cy.get('#save-comment-btn', { timeout: 10000 }).should('not.be.disabled');
+    cy.contains('.comment-body', notaText, { timeout: 10000 }).should('be.visible');
 
-    cy.get('#close-sidebar-btn').click();
-    cy.searchDataTable(codiceCliente);
-    cy.get('#data-table').contains('td', codiceCliente).closest('tr').within(() => {
-      cy.get('.btn-edit').click();
-    });
-
-    cy.get('[data-tab="note"]').click();
-    cy.get('.comment-item', { timeout: 10000 }).should('be.visible');
-    cy.get('.comment-body').should('contain', notaText);
+    clientiPage.closeSidebar();
+    clientiPage.editClient(codiceCliente);
+    clientiPage.switchTab('note');
+    cy.contains('.comment-body', notaText, { timeout: 20000 }).should('be.visible');
   });
 
   it('dovrebbe pulire il campo testo dopo aver salvato una nota', () => {
@@ -149,21 +153,21 @@ describe('Anagrafica Clienti - Note', () => {
 
     cy.seedAdmin(adminEmail, adminPassword);
     cy.login(adminEmail, adminPassword);
-    cy.visit('/anagrafica-clienti', { failOnStatusCode: false });
-
-    cy.get('#new-entity-btn').click();
+    clientiPage.visitPage();
+    clientiPage.openNewClientSidebar();
 
     const codiceCliente = `CLI-${Date.now()}`;
     const emailCliente = `clearnote.${Date.now()}@test.local`;
-    cy.typeInto('#codice', codiceCliente);
-    cy.typeInto('#ragione_sociale', 'Cliente Clear Note SRL');
-    cy.typeInto('#piva', '55555555555');
-    cy.typeInto('#email', emailCliente);
+    clientiPage.fillClientForm({
+      codice: codiceCliente,
+      ragioneSociale: 'Cliente Clear Note SRL',
+      piva: '55555555555',
+      email: emailCliente
+    });
 
-    cy.get('button[type="submit"][form="entity-form"]').scrollIntoView().click({ force: true });
-    cy.get('#entity-id', { timeout: 10000 }).invoke('val').should('match', /.+/);
-
-    cy.get('[data-tab="note"]').click();
+    clientiPage.submitForm();
+    clientiPage.waitForSaveComplete();
+    clientiPage.switchTab('note');
 
     const notaText = 'Nota di prova';
     cy.typeInto('#comment-text', notaText);
@@ -179,21 +183,21 @@ describe('Anagrafica Clienti - Note', () => {
 
     cy.seedAdmin(adminEmail, adminPassword);
     cy.login(adminEmail, adminPassword);
-    cy.visit('/anagrafica-clienti', { failOnStatusCode: false });
-
-    cy.get('#new-entity-btn').click();
+    clientiPage.visitPage();
+    clientiPage.openNewClientSidebar();
 
     const codiceCliente = `CLI-${Date.now()}`;
     const emailCliente = `metanote.${Date.now()}@test.local`;
-    cy.typeInto('#codice', codiceCliente);
-    cy.typeInto('#ragione_sociale', 'Cliente Metadata Note SRL');
-    cy.typeInto('#piva', '66666666666');
-    cy.typeInto('#email', emailCliente);
+    clientiPage.fillClientForm({
+      codice: codiceCliente,
+      ragioneSociale: 'Cliente Metadata Note SRL',
+      piva: '66666666666',
+      email: emailCliente
+    });
 
-    cy.get('button[type="submit"][form="entity-form"]').scrollIntoView().click({ force: true });
-    cy.get('#entity-id', { timeout: 10000 }).invoke('val').should('match', /.+/);
-
-    cy.get('[data-tab="note"]').click();
+    clientiPage.submitForm();
+    clientiPage.waitForSaveComplete();
+    clientiPage.switchTab('note');
 
     const notaText = 'Nota con metadata';
     cy.typeInto('#comment-text', notaText);

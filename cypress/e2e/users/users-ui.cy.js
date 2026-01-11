@@ -1,139 +1,143 @@
-describe('Users - UI e Sidebar', () => {
+import { UsersPage } from '../../pages/UsersPage.js';
+
+describe('Users - UI e Sidebar (con Page Objects)', () => {
+  const usersPage = new UsersPage();
+  const adminPassword = 'AdminPass123!';
   const credentials = {
     email: `admin.users.ui.${Date.now()}@test.local`,
-    password: 'AdminPass123!'
+    password: adminPassword
   };
 
   before(() => {
+    cy.clearAllUsers();
     cy.seedAdmin(credentials.email, credentials.password);
   });
 
   beforeEach(() => {
     cy.login(credentials.email, credentials.password);
-    cy.visit('/users', { failOnStatusCode: false });
+    usersPage.visitPage();
   });
 
   describe('Tabella', () => {
     it('dovrebbe visualizzare le colonne corrette', () => {
-      // Attendi che la tabella sia caricata
-      cy.get('#data-table', { timeout: 10000 }).should('exist');
-      cy.get('#data-table').scrollIntoView().should('be.visible');
-
-      // Verifica le colonne - usa exist invece di be.visible per colonne che potrebbero essere fuori viewport
-      cy.get('#data-table').contains('th', 'Nome').should('exist');
-      cy.get('#data-table').contains('th', 'Cognome').should('exist');
-      cy.get('#data-table').contains('th', 'Email').should('exist');
-      cy.get('#data-table').contains('th', 'Ruolo').should('exist');
-      cy.get('#data-table').contains('th', 'Status').should('exist');
-      cy.get('#data-table').contains('th', 'Azioni').should('exist');
+      usersPage.shouldHaveAllColumns();
     });
 
     it('dovrebbe avere il pulsante Nuovo Utente', () => {
-      cy.get('#new-entity-btn').should('be.visible');
-      cy.get('#new-entity-btn').should('contain', 'Nuovo Utente');
+      usersPage.shouldShowNewUserButton();
     });
 
     it('dovrebbe filtrare i risultati con la ricerca', () => {
-      cy.get('#new-entity-btn').click();
+      usersPage.openNewUserSidebar();
 
       const userEmail = `search.${Date.now()}@test.local`;
-      cy.typeInto('#nome', 'Ricerca');
-      cy.typeInto('#cognome', 'Utente');
-      cy.typeInto('#email', userEmail);
-      cy.typeInto('#password', 'Password123!');
-      cy.get('#ruolo-multiselect-hidden').select('operatore', { force: true });
-      cy.get('button[type="submit"][form="entity-form"]').scrollIntoView().click({ force: true });
-      cy.get('#entity-id', { timeout: 10000 }).invoke('val').should('match', /.+/);
-      cy.get('#close-sidebar-btn').click();
+      usersPage.fillUserForm({
+        nome: 'Ricerca',
+        cognome: 'Utente',
+        email: userEmail,
+        password: 'Password123!',
+        ruolo: 'operatore'
+      });
+      usersPage.submitForm();
+      usersPage.waitForSaveComplete();
+      usersPage.closeSidebar();
 
-      cy.waitForTableSync(userEmail, { exists: true });
-      cy.get('#data-table').contains('td', userEmail).should('be.visible');
+      usersPage.waitForTableSync(userEmail, { exists: true });
+      usersPage.findTableRow(userEmail);
     });
   });
 
   describe('Sidebar - Apertura e Chiusura', () => {
     it('dovrebbe aprire la sidebar al click su Nuovo Utente', () => {
-      cy.get('#entity-form-sidebar').should('not.have.class', 'open');
-      cy.get('#new-entity-btn').click();
-      cy.get('#entity-form-sidebar').should('have.class', 'open');
+      usersPage.expectSidebarOpen(false);
+      usersPage.openNewUserSidebar();
+      usersPage.expectSidebarOpen(true);
     });
 
     it('dovrebbe mostrare il titolo "Nuovo Utente"', () => {
-      cy.get('#new-entity-btn').click();
-      cy.get('#entity-form-title').should('contain', 'Nuovo Utente');
+      usersPage.openNewUserSidebar();
+      usersPage.expectSidebarTitle('Nuovo Utente');
     });
 
     it('dovrebbe chiudere la sidebar con il bottone X', () => {
-      cy.get('#new-entity-btn').click();
-      cy.get('#entity-form-sidebar').should('have.class', 'open');
-      cy.get('#close-sidebar-btn').click();
-      cy.get('#entity-form-sidebar').should('not.have.class', 'open');
+      usersPage.openNewUserSidebar();
+      usersPage.closeSidebar();
+      usersPage.expectSidebarOpen(false);
+    });
+
+    it('dovrebbe chiudere la sidebar al click sulla tabella', () => {
+      usersPage.openNewUserSidebar();
+      usersPage.clickTable();
+      usersPage.expectSidebarOpen(false);
     });
 
     it('dovrebbe cambiare titolo quando si modifica un utente', () => {
-      cy.get('#new-entity-btn').click();
+      usersPage.openNewUserSidebar();
 
       const userEmail = `title.${Date.now()}@test.local`;
       const fullName = 'Titolo Utente';
-      cy.typeInto('#nome', 'Titolo');
-      cy.typeInto('#cognome', 'Utente');
-      cy.typeInto('#email', userEmail);
-      cy.typeInto('#password', 'Password123!');
-      cy.get('#ruolo-multiselect-hidden').select('operatore', { force: true });
-      cy.get('button[type="submit"][form="entity-form"]').scrollIntoView().click({ force: true });
-      cy.get('#entity-id', { timeout: 10000 }).invoke('val').should('match', /.+/);
-      cy.get('#close-sidebar-btn').click();
-
-      cy.waitForTableSync(userEmail, { exists: true });
-      cy.get('#data-table').contains('td', userEmail).closest('tr').within(() => {
-        cy.get('.btn-edit').click();
+      usersPage.fillUserForm({
+        nome: 'Titolo',
+        cognome: 'Utente',
+        email: userEmail,
+        password: 'Password123!',
+        ruolo: 'operatore'
       });
+      usersPage.submitForm();
+      usersPage.waitForSaveComplete();
+      usersPage.closeSidebar();
 
-      cy.get('#entity-form-title').should('contain', fullName);
+      usersPage.waitForTableSync(userEmail, { exists: true });
+      usersPage.editUser(userEmail);
+      usersPage.expectSidebarTitle(fullName);
     });
   });
 
   describe('Sidebar - Tab per Nuovo Utente', () => {
     it('dovrebbe nascondere il tab Azioni per nuovo utente', () => {
-      cy.get('#new-entity-btn').click();
-      cy.get('[data-tab="anagrafica"]').should('be.visible');
-      cy.get('[data-tab="azioni"]').should('not.be.visible');
+      usersPage.openNewUserSidebar();
+      usersPage.expectAnagraficaTabVisible();
+      usersPage.expectActionsTabVisible(false);
     });
 
     it('dovrebbe mostrare il tab Azioni per utente esistente', () => {
-      cy.get('#new-entity-btn').click();
+      usersPage.openNewUserSidebar();
 
       const userEmail = `tabs.${Date.now()}@test.local`;
-      cy.typeInto('#nome', 'Tab');
-      cy.typeInto('#cognome', 'Utente');
-      cy.typeInto('#email', userEmail);
-      cy.typeInto('#password', 'Password123!');
-      cy.get('#ruolo-multiselect-hidden').select('operatore', { force: true });
-      cy.get('button[type="submit"][form="entity-form"]').scrollIntoView().click({ force: true });
-      cy.get('#entity-id', { timeout: 10000 }).invoke('val').should('match', /.+/);
+      usersPage.fillUserForm({
+        nome: 'Tab',
+        cognome: 'Utente',
+        email: userEmail,
+        password: 'Password123!',
+        ruolo: 'operatore'
+      });
+      usersPage.submitForm();
+      usersPage.waitForSaveComplete();
 
-      cy.get('[data-tab="anagrafica"]').scrollIntoView().should('be.visible');
-      cy.get('[data-tab="azioni"]').scrollIntoView().should('be.visible');
+      usersPage.expectAnagraficaTabVisible();
+      usersPage.expectActionsTabVisible(true);
     });
   });
 
   describe('Sidebar - Navigazione Tab', () => {
     it('dovrebbe cambiare tab al click', () => {
-      cy.get('#new-entity-btn').click();
+      usersPage.openNewUserSidebar();
 
       const userEmail = `nav.${Date.now()}@test.local`;
-      cy.typeInto('#nome', 'Nav');
-      cy.typeInto('#cognome', 'Utente');
-      cy.typeInto('#email', userEmail);
-      cy.typeInto('#password', 'Password123!');
-      cy.get('#ruolo-multiselect-hidden').select('operatore', { force: true });
-      cy.get('button[type="submit"][form="entity-form"]').scrollIntoView().click({ force: true });
-      cy.get('#entity-id', { timeout: 10000 }).invoke('val').should('match', /.+/);
+      usersPage.fillUserForm({
+        nome: 'Nav',
+        cognome: 'Utente',
+        email: userEmail,
+        password: 'Password123!',
+        ruolo: 'operatore'
+      });
+      usersPage.submitForm();
+      usersPage.waitForSaveComplete();
 
       cy.get('#tab-anagrafica').should('have.class', 'active');
       cy.get('[data-tab="anagrafica"]').should('have.class', 'active');
 
-      cy.get('[data-tab="azioni"]').click();
+      usersPage.openActionsTab();
       cy.get('#tab-azioni').should('have.class', 'active');
       cy.get('[data-tab="azioni"]').should('have.class', 'active');
       cy.get('#tab-anagrafica').should('not.have.class', 'active');

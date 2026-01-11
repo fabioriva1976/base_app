@@ -111,7 +111,22 @@ export class UsersPage extends BasePage {
    * Verifica che il submit button non sia disabilitato
    */
   shouldSubmitBeEnabled() {
-    cy.get(this.selectors.submitButton).should('not.be.disabled');
+    cy.get(this.selectors.submitButton, { timeout: 10000 }).should('not.be.disabled');
+  }
+
+  /**
+   * Apre il tab Azioni
+   */
+  openActionsTab() {
+    cy.get(this.selectors.tabAzioni).click();
+  }
+
+  /**
+   * Verifica che la lista azioni contenga un testo
+   * @param {string} text - Testo atteso
+   */
+  expectAction(text) {
+    cy.get(this.selectors.actionList, { timeout: 10000 }).contains(text).should('be.visible');
   }
 
   /**
@@ -183,10 +198,59 @@ export class UsersPage extends BasePage {
   }
 
   /**
-   * Verifica che la tabella contenga tutte le colonne
+   * Verifica che il pulsante Nuovo Utente sia visibile
+   */
+  shouldShowNewUserButton() {
+    cy.get(this.selectors.newEntityButton).should('be.visible');
+    cy.get(this.selectors.newEntityButton).should('contain', 'Nuovo Utente');
+  }
+
+  /**
+   * Verifica la visibilita' della sidebar
+   * @param {boolean} isOpen - Stato atteso
+   */
+  expectSidebarOpen(isOpen = true) {
+    const assertion = isOpen ? 'have.class' : 'not.have.class';
+    cy.get(this.selectors.sidebar).should(assertion, 'open');
+  }
+
+  /**
+   * Verifica il titolo della sidebar
+   * @param {string} text - Testo atteso
+   */
+  expectSidebarTitle(text) {
+    cy.get(this.selectors.sidebarTitle).should('contain', text);
+  }
+
+  /**
+   * Verifica che il tab Azioni sia visibile o nascosto
+   * @param {boolean} isVisible - Stato atteso
+   */
+  expectActionsTabVisible(isVisible = true) {
+    const assertion = isVisible ? 'be.visible' : 'not.be.visible';
+    cy.get(this.selectors.tabAzioni).scrollIntoView().should(assertion);
+  }
+
+  /**
+   * Verifica che il tab Anagrafica sia visibile
+   */
+  expectAnagraficaTabVisible() {
+    cy.get(this.selectors.tabAnagrafica).scrollIntoView().should('be.visible');
+  }
+
+  /**
+   * Click sulla tabella (utile per chiudere la sidebar)
+   */
+  clickTable() {
+    cy.get(this.selectors.dataTable).click();
+  }
+
+  /**
+   * Verifica le colonne della tabella
    */
   shouldHaveAllColumns() {
-    cy.get(this.selectors.dataTable).should('exist');
+    cy.get(this.selectors.dataTable, { timeout: 10000 }).should('exist');
+    cy.get(this.selectors.dataTable).scrollIntoView().should('be.visible');
     cy.get(this.selectors.dataTable).contains('th', 'Nome').should('exist');
     cy.get(this.selectors.dataTable).contains('th', 'Cognome').should('exist');
     cy.get(this.selectors.dataTable).contains('th', 'Email').should('exist');
@@ -194,10 +258,6 @@ export class UsersPage extends BasePage {
     cy.get(this.selectors.dataTable).contains('th', 'Status').should('exist');
     cy.get(this.selectors.dataTable).contains('th', 'Azioni').should('exist');
   }
-
-  /**
-   * Verifica che il pulsante Nuovo Utente sia visibile
-   */
   shouldHaveNewUserButton() {
     cy.get(this.selectors.newEntityButton).should('be.visible');
     cy.get(this.selectors.newEntityButton).should('contain', 'Nuovo Utente');

@@ -16,6 +16,11 @@ let unsubscribeStore = null;
 let listenerReady = false;
 
 export function initPageAnagraficaClientiPage() {
+    const container = document.querySelector('.container');
+    if (container) {
+        container.dataset.tableReady = 'false';
+    }
+
     const db = getFirestore();
     attachmentUtils.setup({ db, storage, auth, functions, entityCollection: collection_name });
     actionUtils.setup({ db, auth, functions, entityCollection: collection_name });
@@ -74,6 +79,11 @@ function setupEventListeners() {
 }
 
 function renderTable() {
+    const container = document.querySelector('.container');
+    if (container) {
+        container.dataset.tableReady = 'false';
+    }
+
     const tableData = entities.map(e => [
         e.codice || 'N/D',
         e.ragione_sociale || 'N/D',
@@ -99,6 +109,28 @@ function renderTable() {
     });
 
     setupTableClickHandlers();
+
+    waitForSearchReady(container);
+}
+
+function waitForSearchReady(container, attempts = 20) {
+    if (!container) {
+        return;
+    }
+
+    const selector = 'input[type="search"], .datatable-input, .dataTable-input';
+    const input = container.querySelector(selector);
+    if (input && !input.disabled) {
+        container.dataset.tableReady = 'true';
+        return;
+    }
+
+    if (attempts <= 0) {
+        container.dataset.tableReady = 'true';
+        return;
+    }
+
+    setTimeout(() => waitForSearchReady(container, attempts - 1), 100);
 }
 
 async function saveEntity(e) {

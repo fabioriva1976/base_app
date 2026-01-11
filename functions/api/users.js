@@ -32,6 +32,7 @@ import {
 } from "../utils/authHelpers.js";
 import { logAudit, AuditAction } from "../utils/auditLogger.js";
 import { COLLECTIONS } from "../../shared/constants/collections.js";
+import { z } from "zod";
 
 // 🔧 Inizializza Firebase Admin (singleton pattern)
 if (admin.apps.length === 0) {
@@ -55,30 +56,45 @@ const COLLECTION_NAME = COLLECTIONS.USERS;
  * @param {object} data - I dati dell'utente da validare
  * @throws {HttpsError} Se i dati non sono validi
  */
-function validateUserData(data) {
-    if (!data.email || typeof data.email !== 'string' || !data.email.includes('@')) {
-        throw new HttpsError('invalid-argument', 'Email obbligatoria e valida');
-    }
-    if (data.displayName && typeof data.displayName !== 'string') {
-        throw new HttpsError('invalid-argument', 'displayName deve essere una stringa');
-    }
-}
+const userCreateSchema = z.object({
+  email: z.string().email(),
+  displayName: z.string().optional(),
+  password: z.string().optional(),
+  ruolo: z.string().optional(),
+  disabled: z.boolean().optional(),
+  nome: z.string().optional(),
+  cognome: z.string().optional(),
+  telefono: z.string().optional(),
+  status: z.boolean().optional()
+}).passthrough();
 
-function validateUserUpdateData(data) {
-  if (data.email !== undefined) {
-    if (typeof data.email !== 'string' || !data.email.includes('@')) {
-      throw new HttpsError('invalid-argument', 'Email non valida');
-    }
+const userUpdateSchema = z.object({
+  uid: z.string().min(1),
+  email: z.string().email().optional(),
+  displayName: z.string().optional(),
+  disabled: z.boolean().optional(),
+  ruolo: z.string().optional(),
+  nome: z.string().optional(),
+  cognome: z.string().optional(),
+  telefono: z.string().optional(),
+  status: z.boolean().optional()
+}).passthrough();
+
+const userSelfUpdateSchema = z.object({
+  displayName: z.string().optional(),
+  nome: z.string().optional(),
+  cognome: z.string().optional(),
+  telefono: z.string().optional(),
+  email: z.string().email().optional()
+}).passthrough();
+
+function parseWithSchema(schema, data) {
+  const result = schema.safeParse(data);
+  if (!result.success) {
+    const message = result.error.issues.map((issue) => issue.message).join("; ");
+    throw new HttpsError("invalid-argument", message);
   }
-  if (data.nome !== undefined && typeof data.nome !== 'string') {
-    throw new HttpsError('invalid-argument', 'nome deve essere una stringa');
-  }
-  if (data.cognome !== undefined && typeof data.cognome !== 'string') {
-    throw new HttpsError('invalid-argument', 'cognome deve essere una stringa');
-  }
-  if (data.telefono !== undefined && typeof data.telefono !== 'string') {
-    throw new HttpsError('invalid-argument', 'telefono deve essere una stringa');
-  }
+  return result.data;
 }
 
 /**
@@ -103,10 +119,7 @@ export const userCreateApi = onCall({ region, cors: corsOrigins, ...runtimeOpts 
   const callerRole = await requireAdmin(request);
 
   try {
-    const data = request.data || {};
-
-    // 2. VALIDAZIONE: Controlla che i dati inviati siano validi
-    validateUserData(data);
+    const data = parseWithSchema(userCreateSchema, request.data || {});
     const targetRole = data.ruolo;
 
     // 4. AUTHORIZATION: Verifica che l'admin possa creare il ruolo richiesto
@@ -220,11 +233,10 @@ export const userCreateApi = onCall({ region, cors: corsOrigins, ...runtimeOpts 
 export const userUpdateApi = onCall({ region, cors: corsOrigins, ...runtimeOpts }, async (request) => {
   // 1. SICUREZZA: Verifica permessi
   const callerRole = await requireAdmin(request);
-  const data = request.data || {};
+  const data = parseWithSchema(userUpdateSchema, request.data || {});
   const { uid, ruolo: targetRole, ...updateData } = data;
 
   try {
-    validateUserUpdateData(data);
     let currentTargetRole = await getUserRole(uid);
 
     if (!currentTargetRole) {
@@ -323,18 +335,9 @@ export const userSelfUpdateApi = onCall({ region, cors: corsOrigins, ...runtimeO
   requireAuth(request);
 
   const uid = request.auth.uid;
-  const data = request.data || {};
-  const updateData = {
-    displayName: data.displayName,
-    nome: data.nome,
-    cognome: data.cognome,
-    telefono: data.telefono,
-    email: data.email
-  };
+  const updateData = parseWithSchema(userSelfUpdateSchema, request.data || {});
 
   try {
-    validateUserUpdateData(updateData);
-
     const authUpdate = {};
     if (updateData.displayName !== undefined) authUpdate.displayName = updateData.displayName;
     if (updateData.email !== undefined) authUpdate.email = updateData.email;

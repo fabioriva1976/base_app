@@ -18,6 +18,11 @@ const labelNewEntity = 'Nuovo Utente';
 
 
 export function initUsersPage() {
+    const container = document.querySelector('.container');
+    if (container) {
+        container.dataset.tableReady = 'false';
+    }
+
     actionUtils.setup({ db, auth, functions, entityCollection: collection_name });
     const availableRoles = getAvailableRoles();
     ruoloMultiselect = new Multiselect({
@@ -83,6 +88,16 @@ export function cleanupUsersPage() {
 }
 
 function renderTable() {
+    const container = document.querySelector('.container');
+    if (container) {
+        container.dataset.tableReady = 'false';
+    }
+
+    const tableEl = document.getElementById('data-table');
+    if (tableEl) {
+        tableEl.dataset.ready = 'false';
+    }
+
     // Verifica se l'utente può gestire gli utenti (admin/superuser)
     const canManage = document.querySelector('.container')?.dataset.canManage === 'true';
 
@@ -117,6 +132,32 @@ function renderTable() {
     });
 
     setupTableClickHandlers();
+
+    if (tableEl) {
+        tableEl.dataset.ready = 'true';
+    }
+
+    waitForSearchReady(container);
+}
+
+function waitForSearchReady(container, attempts = 20) {
+    if (!container) {
+        return;
+    }
+
+    const selector = 'input[type="search"], .datatable-input, .dataTable-input';
+    const input = container.querySelector(selector);
+    if (input && !input.disabled) {
+        container.dataset.tableReady = 'true';
+        return;
+    }
+
+    if (attempts <= 0) {
+        container.dataset.tableReady = 'true';
+        return;
+    }
+
+    setTimeout(() => waitForSearchReady(container, attempts - 1), 100);
 }
 
 //CRUD entity

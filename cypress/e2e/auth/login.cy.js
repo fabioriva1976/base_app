@@ -1,14 +1,17 @@
+import { LoginPage } from '../../pages/LoginPage.js';
+
 describe('Flusso di Autenticazione', () => {
+  const loginPage = new LoginPage();
+
   beforeEach(() => {
     // Visita la pagina di login prima di ogni test
     // failOnStatusCode: false perché il middleware potrebbe causare redirect strani
-    cy.visit('/login', { failOnStatusCode: false });
+    loginPage.visit();
   });
 
   it('dovrebbe mostrare un errore con credenziali sbagliate', () => {
-    cy.typeInto('#email', 'wrong@email.com');
-    cy.typeInto('#password', 'wrongpassword');
-    cy.get('#login-btn').click();
+    loginPage.fillForm('wrong@email.com', 'wrongpassword');
+    loginPage.submit();
 
     cy.contains(/Email o password non corretti|Utente non trovato/).should('be.visible');
   });
@@ -19,9 +22,8 @@ describe('Flusso di Autenticazione', () => {
 
     cy.createAuthUser(email, password);
 
-    cy.typeInto('#email', email);
-    cy.typeInto('#password', password);
-    cy.get('#login-btn').click();
+    loginPage.fillForm(email, password);
+    loginPage.submit();
 
     // Dopo il login, l'utente viene rediretto alla dashboard
     cy.location('pathname', { timeout: 10000 }).should('eq', '/dashboard');

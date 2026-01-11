@@ -2,6 +2,8 @@
  * Comandi Cypress per l'autenticazione e gestione utenti
  */
 
+import { LoginPage } from '../../pages/LoginPage.js';
+
 const apiKey = Cypress.env('FIREBASE_API_KEY') || 'AIzaSyD8Wqok8hADg9bipYln3KpQbQ99nHVI-4s';
 const projectId = Cypress.env('FIREBASE_PROJECT_ID') || 'base-app-12108';
 const authEmulatorUrl = Cypress.env('FIREBASE_AUTH_EMULATOR_URL') || 'http://localhost:9099';
@@ -149,12 +151,20 @@ Cypress.Commands.add('clearAllUsers', () => {
 });
 
 /**
+ * Elimina tutti gli utenti dall'Auth Emulator
+ */
+Cypress.Commands.add('clearAllAuthUsers', () => {
+  return cy.request({
+    method: 'DELETE',
+    url: `${authEmulatorUrl}/emulator/v1/projects/${projectId}/accounts`,
+    failOnStatusCode: false
+  });
+});
+
+/**
  * Effettua il login tramite form
  */
 Cypress.Commands.add('login', (email, password) => {
-  cy.visit('/login', { failOnStatusCode: false });
-  cy.typeInto('#email', email);
-  cy.typeInto('#password', password);
-  cy.get('#login-btn').click();
-  cy.location('pathname', { timeout: 10000 }).should('eq', '/dashboard');
+  const loginPage = new LoginPage();
+  loginPage.login(email, password);
 });

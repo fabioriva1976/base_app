@@ -12,24 +12,27 @@ cypress/
 │   ├── users/                    # Test gestione utenti
 │   │   ├── users-create.cy.js
 │   │   ├── users-update-delete.cy.js
-│   │   ├── users-ui.cy.js
-│   │   └── users-create-po.cy.js # Esempio con Page Objects
+│   │   └── users-ui.cy.js
 │   ├── anagrafica-clienti/       # Test gestione clienti
 │   │   ├── anagrafica-clienti-create.cy.js
 │   │   ├── anagrafica-clienti-update-delete.cy.js
 │   │   ├── anagrafica-clienti-ui.cy.js
-│   │   └── anagrafica-clienti-create-po.cy.js # Esempio con Page Objects
+│   │   ├── anagrafica-clienti-documenti.cy.js
+│   │   └── anagrafica-clienti-note.cy.js
 │   ├── profile/                  # Test profilo utente
 │   │   └── profile.cy.js
 │   └── settings/                 # Test impostazioni
 │       └── settings.cy.js
 ├── pages/                        # Page Objects
 │   ├── BasePage.js              # Classe base con metodi comuni
+│   ├── LoginPage.js             # Page Object per login
+│   ├── ProfilePage.js           # Page Object profilo
 │   ├── UsersPage.js             # Page Object per users
 │   └── AnagraficaClientiPage.js # Page Object per clienti
 ├── support/
 │   ├── commands/                # Custom commands organizzati
 │   │   ├── auth.js              # Comandi autenticazione
+│   │   ├── firestore.js         # Comandi pulizia Firestore
 │   │   ├── table.js             # Comandi tabelle
 │   │   └── form.js              # Comandi form
 │   ├── utils/                   # Utility functions
@@ -50,7 +53,6 @@ cypress/
   - `*-ui.cy.js` - Test UI, sidebar, tabelle, navigazione
   - `*-create.cy.js` - Test creazione entità
   - `*-update-delete.cy.js` - Test modifica ed eliminazione
-  - `*-po.cy.js` - Test usando Page Objects (esempi)
 
 ### Page Objects
 - **Pattern**: `<Feature>Page.js` (PascalCase)
@@ -61,6 +63,7 @@ cypress/
 - `auth.js` - Autenticazione e gestione utenti
 - `table.js` - Interazione con DataTable
 - `form.js` - Manipolazione form
+- `firestore.js` - Pulizia dati Firestore
 
 ## 🔧 Page Objects
 
@@ -119,6 +122,7 @@ cy.fixture('testData').then((testData) => {
 - `cy.seedAdmin(email, password)` - Crea admin completo
 - `cy.seedOperatore(email, password)` - Crea operatore completo
 - `cy.seedSuperuser(email, password)` - Crea superuser completo
+- `cy.clearAllAuthUsers()` - Elimina tutti gli utenti Auth Emulator
 - `cy.login(email, password)` - Login tramite form
 
 ### Table Commands
@@ -128,6 +132,11 @@ cy.fixture('testData').then((testData) => {
 
 ### Form Commands
 - `cy.typeInto(selector, value)` - Pulisce e inserisce valore
+
+### Firestore Commands
+- `cy.clearAllUsers()` - Elimina tutti gli utenti Firestore
+- `cy.clearAllClienti()` - Elimina tutti i clienti
+- `cy.clearCollection(collection)` - Elimina tutti i documenti di una collection
 
 ## 🔄 Utilities
 
@@ -185,7 +194,7 @@ Per facilitare l'estensione e la creazione di nuovi test tramite AI:
 ### Opzione 2: Test con Page Objects (Raccomandato)
 
 1. Se necessario, crea/estendi Page Object in `cypress/pages/`
-2. Crea test file: `cypress/e2e/<feature>/<feature>-<operazione>-po.cy.js`
+2. Crea test file: `cypress/e2e/<feature>/<feature>-<operazione>.cy.js`
 3. Importa e usa Page Object
 4. Aggiungi spec a `cypress.config.js`
 

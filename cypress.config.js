@@ -15,7 +15,6 @@ export default defineConfig({
       'cypress/e2e/users/users-create.cy.js',
       'cypress/e2e/users/users-update-delete.cy.js',
       'cypress/e2e/users/users-ui.cy.js',
-      'cypress/e2e/users/users-create-po.cy.js', // Esempio con Page Objects
 
       // Settings tests
       'cypress/e2e/settings/settings.cy.js',
@@ -25,8 +24,7 @@ export default defineConfig({
       'cypress/e2e/anagrafica-clienti/anagrafica-clienti-update-delete.cy.js',
       'cypress/e2e/anagrafica-clienti/anagrafica-clienti-ui.cy.js',
       'cypress/e2e/anagrafica-clienti/anagrafica-clienti-documenti.cy.js',
-      'cypress/e2e/anagrafica-clienti/anagrafica-clienti-note.cy.js',
-      'cypress/e2e/anagrafica-clienti/anagrafica-clienti-create-po.cy.js' // Esempio con Page Objects
+      'cypress/e2e/anagrafica-clienti/anagrafica-clienti-note.cy.js'
     ],
   },
 });

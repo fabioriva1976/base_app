@@ -4,6 +4,7 @@
 import './commands/auth.js';
 import './commands/table.js';
 import './commands/form.js';
+import './commands/firestore.js';
 
 // Ignora eccezioni non catturate
 Cypress.on('uncaught:exception', (err, runnable) => {

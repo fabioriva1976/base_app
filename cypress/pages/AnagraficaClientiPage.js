@@ -81,6 +81,15 @@ export class AnagraficaClientiPage extends BasePage {
   }
 
   /**
+   * Verifica la visibilita' della sidebar
+   * @param {boolean} isOpen - Stato atteso
+   */
+  expectSidebarOpen(isOpen = true) {
+    const assertion = isOpen ? 'have.class' : 'not.have.class';
+    cy.get(this.selectors.sidebar).should(assertion, 'open');
+  }
+
+  /**
    * Compila il form cliente
    * @param {object} clientData - Dati del cliente
    */
@@ -248,7 +257,7 @@ export class AnagraficaClientiPage extends BasePage {
       note: this.selectors.tabNote,
       azioni: this.selectors.tabAzioni
     };
-    cy.get(tabMap[tabName]).should('be.visible');
+    cy.get(tabMap[tabName]).scrollIntoView().should('be.visible');
   }
 
   /**
@@ -262,7 +271,7 @@ export class AnagraficaClientiPage extends BasePage {
       note: this.selectors.tabNote,
       azioni: this.selectors.tabAzioni
     };
-    cy.get(tabMap[tabName]).should('not.be.visible');
+    cy.get(tabMap[tabName]).scrollIntoView().should('not.be.visible');
   }
 
   /**

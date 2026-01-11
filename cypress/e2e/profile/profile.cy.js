@@ -1,4 +1,13 @@
+import { ProfilePage } from '../../pages/ProfilePage.js';
+
 describe('Profile', () => {
+  const profilePage = new ProfilePage();
+
+  before(() => {
+    cy.clearAllUsers();
+    cy.clearAllAuthUsers();
+  });
+
   it('dovrebbe creare il primo utente come SUPERUSER completando il profilo', () => {
     const email = `superuser.${Date.now()}@test.local`;
     const password = 'SuperPass123!';
@@ -6,22 +15,26 @@ describe('Profile', () => {
     cy.clearAllUsers();
     cy.createAuthUser(email, password);
     cy.login(email, password);
-    cy.visit('/profile', { failOnStatusCode: false });
+    profilePage.visit();
 
-    cy.get('#profile-email', { timeout: 10000 }).should('have.value', email);
-    cy.get('#profile-ruolo', { timeout: 5000 }).should('exist');
+    profilePage.expectEmail(email, 10000);
+    profilePage.expectRoleExists(5000);
 
-    cy.get('#profile-nome').clear().type('Super');
-    cy.get('#profile-cognome').clear().type('Admin');
-    cy.get('#profile-telefono').clear().type('+39 333 9999999');
+    profilePage.fillProfile({
+      nome: 'Super',
+      cognome: 'Admin',
+      telefono: '+39 333 9999999'
+    });
 
-    cy.get('button[type="submit"]').scrollIntoView().click({ force: true });
-    cy.get('#profile-save-message', { timeout: 10000 }).should('be.visible');
-    cy.get('#profile-ruolo', { timeout: 10000 }).should('not.have.value', '').and('have.value', 'Super User');
+    profilePage.submitAndWait();
+    profilePage.expectSaveMessageVisible(20000);
+    profilePage.expectRole('Super User', 10000);
 
-    cy.get('#profile-nome').should('have.value', 'Super');
-    cy.get('#profile-cognome').should('have.value', 'Admin');
-    cy.get('#profile-telefono').should('have.value', '+39 333 9999999');
+    profilePage.expectProfileValues({
+      nome: 'Super',
+      cognome: 'Admin',
+      telefono: '+39 333 9999999'
+    });
 
     cy.visit('/users', { failOnStatusCode: false });
     cy.searchDataTable(email);
@@ -36,21 +49,25 @@ describe('Profile', () => {
 
     cy.seedAdmin(email, password);
     cy.login(email, password);
-    cy.visit('/profile', { failOnStatusCode: false });
+    profilePage.visit();
 
-    cy.get('#profile-email', { timeout: 20000 }).should('have.value', email);
-    cy.get('#profile-ruolo', { timeout: 20000 }).should('have.value', 'Amministratore');
+    profilePage.expectEmail(email, 20000);
+    profilePage.expectRole('Amministratore', 20000);
 
-    cy.get('#profile-nome').clear().type('Mario');
-    cy.get('#profile-cognome').clear().type('Rossi');
-    cy.get('#profile-telefono').clear().type('+39 333 0000000');
+    profilePage.fillProfile({
+      nome: 'Mario',
+      cognome: 'Rossi',
+      telefono: '+39 333 0000000'
+    });
 
-    cy.get('button[type="submit"]').scrollIntoView().click({ force: true });
-    cy.get('#profile-save-message', { timeout: 10000 }).should('be.visible');
+    profilePage.submitAndWait();
+    profilePage.expectSaveMessageVisible(20000);
 
-    cy.get('#profile-nome').should('have.value', 'Mario');
-    cy.get('#profile-cognome').should('have.value', 'Rossi');
-    cy.get('#profile-telefono').should('have.value', '+39 333 0000000');
+    profilePage.expectProfileValues({
+      nome: 'Mario',
+      cognome: 'Rossi',
+      telefono: '+39 333 0000000'
+    });
   });
 
   it('dovrebbe aggiornare l\'avatar quando cambia il nome profilo', () => {
@@ -59,17 +76,13 @@ describe('Profile', () => {
 
     cy.seedAdmin(email, password);
     cy.login(email, password);
-    cy.visit('/profile', { failOnStatusCode: false });
+    profilePage.visit();
 
-    cy.get('#profile-email', { timeout: 10000 }).should('have.value', email);
+    profilePage.expectEmail(email, 10000);
 
-    cy.get('#profile-nome').clear().type('Luigi');
-    cy.get('button[type="submit"]').scrollIntoView().click({ force: true });
-    cy.get('#profile-save-message', { timeout: 10000 }).should('be.visible');
-
-    const expected = encodeURIComponent('Luigi');
-    cy.get('#avatar-icon', { timeout: 10000 })
-      .should('have.attr', 'src')
-      .and('include', `name=${expected}`);
+    profilePage.fillProfile({ nome: 'Luigi' });
+    profilePage.submitAndWait();
+    profilePage.expectSaveMessageVisible(20000);
+    profilePage.expectAvatarName('Luigi', 10000);
   });
 });
