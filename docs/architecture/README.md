@@ -15,13 +15,13 @@ Guida rapida AI-first con checklist e percorsi di riferimento.
 - Niente modifiche a file generati
 
 ### [REALTIME_STORES.md](REALTIME_STORES.md)
-Pattern per aggiornamenti real-time UI con nano-stores + Firebase snapshots.
+Pattern per aggiornamenti realtime UI con nanostores + Firebase snapshots.
 
 **Quando usare:** Quando vuoi che tabelle/form si aggiornino automaticamente quando i dati cambiano su Firestore.
 
 **Key Points:**
-- State management: nano-stores (<1KB)
-- Real-time: Firebase `onSnapshot()`
+- State management: nanostores (<1KB)
+- Realtime: Firebase `onSnapshot()`
 - Auto-update: UI si aggiorna quando Firestore cambia
 - Meno codice: Elimina `loadEntities()`, polling, manual refresh
 
@@ -30,7 +30,7 @@ Pattern per aggiornamenti real-time UI con nano-stores + Firebase snapshots.
 ### [FACTORIES_SYNC.md](FACTORIES_SYNC.md)
 Sistema di sincronizzazione delle factory functions tra frontend (ES6 modules) e backend (CommonJS).
 
-**Quando usare:** Quando devi modificare o creare nuove factory functions per entità.
+**Quando usare:** Quando devi modificare o creare nuove factory functions per entita.
 
 **Key Points:**
 - File sorgente unico: `shared/schemas/entityFactory.js`
@@ -40,14 +40,14 @@ Sistema di sincronizzazione delle factory functions tra frontend (ES6 modules) e
 ---
 
 ### [CACHE_SYSTEM.md](CACHE_SYSTEM.md)
-Sistema di cache in-memory per Firestore con TTL e invalidazione automatica.
+Cache legacy in-memory per Firestore. Il default attuale e realtime store + persistence Firestore.
 
-**Quando usare:** Quando implementi nuove query Firestore che potrebbero beneficiare di caching.
+**Quando usare:** Solo se non puoi usare realtime/persistence (casi legacy o query one-shot).
 
 **Key Points:**
-- Utility: `src/scripts/utils/firestoreCache.js`
+- Default: realtime store + persistence Firestore
+- Legacy: `src/scripts/utils/firestoreCache.js`
 - Funzioni: `getCached()`, `invalidateCache()`
-- Risparmio: 70-75% reads Firestore, 95% latency reduction
 
 ---
 
@@ -91,21 +91,21 @@ Set completo di template (API, test, pagina, script, store): `templates/`
    - FACTORIES_SYNC.md (come funzionano i dati)
    - SERVER_SIDE_VALIDATION.md (come validare)
    - FORMATTERS_CONSOLIDATION.md (come presentare i dati)
-   - CACHE_SYSTEM.md (come ottimizzare)
+   - CACHE_SYSTEM.md (solo legacy)
 
 ### Per AI che Estendono il Progetto
 1. Leggi [AI_START.md](AI_START.md)
 2. Leggi [PATTERNS.md](PATTERNS.md) per i pattern CRUD
-2. Consulta REALTIME_STORES.md per state management real-time
+2. Consulta REALTIME_STORES.md per state management realtime
 3. Consulta SERVER_SIDE_VALIDATION.md per la sicurezza
 4. Consulta FACTORIES_SYNC.md per la struttura dati
 5. Usa FORMATTERS_CONSOLIDATION.md per la UI
 
 ### Per Manutenzione
-- **Aggiungere real-time updates:** REALTIME_STORES.md
-- **Modificare struttura entità:** FACTORIES_SYNC.md
+- **Aggiungere realtime updates:** REALTIME_STORES.md
+- **Modificare struttura entita:** FACTORIES_SYNC.md
 - **Aggiungere validazione:** SERVER_SIDE_VALIDATION.md
-- **Ottimizzare performance:** CACHE_SYSTEM.md
+- **Ottimizzare performance:** REALTIME_STORES.md (default) / CACHE_SYSTEM.md (legacy)
 - **Standardizzare UI:** FORMATTERS_CONSOLIDATION.md
 
 ---
@@ -113,4 +113,4 @@ Set completo di template (API, test, pagina, script, store): `templates/`
 ## Note
 
 Questi documenti descrivono pattern già implementati nel progetto.
-Per creare nuove entità seguendo questi pattern, consulta [PATTERNS.md](PATTERNS.md).
+Per creare nuove entita seguendo questi pattern, consulta [PATTERNS.md](PATTERNS.md).

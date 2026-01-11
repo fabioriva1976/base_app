@@ -10,6 +10,7 @@ senza introdurre regressioni o duplicazioni di pattern.
 - Leggi `docs/architecture/FACTORIES_SYNC.md` per le factory condivise.
 - Se tocchi UI, usa `docs/architecture/FORMATTERS_CONSOLIDATION.md`.
 - Se serve realtime, usa `docs/architecture/REALTIME_STORES.md`.
+- Per caching dati lista, usa realtime + persistence (evita cache custom).
 
 ## Source of Truth
 - Schema entita: `shared/schemas/entityFactory.js`
@@ -26,6 +27,7 @@ senza introdurre regressioni o duplicazioni di pattern.
 - Naming: collection snake_case, API camelCase, file plurali per API/test.
 - Usa sempre le factory per creare oggetti (non creare oggetti a mano).
 - Validazione doppia: client + server. La logica di autorizzazione deve stare in Functions.
+- Evita cache manuale: usa store realtime + Firestore persistence.
 
 ## Percorso consigliato per nuove entita
 1. Aggiungi factory in `shared/schemas/entityFactory.js`
@@ -34,7 +36,8 @@ senza introdurre regressioni o duplicazioni di pattern.
 4. Aggiungi test in `tests/functions/[entita].test.js`
 5. Aggiungi pagina `src/pages/[entita].astro`
 6. Aggiungi script `src/scripts/[entita].js`
-7. Aggiorna `firestore.rules` se serve
+7. Aggiungi store realtime `src/stores/[entita]Store.js`
+8. Aggiorna `firestore.rules` se serve
 
 ## Pattern riutilizzabili
 - CRUD standard: `functions/api/clienti.js`
@@ -53,6 +56,10 @@ Usa i file in `templates/` come base per nuove entita:
 
 Generazione automatica:
 `npm run generate:entity <entita_plural> <EntityName>`
+
+## Caching (linea guida)
+- Il default e: store realtime + persistence Firestore (offline/cache locale).
+- Usa `firestoreCache.js` solo per casi legacy o se non puoi usare realtime.
 
 ## Attachments (Documenti)
 - Backend: `functions/api/attachments.js` (`createAttachmentRecordApi`, `updateAttachmentApi`, `deleteAttachmentApi`)

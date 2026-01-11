@@ -12,7 +12,7 @@ Vedi [docs/architecture/AI_START.md](docs/architecture/AI_START.md) per iniziare
 - [docs/architecture/PATTERNS.md](docs/architecture/PATTERNS.md) - Pattern CRUD per creare nuove entità
 - [docs/architecture/](docs/architecture/) - Documentazione tecnica dell'architettura
   - [FACTORIES_SYNC.md](docs/architecture/FACTORIES_SYNC.md) - Sistema di sincronizzazione factory frontend/backend
-  - [CACHE_SYSTEM.md](docs/architecture/CACHE_SYSTEM.md) - Sistema di cache Firestore in-memory
+  - [CACHE_SYSTEM.md](docs/architecture/CACHE_SYSTEM.md) - Cache legacy (fallback)
   - [SERVER_SIDE_VALIDATION.md](docs/architecture/SERVER_SIDE_VALIDATION.md) - Validazione server-side per sicurezza
   - [FORMATTERS_CONSOLIDATION.md](docs/architecture/FORMATTERS_CONSOLIDATION.md) - Utility di formattazione centralizzate
 
@@ -101,15 +101,16 @@ Devi essere autenticato con Firebase CLI (puoi farlo anche nel container con `fi
 
 Questo progetto segue pattern standardizzati per facilitare l'aggiunta di nuove entità.
 
-**Per creare una nuova entità (es: "prodotti"):**
+**Per creare una nuova entita (es: "prodotti"):**
 
-1. Leggi [PATTERNS.md](PATTERNS.md) - Guida completa ai pattern
+1. Leggi [PATTERNS.md](docs/architecture/PATTERNS.md) - Guida completa ai pattern
 2. Aggiungi factory in `shared/schemas/entityFactory.js`
 3. Crea API in `functions/api/prodotti.js` (usa `functions/api/clienti.js` come template)
-4. Crea test in `functions/prodotti.test.js` (usa `functions/clienti.test.js` come template)
-5. Esegui `npm test` per verificare
+4. Crea test in `tests/functions/prodotti.test.js` (usa `tests/functions/clienti.test.js` come template)
+5. Aggiungi store realtime in `src/stores/prodottiStore.js`
+6. Esegui `npm test` per verificare
 
 **File di riferimento:**
 - 📄 Template API: `functions/api/clienti.js` (commentato per AI)
 - 🏗️ Factory: `shared/schemas/entityFactory.js`
-- 🧪 Test: `functions/clienti.test.js`
+- 🧪 Test: `tests/functions/clienti.test.js`

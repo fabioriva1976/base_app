@@ -2,14 +2,14 @@
 
 **Versione:** 1.0
 **Data:** 2026-01-08
-**Obiettivo:** Documentazione per AI - Pattern replicabili per nuove entità
+**Obiettivo:** Documentazione per AI - Pattern replicabili per nuove entita
 
 ---
 
 ## 🎯 Come Usare Questo Attachment
 
-Questo attachment definisce i **pattern standard** per creare nuove entità (es: prodotti, fornitori, ordini).
-Ogni nuova entità DEVE seguire questi pattern per garantire:
+Questo attachment definisce i **pattern standard** per creare nuove entita (es: prodotti, fornitori, ordini).
+Ogni nuova entita DEVE seguire questi pattern per garantire:
 - ✅ Coerenza del codice
 - ✅ Facilità di manutenzione
 - ✅ Replicabilità da parte di AI
@@ -17,15 +17,15 @@ Ogni nuova entità DEVE seguire questi pattern per garantire:
 
 ---
 
-## 📋 Checklist per Nuova Entità
+## 📋 Checklist per Nuova Entita
 
-Quando crei una nuova entità (es: `prodotti`), devi creare questi file:
+Quando crei una nuova entita (es: `prodotti`), devi creare questi file:
 
 ### 1. Schema e Factory
 - [ ] `shared/schemas/entityFactory.js` - Aggiungi funzione `createProdotto()`
 
 ### 2. API Backend
-- [ ] `functions/api/prodotti.js` - CRUD completo (Create, Read, Update, Delete, List)
+- [ ] `functions/api/prodotti.js` - CRUD CUD (Create, Update, Delete). La lista e realtime via store.
 
 ### 3. Test
 - [ ] `tests/functions/prodotti.test.js` - Test per tutte le operazioni CRUD
@@ -33,18 +33,19 @@ Quando crei una nuova entità (es: `prodotti`), devi creare questi file:
 ### 4. Frontend
 - [ ] `src/pages/prodotti.astro` - Pagina lista/gestione
 - [ ] `src/scripts/prodotti.js` - Logica frontend
+- [ ] `src/stores/prodottiStore.js` - Store realtime per la lista
 
 ### 5. Firestore Rules
 - [ ] `firestore.rules` - Aggiungi regole per collection `prodotti`
 
 ---
 
-## 📚 Entità Template Esistenti
+## 📚 Entita Template Esistenti
 
-Il progetto include 3 entità completamente documentate che puoi usare come template:
+Il progetto include 3 entita completamente documentate che puoi usare come template:
 
 ### 1. **Clienti** (CRUD Standard)
-File di riferimento più completo per entità con CRUD classico.
+File di riferimento più completo per entita con CRUD classico.
 
 - 📄 **API**: [functions/api/clienti.js](functions/api/clienti.js)
 - 🏗️ **Factory**: [shared/schemas/entityFactory.js](shared/schemas/entityFactory.js) - `createCliente()`
@@ -53,12 +54,12 @@ File di riferimento più completo per entità con CRUD classico.
 - 👥 **Permessi**: Admin per CUD, Operatore+ per R
 
 **Quando usare come template:**
-- Entità con campi semplici (stringhe, numeri, booleani)
+- Entita con campi semplici (stringhe, numeri, booleani)
 - CRUD standard senza logiche complesse
 - Esempi: prodotti, fornitori, categorie, tag
 
 ### 2. **Users** (Firebase Auth + Firestore)
-Template per entità che usano Firebase Authentication.
+Template per entita che usano Firebase Authentication.
 
 - 📄 **API**: [functions/api/users.js](functions/api/users.js)
 - 🏗️ **Factory**: [shared/schemas/entityFactory.js](shared/schemas/entityFactory.js) - `createUtente()`
@@ -67,7 +68,7 @@ Template per entità che usano Firebase Authentication.
 - 👥 **Permessi**: Admin only, con controllo gerarchico ruoli
 
 **Quando usare come template:**
-- Entità che richiedono autenticazione
+- Entita che richiedono autenticazione
 - Gestione ruoli e permessi granulari
 - Sincronizzazione tra Firebase Auth e Firestore
 
@@ -77,7 +78,7 @@ Template per entità che usano Firebase Authentication.
 - Dual-storage (Auth per login, Firestore per metadati)
 
 ### 3. **Attachments** (Firestore + Storage)
-Template per entità che gestiscono file.
+Template per entita che gestiscono file.
 
 - 📄 **API**: [functions/api/attachments.js](functions/api/attachments.js)
 - 🏗️ **Factory**: [shared/schemas/entityFactory.js](shared/schemas/entityFactory.js) - `createAttachment()`
@@ -86,7 +87,7 @@ Template per entità che gestiscono file.
 - 👥 **Permessi**: Authenticated per C, Admin per UD
 
 **Quando usare come template:**
-- Entità con file allegati (PDF, immagini, etc.)
+- Entita con file allegati (PDF, immagini, etc.)
 - Gestione upload/download
 - Metadata + file binario
 
@@ -110,11 +111,11 @@ Template per entità che gestiscono file.
  * Crea un oggetto [ENTITY_NAME] validato e strutturato.
  * Usato sia lato client che server per garantire consistenza.
  *
- * @param {Object} params - Parametri dell'entità
+ * @param {Object} params - Parametri dell'entita
  * @param {string} params.[CAMPO_OBBLIGATORIO] - Descrizione campo
  * @param {string} [params.[CAMPO_OPZIONALE]] - Descrizione campo opzionale
- * @param {string} [params.lastModifiedBy] - UID utente che crea l'entità
- * @param {string} [params.lastModifiedByEmail] - Email utente che crea l'entità
+ * @param {string} [params.lastModifiedBy] - UID utente che crea l'entita
+ * @param {string} [params.lastModifiedByEmail] - Email utente che crea l'entita
  * @returns {Object} Oggetto [ENTITY_NAME] validato
  * @throws {Error} Se campi obbligatori mancanti
  */
@@ -201,17 +202,16 @@ export function createCliente({
  * 🎯 PATTERN: API CRUD per [ENTITY_NAME]
  *
  * Operazioni disponibili:
- * - CREATE: Crea nuova entità (solo admin)
- * - READ: Ottieni entità per ID (operatore+)
- * - UPDATE: Aggiorna entità esistente (admin)
- * - DELETE: Elimina entità (admin)
- * - LIST: Lista tutte le entità (operatore+)
+ * - CREATE: Crea nuova entita (solo admin)
+ * - UPDATE: Aggiorna entita esistente (admin)
+ * - DELETE: Elimina entita (admin)
+ * - LIST: gestita da realtime store lato client (no API list)
  */
 
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { getApps, initializeApp } from "firebase-admin/app";
-import { requireAdmin, requireOperator } from "../utils/authHelpers.js";
+import { requireAdmin } from "../utils/authHelpers.js";
 import { create[EntityName] } from "../../shared/schemas/entityFactory.js";
 import { region, corsOrigins } from "../config.js";
 import { logAudit, AuditAction } from "../utils/auditLogger.js";
@@ -243,11 +243,11 @@ function validate[EntityName]Data(data) {
 }
 
 /**
- * 🎯 CREATE: Crea nuova entità
+ * 🎯 CREATE: Crea nuova entita
  *
  * Permessi: Solo ADMIN
- * Input: { ...campi entità }
- * Output: { id, ...dati entità }
+ * Input: { ...campi entita }
+ * Output: { id, ...dati entita }
  */
 export const [entita]CreateApi = onCall({
     region: region,
@@ -284,7 +284,7 @@ export const [entita]CreateApi = onCall({
             source: 'web'
         });
 
-        console.log(`Utente ${uid} ha creato [entità] ${docRef.id}`);
+        console.log(`Utente ${uid} ha creato [entita] ${docRef.id}`);
 
         return { id: docRef.id, ...nuovo[EntityName] };
 
@@ -293,12 +293,12 @@ export const [entita]CreateApi = onCall({
         if (error instanceof HttpsError) {
             throw error;
         }
-        throw new HttpsError('internal', 'Impossibile creare [entità].');
+        throw new HttpsError('internal', 'Impossibile creare [entita].');
     }
 });
 
 /**
- * 🎯 UPDATE: Aggiorna entità esistente
+ * 🎯 UPDATE: Aggiorna entita esistente
  *
  * Permessi: Solo ADMIN
  * Input: { id, ...campi da aggiornare }
@@ -314,7 +314,7 @@ export const [entita]UpdateApi = onCall({
     const { id, ...updateData } = request.data;
 
     if (!id) {
-        throw new HttpsError('invalid-argument', 'ID [entità] è obbligatorio.');
+        throw new HttpsError('invalid-argument', 'ID [entita] è obbligatorio.');
     }
 
     try {
@@ -346,21 +346,21 @@ export const [entita]UpdateApi = onCall({
             source: 'web'
         });
 
-        console.log(`Utente ${uid} ha aggiornato [entità] ${id}`);
+        console.log(`Utente ${uid} ha aggiornato [entita] ${id}`);
 
-        return { message: "[Entità] aggiornato con successo." };
+        return { message: "[Entita] aggiornato con successo." };
 
     } catch (error) {
         console.error("Errore durante l'aggiornamento:", error);
         if (error instanceof HttpsError) {
             throw error;
         }
-        throw new HttpsError('internal', 'Impossibile aggiornare [entità].');
+        throw new HttpsError('internal', 'Impossibile aggiornare [entita].');
     }
 });
 
 /**
- * 🎯 DELETE: Elimina entità
+ * 🎯 DELETE: Elimina entita
  *
  * Permessi: Solo ADMIN
  * Input: { id }
@@ -376,7 +376,7 @@ export const [entita]DeleteApi = onCall({
     const { id } = request.data;
 
     if (!id) {
-        throw new HttpsError('invalid-argument', 'ID [entità] è obbligatorio.');
+        throw new HttpsError('invalid-argument', 'ID [entita] è obbligatorio.');
     }
 
     try {
@@ -399,51 +399,17 @@ export const [entita]DeleteApi = onCall({
             source: 'web'
         });
 
-        console.log(`Utente ${uid} ha eliminato [entità] ${id}`);
+        console.log(`Utente ${uid} ha eliminato [entita] ${id}`);
 
-        return { message: "[Entità] eliminato con successo." };
+        return { message: "[Entita] eliminato con successo." };
 
     } catch (error) {
         console.error("Errore durante l'eliminazione:", error);
-        throw new HttpsError('internal', 'Impossibile eliminare [entità].');
+        throw new HttpsError('internal', 'Impossibile eliminare [entita].');
     }
 });
 
-/**
- * 🎯 LIST: Ottieni lista entità
- *
- * Permessi: OPERATORE o superiore
- * Input: {} (opzionale: filtri)
- * Output: [{ id, ...dati }]
- */
-export const [entita]ListApi = onCall({
-    region: region,
-    cors: corsOrigins
-}, async (request) => {
-    await requireOperator(request);
-
-    const { uid } = request.auth;
-
-    try {
-        const snapshot = await db.collection(COLLECTION_NAME)
-            .where('status', '==', true)
-            .orderBy('created', 'desc')
-            .get();
-
-        const lista = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-        }));
-
-        console.log(`Utente ${uid} ha listato ${lista.length} [entità]`);
-
-        return lista;
-
-    } catch (error) {
-        console.error("Errore durante il recupero lista:", error);
-        throw new HttpsError('internal', 'Impossibile recuperare lista [entità].');
-    }
-});
+// Lista: realtime store lato client (vedi REALTIME_STORES.md)
 ```
 
 ---
@@ -463,7 +429,6 @@ export const [entita]ListApi = onCall({
  * - CREATE con dati invalidi
  * - UPDATE
  * - DELETE
- * - LIST
  * - Controllo permessi (admin/operatore)
  */
 
@@ -474,8 +439,7 @@ import { getAuth } from 'firebase-admin/auth';
 import {
     [entita]CreateApi,
     [entita]UpdateApi,
-    [entita]DeleteApi,
-    [entita]ListApi
+    [entita]DeleteApi
 } from './api/[entita].js';
 
 const testEnv = test({
@@ -504,7 +468,7 @@ describe('API [EntityName]', () => {
     /**
      * TEST CREATE
      */
-    it('dovrebbe creare [entità] con dati validi', async () => {
+    it('dovrebbe creare [entita] con dati validi', async () => {
         const wrapped = test.wrap([entita]CreateApi);
         const adminUser = {
             uid: 'admin-test',
@@ -557,14 +521,14 @@ describe('API [EntityName]', () => {
     /**
      * TEST UPDATE
      */
-    it('dovrebbe aggiornare [entità] esistente', async () => {
+    it('dovrebbe aggiornare [entita] esistente', async () => {
         // Implementazione test update...
     });
 
     /**
      * TEST DELETE
      */
-    it('dovrebbe eliminare [entità]', async () => {
+    it('dovrebbe eliminare [entita]', async () => {
         // Implementazione test delete...
     });
 
@@ -609,7 +573,7 @@ createCliente({ ragione_sociale, email, ... })
 - `clienteCreateApi`
 - `clienteUpdateApi`
 - `clienteDeleteApi`
-- `clienteListApi`
+- Lista via realtime store (no API list)
 
 **Collection:** `clienti`
 
@@ -632,7 +596,7 @@ createProdotto({
 - `prodottoCreateApi`
 - `prodottoUpdateApi`
 - `prodottoDeleteApi`
-- `prodottoListApi`
+- Lista via realtime store (no API list)
 
 **Collection:** `prodotti`
 
@@ -654,16 +618,17 @@ createProdotto({
 - **Test:** `tests/functions/[entita].test.js` (plurale)
 - **Frontend:** `src/scripts/[entita].js` (singolare con trattino)
 - **Pagina:** `src/pages/[entita].astro`
+- **Store:** `src/stores/[entita]Store.js`
 
 ---
 
-## 📎 Associare Attachments alle Entità
+## 📎 Associare Attachments alle Entita
 
-Il sistema di gestione attachments è **già predisposto** per funzionare con qualsiasi entità. Non devi creare nuove API o backend, ma solo collegare il componente frontend.
+Il sistema di gestione attachments è **già predisposto** per funzionare con qualsiasi entita. Non devi creare nuove API o backend, ma solo collegare il componente frontend.
 
 ### 🎯 Come Funziona
 
-I attachments sono salvati in una **collection centrale** (`attachments`) con metadata che puntano all'entità associata:
+I attachments sono salvati in una **collection centrale** (`attachments`) con metadata che puntano all'entita associata:
 
 ```javascript
 {
@@ -671,7 +636,7 @@ I attachments sono salvati in una **collection centrale** (`attachments`) con me
   tipo: "application/pdf",
   storagePath: "attachments/ABC123/1234567890_fattura.pdf",
   metadata: {
-    entityId: "ABC123",              // ID dell'entità (cliente, prodotto, etc.)
+    entityId: "ABC123",              // ID dell'entita (cliente, prodotto, etc.)
     entityCollection: "clienti",  // Nome collection
     url: "https://...",
     size: 123456,
@@ -683,7 +648,7 @@ I attachments sono salvati in una **collection centrale** (`attachments`) con me
 }
 ```
 
-### ✅ 3 Passi per Aggiungere Attachments a una Nuova Entità
+### ✅ 3 Passi per Aggiungere Attachments a una Nuova Entita
 
 #### PASSO 1: Aggiungi Tab Attachments alla Pagina Astro
 
@@ -723,12 +688,12 @@ export function init[Entita]Page() {
         storage,
         auth,
         functions,
-        entityCollection: '[entita]'  // Nome collection della tua entità
+        entityCollection: '[entita]'  // Nome collection della tua entita
     });
     // ... resto del codice
 }
 
-// Quando salvi una nuova entità
+// Quando salvi una nuova entita
 if (isNew) {
     const createApi = httpsCallable(functions, 'create[Entita]Api');
     const result = await createApi(payloadToSend);
@@ -741,10 +706,10 @@ if (isNew) {
     }
 }
 
-// Quando modifichi un'entità esistente
+// Quando modifichi un'entita esistente
 const editEntity = async (id) => {
     currentEntityId = id;
-    // ... carica dati entità
+    // ... carica dati entita
     showTabsForExistingEntity();
     attachmentUtils.listenForAttachments(id);  // ✅ Carica attachments esistenti
     actionUtils.loadActions(id);
@@ -752,9 +717,9 @@ const editEntity = async (id) => {
 };
 ```
 
-#### PASSO 3: Nascondi Tab per Nuove Entità
+#### PASSO 3: Nascondi Tab per Nuove Entita
 
-Le nuove entità non hanno ancora un ID, quindi nascondi il tab attachments:
+Le nuove entita non hanno ancora un ID, quindi nascondi il tab attachments:
 
 ```javascript
 function hideTabsForNewEntity() {
@@ -828,7 +793,7 @@ export function initProdottiPage() {
 
     actionUtils.setup({ db, auth, functions, entityCollection: 'prodotti' });
     setupEventListeners();
-    loadEntities();
+    // Lista gestita da store realtime (no loadEntities)
 }
 
 async function saveEntity(e) {
@@ -885,33 +850,33 @@ function showTabsForExistingEntity() {
 
 ### 🚀 Vantaggi di Questo Approccio
 
-✅ **Riutilizzabile:** Stesso codice per tutte le entità
+✅ **Riutilizzabile:** Stesso codice per tutte le entita
 ✅ **Zero backend:** API attachments già pronte
 ✅ **Audit automatico:** Ogni upload tracciato
-✅ **Storage organizzato:** File separati per entità
+✅ **Storage organizzato:** File separati per entita
 ✅ **Query efficienti:** Index su `metadata.entityId`
 
 ### 📝 Note Importanti
 
 1. **Non creare nuove API attachments** - Usa quelle esistenti (`createAttachmentRecordApi`, `deleteAttachmentApi`)
 2. **entityCollection deve corrispondere** - Deve essere lo stesso nome usato per audit e collection
-3. **Tab sempre nascosto per nuove entità** - Gli upload richiedono un ID salvato
+3. **Tab sempre nascosto per nuove entita** - Gli upload richiedono un ID salvato
 4. **Cleanup automatico Storage** - L'eliminazione del attachment rimuove anche il file fisico
 
 ---
 
-## 💬 Associare Comments alle Entità
+## 💬 Associare Comments alle Entita
 
-Il sistema di gestione comments è **già predisposto** per funzionare con qualsiasi entità, esattamente come gli attachments. Non devi creare nuove API o backend, ma solo collegare il componente frontend.
+Il sistema di gestione comments è **già predisposto** per funzionare con qualsiasi entita, esattamente come gli attachments. Non devi creare nuove API o backend, ma solo collegare il componente frontend.
 
 ### 🎯 Come Funziona
 
-I comments sono salvati in una **collection centrale** (`comments`) con metadata che puntano all'entità associata:
+I comments sono salvati in una **collection centrale** (`comments`) con metadata che puntano all'entita associata:
 
 ```javascript
 {
   text: "Contattare il cliente per preventivo 2024",
-  entityId: "ABC123",              // ID dell'entità (cliente, prodotto, etc.)
+  entityId: "ABC123",              // ID dell'entita (cliente, prodotto, etc.)
   entityCollection: "clienti",  // Nome collection
   lastModifiedBy: "user123",
   lastModifiedByEmail: "user@example.com",
@@ -929,7 +894,7 @@ I comments sono salvati in una **collection centrale** (`comments`) con metadata
 | **Permessi Delete** | Solo admin | Admin o creatore |
 | **Audit Log** | Salvato su parent entity | Salvato su parent entity |
 
-### ✅ 3 Passi per Aggiungere Comments a una Nuova Entità
+### ✅ 3 Passi per Aggiungere Comments a una Nuova Entita
 
 #### PASSO 1: Aggiungi Tab Note alla Pagina Astro
 
@@ -973,12 +938,12 @@ export function init[Entita]Page() {
         db,
         auth,
         functions,
-        entityCollection: '[entita]'  // Nome collection della tua entità
+        entityCollection: '[entita]'  // Nome collection della tua entita
     });
     // ... resto del codice
 }
 
-// Quando salvi una nuova entità
+// Quando salvi una nuova entita
 if (isNew) {
     const createApi = httpsCallable(functions, 'create[Entita]Api');
     const result = await createApi(payloadToSend);
@@ -992,10 +957,10 @@ if (isNew) {
     }
 }
 
-// Quando modifichi un'entità esistente
+// Quando modifichi un'entita esistente
 const editEntity = async (id) => {
     currentEntityId = id;
-    // ... carica dati entità
+    // ... carica dati entita
     showTabsForExistingEntity();
     attachmentUtils.listenForAttachments(id);
     actionUtils.loadActions(id);
@@ -1004,9 +969,9 @@ const editEntity = async (id) => {
 };
 ```
 
-#### PASSO 3: Nascondi Tab per Nuove Entità
+#### PASSO 3: Nascondi Tab per Nuove Entita
 
-Le nuove entità non hanno ancora un ID, quindi nascondi il tab note insieme agli altri:
+Le nuove entita non hanno ancora un ID, quindi nascondi il tab note insieme agli altri:
 
 ```javascript
 function hideTabsForNewEntity() {
@@ -1074,7 +1039,7 @@ Le Cloud Functions per comments sono in `functions/api/comments.js`:
    - Input: `{ text, entityId, entityCollection }`
    - Audit log salvato su parent entity
 
-2. **getEntityCommentsApi** - Recupera commenti di un'entità
+2. **getEntityCommentsApi** - Recupera commenti di un'entita
    - Permessi: Tutti gli utenti autenticati
    - Input: `{ entityId, entityCollection }`
 
@@ -1121,7 +1086,7 @@ export function initProdottiPage() {
     });
 
     setupEventListeners();
-    loadEntities();
+    // Lista gestita da store realtime (no loadEntities)
 }
 
 async function saveEntity(e) {
@@ -1180,10 +1145,10 @@ function showTabsForExistingEntity() {
 
 ### 🚀 Vantaggi di Questo Approccio
 
-✅ **Riutilizzabile:** Stesso codice per tutte le entità
+✅ **Riutilizzabile:** Stesso codice per tutte le entita
 ✅ **Zero backend:** API comments già pronte
 ✅ **Audit automatico:** Ogni commento tracciato su parent entity
-✅ **Real-time:** Listener Firestore per aggiornamenti live
+✅ **Realtime:** Listener Firestore per aggiornamenti live
 ✅ **Query efficienti:** Composite index su `entityId` + `entityCollection`
 ✅ **Permessi granulari:** Admin o creatore possono eliminare
 
@@ -1191,9 +1156,9 @@ function showTabsForExistingEntity() {
 
 1. **Non creare nuove API comments** - Usa quelle esistenti (`createCommentApi`, `deleteCommentApi`)
 2. **entityCollection deve corrispondere** - Deve essere lo stesso nome usato per audit e collection
-3. **Tab sempre nascosto per nuove entità** - I commenti richiedono un ID salvato
-4. **Audit logs su parent** - I log appaiono nella timeline dell'entità associata
-5. **Real-time updates** - Usa `onSnapshot` per visualizzazione live dei commenti
+3. **Tab sempre nascosto per nuove entita** - I commenti richiedono un ID salvato
+4. **Audit logs su parent** - I log appaiono nella timeline dell'entita associata
+5. **Realtime updates** - Usa `onSnapshot` per visualizzazione live dei commenti
 
 ### 🔧 Componenti HTML Necessari
 
@@ -1256,21 +1221,21 @@ export function createComment({
 3. **Audit fields:** Sempre `lastModifiedBy`, `created`, `changed`
 4. **Timestamp ISO:** Usa `.toISOString()` per consistenza
 5. **Firestore Timestamp solo per changed:** Nelle update usa `FieldValue.serverTimestamp()`
-6. **Test per ogni operazione:** Almeno 5 test (create, update, delete, list, permessi)
+6. **Test per ogni operazione:** Almeno 4 test (create, update, delete, permessi)
 7. **Log strutturati:** Sempre `console.log("Utente X ha fatto Y")`
 8. **Error handling:** Try-catch con HttpsError specifici
 9. **Attachments sempre associati:** Usa `attachmentUtils.setup()` con `entityCollection` corretta
-10. **Storage path unico:** Ogni entità ha la sua cartella `attachments/[entityId]/`
+10. **Storage path unico:** Ogni entita ha la sua cartella `attachments/[entityId]/`
 
 ---
 
 ## 📚 Prossimi Passi
 
-Per aggiungere una nuova entità:
+Per aggiungere una nuova entita:
 1. Copia questo pattern
-2. Sostituisci `[entita]` e `[EntityName]` con il nome della tua entità
+2. Sostituisci `[entita]` e `[EntityName]` con il nome della tua entita
 3. Definisci i campi specifici
 4. Implementa i test
 5. Esegui `npm test` per verificare
 
-**Tempo stimato per nuova entità:** 2-3 ore seguendo questi pattern.
+**Tempo stimato per nuova entita:** 2-3 ore seguendo questi pattern.

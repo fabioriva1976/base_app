@@ -1,8 +1,8 @@
-# 🔄 Real-time State Management Pattern
+# 🔄 Realtime State Management Pattern
 
 **Versione:** 1.0
 **Data:** 2026-01-11
-**Obiettivo:** Pattern per aggiornamento automatico UI con nano-stores + Firebase snapshots
+**Obiettivo:** Pattern per aggiornamento automatico UI con nanostores + Firebase snapshots
 
 ---
 
@@ -16,7 +16,7 @@
 
 **Dopo l'implementazione:**
 - Listener Firebase `onSnapshot` attivi su collection/documenti
-- State management centralizzato con **nano-stores**
+- State management centralizzato con **nanostores**
 - UI si aggiorna automaticamente quando Firestore cambia
 - Meno codice, più reattività
 
@@ -24,14 +24,14 @@
 
 ## 📚 Stack Tecnologico
 
-### Nano-stores
+### Nanostores
 - **Libreria:** [nanostores](https://github.com/nanostores/nanostores)
 - **Dimensione:** < 1KB (non gzipped)
 - **Tipo:** Atomic state management
 - **Supporto:** Vanilla JS, React, Vue, Svelte, Astro
 
 ### Firebase Firestore
-- **Feature:** `onSnapshot()` per real-time listeners
+- **Feature:** `onSnapshot()` per realtime listeners
 - **Tipo:** Server-side reactive updates
 - **Latenza:** < 1 secondo per propagazione globale
 
@@ -46,11 +46,11 @@
 │   (Database)    │
 └────────┬────────┘
          │ onSnapshot()
-         │ (real-time listener)
+         │ (realtime listener)
          ▼
 ┌─────────────────┐
 │   Store         │
-│  (nano-stores)  │
+│  (nanostores)  │
 └────────┬────────┘
          │ subscribe()
          │ (reactive)
@@ -72,17 +72,21 @@
    - Subscribe allo store
    - Render UI quando store cambia
    - NO più chiamate manuali a Firestore
+   - Listener avviato solo dopo auth pronta
 
 3. **Layout/Init** (`BaseLayout.astro` o init function)
-   - Inizializza listener Firebase
+   - Inizializza listener Firebase dopo `auth.onAuthStateChanged`
    - Cleanup su logout/unmount
+
+4. **Persistence** (`src/lib/firebase-client.ts`)
+   - Abilita cache locale Firestore per riaperture pagina/offline
 
 ---
 
-## 📋 Pattern 1: Store per Collection (Lista Entità)
+## 📋 Pattern 1: Store per Collection (Lista Entita)
 
 ### Caso d'uso
-- Tabelle con lista entità (utenti, clienti, prodotti)
+- Tabelle con lista entita (utenti, clienti, prodotti)
 - Sidebar con lista items
 - Dashboard con statistiche
 
@@ -90,9 +94,9 @@
 
 ```javascript
 /**
- * 🎯 PATTERN: Store Real-time per Collection
+ * 🎯 PATTERN: Store Realtime per Collection
  *
- * Gestisce una lista di entità da Firestore con aggiornamenti real-time.
+ * Gestisce una lista di entita da Firestore con aggiornamenti realtime.
  * Usato per tabelle, liste, dashboard.
  *
  * @example
@@ -114,7 +118,7 @@ import { db } from '../lib/firebase-client';
 // ============================================
 
 /**
- * Store principale - contiene array di entità
+ * Store principale - contiene array di entita
  * @type {import('nanostores').Atom<Array>}
  */
 export const [entity]Store = atom([]);
@@ -143,7 +147,7 @@ let unsubscribe = null; // Riferimento al listener Firestore
  * IMPORTANTE:
  * - Chiamare solo UNA volta all'init della pagina
  * - Il listener rimane attivo finché non si chiama stop
- * - Usa onSnapshot per aggiornamenti real-time
+ * - Usa onSnapshot per aggiornamenti realtime
  *
  * @returns {void}
  */
@@ -160,7 +164,7 @@ export function init[Entity]Listener() {
     try {
         const [entity]Collection = collection(db, '[collection_name]');
 
-        // ✅ onSnapshot: listener real-time
+        // ✅ onSnapshot: listener realtime
         unsubscribe = onSnapshot(
             [entity]Collection,
             (snapshot) => {
@@ -293,13 +297,20 @@ let unsubscribeStore = null;
 export function init[Entity]Page() {
     // ... setup altri componenti ...
 
-    // 1️⃣ Inizializza il listener Firebase
-    init[Entity]Listener();
+    // Inizializza listener solo dopo auth pronta
+    auth.onAuthStateChanged((user) => {
+        if (!user) {
+            cleanup[Entity]Page();
+            return;
+        }
 
-    // 2️⃣ Subscribe allo store per aggiornamenti UI
-    unsubscribeStore = [entity]Store.subscribe((data) => {
-        entities = data;
-        renderTable(); // 🎯 UI si aggiorna automaticamente
+        init[Entity]Listener();
+
+        // Subscribe allo store per aggiornamenti UI
+        unsubscribeStore = [entity]Store.subscribe((data) => {
+            entities = data;
+            renderTable(); // 🎯 UI si aggiorna automaticamente
+        });
     });
 }
 
@@ -380,13 +391,20 @@ let unsubscribeStore = null;
 export function initUsersPage() {
     // Setup altri componenti...
 
-    // Inizializza il listener Firebase
-    initUsersListener();
+    // Inizializza il listener Firebase solo dopo auth pronta
+    auth.onAuthStateChanged((user) => {
+        if (!user) {
+            cleanupUsersPage();
+            return;
+        }
 
-    // Subscribe allo store per aggiornare la tabella
-    unsubscribeStore = usersStore.subscribe((users) => {
-        entities = users;
-        renderTable();
+        initUsersListener();
+
+        // Subscribe allo store per aggiornare la tabella
+        unsubscribeStore = usersStore.subscribe((users) => {
+            entities = users;
+            renderTable();
+        });
     });
 }
 
@@ -428,17 +446,17 @@ async function saveEntity(e) {
 
 ### Caso d'uso
 - Profilo utente corrente
-- Dati singola entità in dettaglio
-- Form di modifica entità
+- Dati singola entita in dettaglio
+- Form di modifica entita
 
 ### Template Store: `src/stores/current[Entity]Store.js`
 
 ```javascript
 /**
- * 🎯 PATTERN: Store Real-time per Documento Singolo
+ * 🎯 PATTERN: Store Realtime per Documento Singolo
  *
- * Gestisce un singolo documento da Firestore con aggiornamenti real-time.
- * Usato per profili utente, dettagli entità, form di modifica.
+ * Gestisce un singolo documento da Firestore con aggiornamenti realtime.
+ * Usato per profili utente, dettagli entita, form di modifica.
  *
  * @example
  * // In BaseLayout.astro
@@ -502,7 +520,7 @@ export function initCurrent[Entity]Listener(entityId) {
     try {
         const entityDocRef = doc(db, '[collection_name]', entityId);
 
-        // ✅ onSnapshot: listener real-time su singolo documento
+        // ✅ onSnapshot: listener realtime su singolo documento
         unsubscribe = onSnapshot(
             entityDocRef,
             (docSnapshot) => {
@@ -789,7 +807,7 @@ export function stopCurrent[Entity]Listener() {}          // stopCurrentUserList
 
 ## ✅ Checklist Implementazione
 
-Quando implementi real-time stores per una nuova entità, segui questa checklist:
+Quando implementi realtime stores per una nuova entita, segui questa checklist:
 
 ### Per Collection (Lista)
 - [ ] Creare `src/stores/[entity]Store.js`
@@ -828,7 +846,7 @@ Quando implementi real-time stores per una nuova entità, segui questa checklist
 ✅ **Debugging:** Console log automatici su ogni update
 
 ### User Experience
-✅ **Real-time:** Modifiche visibili in <1s su tutti i client
+✅ **Realtime:** Modifiche visibili in <1s su tutti i client
 ✅ **Multi-tab:** Sincronizzazione automatica tra tab del browser
 ✅ **Collaborazione:** Più utenti vedono cambiamenti in tempo reale
 
@@ -839,7 +857,7 @@ Quando implementi real-time stores per una nuova entità, segui questa checklist
 ### Costi Firestore
 - **Read:** `onSnapshot` conta come 1 read iniziale + 1 read per ogni modifica
 - **Ottimizzazione:** Usa `where()` per filtrare dati non necessari
-- **Esempio:** `where('status', '==', true)` riduce listener su entità archiviate
+- **Esempio:** `where('status', '==', true)` riduce listener su entita archiviate
 
 ### Memory Leaks
 - **SEMPRE unsubscribe:** Chiamare `stop[Entity]Listener()` su unmount/logout
@@ -880,7 +898,7 @@ Questo pattern si integra con:
 
 ## 🎯 Implementazioni Esistenti
 
-### ✅ Entità implementate con questo pattern:
+### ✅ Entita implementate con questo pattern:
 
 1. **Users** (`src/stores/usersStore.js`)
    - Collection store per lista utenti
@@ -928,4 +946,4 @@ match /anagrafica_clienti/{clientId} {
 
 ---
 
-**Pattern completato e testato!** Pronto per essere applicato ad altre entità del progetto.
+**Pattern completato e testato!** Pronto per essere applicato ad altre entita del progetto.
