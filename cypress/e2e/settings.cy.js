@@ -1,63 +1,4 @@
 describe('Settings - AI e SMTP', () => {
-  const apiKey = 'AIzaSyD8Wqok8hADg9bipYln3KpQbQ99nHVI-4s';
-  const projectId = Cypress.env('FIREBASE_PROJECT_ID') || 'base-app-12108';
-  const authEmulatorUrl = 'http://localhost:9099';
-  const firestoreEmulatorUrl = 'http://localhost:8080';
-
-  function createAuthUser(email, password) {
-    return cy.request({
-      method: 'POST',
-      url: `${authEmulatorUrl}/identitytoolkit.googleapis.com/v1/accounts:signUp?key=${apiKey}`,
-      body: {
-        email,
-        password,
-        returnSecureToken: true
-      },
-      failOnStatusCode: false
-    }).then((response) => ({
-      uid: response.body.localId,
-      idToken: response.body.idToken
-    }));
-  }
-
-  function setUserRole(uid, role, idToken, email) {
-    const now = new Date().toISOString();
-    return cy.request({
-      method: 'POST',
-      url: `${firestoreEmulatorUrl}/v1/projects/${projectId}/databases/(default)/documents/users?documentId=${uid}`,
-      headers: {
-        Authorization: `Bearer ${idToken}`
-      },
-      body: {
-        fields: {
-          email: {
-            stringValue: email
-          },
-          status: {
-            booleanValue: true
-          },
-          created: {
-            stringValue: now
-          },
-          changed: {
-            stringValue: now
-          },
-          lastModifiedBy: {
-            stringValue: uid
-          },
-          lastModifiedByEmail: {
-            stringValue: email
-          },
-          ruolo: {
-            arrayValue: {
-              values: [{ stringValue: role }]
-            }
-          }
-        }
-      },
-      failOnStatusCode: false
-    });
-  }
 
   const credentials = {
     email: `superuser.${Date.now()}@test.local`,
@@ -65,16 +6,12 @@ describe('Settings - AI e SMTP', () => {
   };
 
   before(() => {
-    createAuthUser(credentials.email, credentials.password)
-      .then(({ uid, idToken }) => setUserRole(uid, 'superuser', idToken, credentials.email));
+    cy.createAuthUser(credentials.email, credentials.password)
+      .then(({ uid, idToken }) => cy.setUserRole(uid, 'superuser', idToken, credentials.email));
   });
 
   function login() {
-    cy.visit('/login', { failOnStatusCode: false });
-    cy.get('#email').clear().type(credentials.email);
-    cy.get('#password').clear().type(credentials.password);
-    cy.get('#login-btn').click();
-    cy.location('pathname', { timeout: 10000 }).should('eq', '/dashboard');
+    cy.login(credentials.email, credentials.password);
   }
 
   it('dovrebbe salvare la configurazione AI', () => {

@@ -1,94 +1,16 @@
 describe('Anagrafica Clienti - UI e Sidebar', () => {
-  const apiKey = 'AIzaSyD8Wqok8hADg9bipYln3KpQbQ99nHVI-4s';
-  const projectId = Cypress.env('FIREBASE_PROJECT_ID') || 'base-app-12108';
-  const authEmulatorUrl = 'http://localhost:9099';
-  const firestoreEmulatorUrl = 'http://localhost:8080';
-
-  function createAuthUser(email, password) {
-    return cy.request({
-      method: 'POST',
-      url: `${authEmulatorUrl}/identitytoolkit.googleapis.com/v1/accounts:signUp?key=${apiKey}`,
-      body: {
-        email,
-        password,
-        returnSecureToken: true
-      },
-      failOnStatusCode: false
-    }).then((response) => ({
-      uid: response.body.localId,
-      idToken: response.body.idToken
-    }));
-  }
-
-  function setUserRole(uid, role, idToken, email) {
-    const now = new Date().toISOString();
-    return cy.request({
-      method: 'POST',
-      url: `${firestoreEmulatorUrl}/v1/projects/${projectId}/databases/(default)/documents/users?documentId=${uid}`,
-      headers: {
-        Authorization: `Bearer ${idToken}`
-      },
-      body: {
-        fields: {
-          email: {
-            stringValue: email
-          },
-          status: {
-            booleanValue: true
-          },
-          created: {
-            stringValue: now
-          },
-          changed: {
-            stringValue: now
-          },
-          lastModifiedBy: {
-            stringValue: uid
-          },
-          lastModifiedByEmail: {
-            stringValue: email
-          },
-          ruolo: {
-            arrayValue: {
-              values: [{ stringValue: role }]
-            }
-          }
-        }
-      },
-      failOnStatusCode: false
-    });
-  }
-
-  function login(email, password) {
-    cy.visit('/login', { failOnStatusCode: false });
-    cy.get('#email').clear().type(email);
-    cy.get('#password').clear().type(password);
-    cy.get('#login-btn').click();
-    cy.location('pathname', { timeout: 10000 }).should('eq', '/dashboard');
-  }
-
-  function findRowByCode(code) {
-    cy.get('input[type="search"], .datatable-input, .dataTable-input', { timeout: 10000 })
-      .first()
-      .clear()
-      .type(code, { delay: 0 });
-    cy.get('#data-table', { timeout: 10000 })
-      .contains('td', code, { timeout: 10000 })
-      .should('exist');
-  }
-
   const credentials = {
     email: `admin.ui.${Date.now()}@test.local`,
     password: 'AdminPass123!'
   };
 
   before(() => {
-    createAuthUser(credentials.email, credentials.password)
-      .then(({ uid, idToken }) => setUserRole(uid, 'admin', idToken, credentials.email));
+    cy.createAuthUser(credentials.email, credentials.password)
+      .then(({ uid, idToken }) => cy.setUserRole(uid, 'admin', idToken, credentials.email));
   });
 
   beforeEach(() => {
-    login(credentials.email, credentials.password);
+    cy.login(credentials.email, credentials.password);
     cy.visit('/anagrafica-clienti', { failOnStatusCode: false });
   });
 
@@ -118,7 +40,7 @@ describe('Anagrafica Clienti - UI e Sidebar', () => {
       cy.get('#entity-id', { timeout: 10000 }).invoke('val').should('match', /.+/);
       cy.get('#close-sidebar-btn').click();
 
-      findRowByCode(codiceCliente);
+      cy.findDataTableRow(codiceCliente);
       cy.get('#data-table').contains('Test Ricerca SRL').should('be.visible');
     });
   });
@@ -161,7 +83,7 @@ describe('Anagrafica Clienti - UI e Sidebar', () => {
       cy.get('#entity-id', { timeout: 10000 }).invoke('val').should('match', /.+/);
       cy.get('#close-sidebar-btn').click();
 
-      findRowByCode(codiceCliente);
+      cy.findDataTableRow(codiceCliente);
       cy.get('#data-table').contains('td', codiceCliente).closest('tr').within(() => {
         cy.get('.btn-edit').click();
       });

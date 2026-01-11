@@ -1,24 +1,6 @@
 describe('Users - UI e Sidebar', () => {
   const apiKey = 'AIzaSyD8Wqok8hADg9bipYln3KpQbQ99nHVI-4s';
-  const projectId = Cypress.env('FIREBASE_PROJECT_ID') || 'base-app-12108';
   const authEmulatorUrl = 'http://localhost:9099';
-  const firestoreEmulatorUrl = 'http://localhost:8080';
-
-  function createAuthUser(email, password) {
-    return cy.request({
-      method: 'POST',
-      url: `${authEmulatorUrl}/identitytoolkit.googleapis.com/v1/accounts:signUp?key=${apiKey}`,
-      body: {
-        email,
-        password,
-        returnSecureToken: true
-      },
-      failOnStatusCode: false
-    }).then((response) => ({
-      uid: response.body.localId,
-      idToken: response.body.idToken
-    }));
-  }
 
   function setCustomClaims(uid, claims) {
     // Usa l'API REST dell'emulatore per settare custom claims
@@ -34,66 +16,8 @@ describe('Users - UI e Sidebar', () => {
   }
 
   function setUserRole(uid, role, idToken, email) {
-    const now = new Date().toISOString();
-
-    // Prima setta i custom claims in Auth
-    setCustomClaims(uid, { role: role });
-
-    // Poi crea il documento in Firestore
-    return cy.request({
-      method: 'POST',
-      url: `${firestoreEmulatorUrl}/v1/projects/${projectId}/databases/(default)/documents/users?documentId=${uid}`,
-      headers: {
-        Authorization: `Bearer ${idToken}`
-      },
-      body: {
-        fields: {
-          email: {
-            stringValue: email
-          },
-          status: {
-            booleanValue: true
-          },
-          created: {
-            stringValue: now
-          },
-          changed: {
-            stringValue: now
-          },
-          lastModifiedBy: {
-            stringValue: uid
-          },
-          lastModifiedByEmail: {
-            stringValue: email
-          },
-          ruolo: {
-            arrayValue: {
-              values: [{ stringValue: role }]
-            }
-          }
-        }
-      },
-      failOnStatusCode: false
-    });
-  }
-
-  function login(email, password) {
-    cy.visit('/login', { failOnStatusCode: false });
-    cy.get('#email').clear().type(email);
-    cy.get('#password').clear().type(password);
-    cy.get('#login-btn').click();
-    cy.location('pathname', { timeout: 10000 }).should('eq', '/dashboard');
-  }
-
-  function findRowByEmail(email) {
-    cy.get('input[type="search"], .datatable-input, .dataTable-input', { timeout: 10000 })
-      .first()
-      .clear()
-      .type(email);
-    cy.get('#data-table', { timeout: 10000 })
-      .contains('td', email)
-      .should('be.visible')
-      .scrollIntoView();
+    return setCustomClaims(uid, { role: role })
+      .then(() => cy.setUserRole(uid, role, idToken, email));
   }
 
   const credentials = {
@@ -102,12 +26,12 @@ describe('Users - UI e Sidebar', () => {
   };
 
   before(() => {
-    createAuthUser(credentials.email, credentials.password)
+    cy.createAuthUser(credentials.email, credentials.password)
       .then(({ uid, idToken }) => setUserRole(uid, 'admin', idToken, credentials.email));
   });
 
   beforeEach(() => {
-    login(credentials.email, credentials.password);
+    cy.login(credentials.email, credentials.password);
     // Attendi un momento per permettere ai custom claims di essere caricati
     cy.wait(500);
     cy.visit('/users', { failOnStatusCode: false });
@@ -143,13 +67,13 @@ describe('Users - UI e Sidebar', () => {
       cy.get('#password').type('Password123!');
       cy.get('#ruolo-multiselect-hidden').select('operatore', { force: true });
       cy.get('button[type="submit"][form="entity-form"]').scrollIntoView().click({ force: true });
-      cy.get('#save-message', { timeout: 10000 }).should('be.visible');
+      cy.get('#entity-id', { timeout: 10000 }).invoke('val').should('match', /.+/);
       cy.get('#close-sidebar-btn').click();
 
       // Attendi che la tabella si aggiorni dopo la creazione
       cy.wait(1000);
 
-      findRowByEmail(userEmail);
+      cy.findDataTableRow(userEmail);
       cy.get('#data-table').contains('td', userEmail).should('be.visible');
     });
   });
@@ -184,13 +108,13 @@ describe('Users - UI e Sidebar', () => {
       cy.get('#password').type('Password123!');
       cy.get('#ruolo-multiselect-hidden').select('operatore', { force: true });
       cy.get('button[type="submit"][form="entity-form"]').scrollIntoView().click({ force: true });
-      cy.get('#save-message', { timeout: 10000 }).should('be.visible');
+      cy.get('#entity-id', { timeout: 10000 }).invoke('val').should('match', /.+/);
       cy.get('#close-sidebar-btn').click();
 
       // Attendi che la tabella si aggiorni dopo la creazione
       cy.wait(1000);
 
-      findRowByEmail(userEmail);
+      cy.findDataTableRow(userEmail);
       cy.get('#data-table').contains('td', userEmail).closest('tr').within(() => {
         cy.get('.btn-edit').click();
       });

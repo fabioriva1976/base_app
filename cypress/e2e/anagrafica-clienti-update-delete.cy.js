@@ -1,90 +1,12 @@
 describe('Anagrafica Clienti - update e delete', () => {
-  const apiKey = 'AIzaSyD8Wqok8hADg9bipYln3KpQbQ99nHVI-4s';
-  const projectId = Cypress.env('FIREBASE_PROJECT_ID') || 'base-app-12108';
-  const authEmulatorUrl = 'http://localhost:9099';
-  const firestoreEmulatorUrl = 'http://localhost:8080';
-
-  function findRowByCode(code) {
-    cy.get('input[type="search"], .datatable-input, .dataTable-input', { timeout: 10000 })
-      .first()
-      .clear()
-      .type(code, { delay: 0 });
-    cy.get('#data-table', { timeout: 20000 })
-      .contains('td', code, { timeout: 20000 })
-      .should('exist');
-  }
-
-  function createAuthUser(email, password) {
-    return cy.request({
-      method: 'POST',
-      url: `${authEmulatorUrl}/identitytoolkit.googleapis.com/v1/accounts:signUp?key=${apiKey}`,
-      body: {
-        email,
-        password,
-        returnSecureToken: true
-      },
-      failOnStatusCode: false
-    }).then((response) => ({
-      uid: response.body.localId,
-      idToken: response.body.idToken
-    }));
-  }
-
-  function setUserRole(uid, role, idToken, email) {
-    const now = new Date().toISOString();
-    return cy.request({
-      method: 'POST',
-      url: `${firestoreEmulatorUrl}/v1/projects/${projectId}/databases/(default)/documents/users?documentId=${uid}`,
-      headers: {
-        Authorization: `Bearer ${idToken}`
-      },
-      body: {
-        fields: {
-          email: {
-            stringValue: email
-          },
-          status: {
-            booleanValue: true
-          },
-          created: {
-            stringValue: now
-          },
-          changed: {
-            stringValue: now
-          },
-          lastModifiedBy: {
-            stringValue: uid
-          },
-          lastModifiedByEmail: {
-            stringValue: email
-          },
-          ruolo: {
-            arrayValue: {
-              values: [{ stringValue: role }]
-            }
-          }
-        }
-      },
-      failOnStatusCode: false
-    });
-  }
-
-  function login(email, password) {
-    cy.visit('/login', { failOnStatusCode: false });
-    cy.get('#email').clear().type(email);
-    cy.get('#password').clear().type(password);
-    cy.get('#login-btn').click();
-    cy.location('pathname', { timeout: 10000 }).should('eq', '/dashboard');
-  }
-
   it('dovrebbe aggiornare un cliente e mostrare le azioni', () => {
     const adminEmail = `admin.update.${Date.now()}@test.local`;
     const adminPassword = 'AdminPass123!';
 
-    createAuthUser(adminEmail, adminPassword)
-      .then(({ uid, idToken }) => setUserRole(uid, 'admin', idToken, adminEmail));
+    cy.createAuthUser(adminEmail, adminPassword)
+      .then(({ uid, idToken }) => cy.setUserRole(uid, 'admin', idToken, adminEmail));
 
-    login(adminEmail, adminPassword);
+    cy.login(adminEmail, adminPassword);
 
     cy.visit('/anagrafica-clienti', { failOnStatusCode: false });
     cy.get('#new-entity-btn').click();
@@ -108,7 +30,8 @@ describe('Anagrafica Clienti - update e delete', () => {
 
     // Aggiorna dati cliente
     cy.get('#close-sidebar-btn').click();
-    findRowByCode(codiceCliente);
+    cy.wait(1000);
+    cy.findDataTableRow(codiceCliente, { timeout: 20000 });
     cy.get('#data-table').contains('td', codiceCliente).closest('tr').within(() => {
       cy.get('.btn-edit').click();
     });
@@ -126,7 +49,7 @@ describe('Anagrafica Clienti - update e delete', () => {
 
     // Riapri per caricare lo storico azioni aggiornato
     cy.get('#close-sidebar-btn').click();
-    findRowByCode(codiceCliente);
+    cy.findDataTableRow(codiceCliente, { timeout: 20000 });
     cy.get('#data-table').contains('td', codiceCliente).closest('tr').within(() => {
       cy.get('.btn-edit').click();
     });
@@ -147,10 +70,10 @@ describe('Anagrafica Clienti - update e delete', () => {
     const adminEmail = `admin.delete.${Date.now()}@test.local`;
     const adminPassword = 'AdminPass123!';
 
-    createAuthUser(adminEmail, adminPassword)
-      .then(({ uid, idToken }) => setUserRole(uid, 'admin', idToken, adminEmail));
+    cy.createAuthUser(adminEmail, adminPassword)
+      .then(({ uid, idToken }) => cy.setUserRole(uid, 'admin', idToken, adminEmail));
 
-    login(adminEmail, adminPassword);
+    cy.login(adminEmail, adminPassword);
 
     cy.visit('/anagrafica-clienti', { failOnStatusCode: false });
     cy.get('#new-entity-btn').click();
@@ -166,28 +89,26 @@ describe('Anagrafica Clienti - update e delete', () => {
     cy.get('#entity-id', { timeout: 10000 }).invoke('val').should('match', /.+/);
     cy.get('#save-message', { timeout: 10000 }).should('contain', 'Salvato');
     cy.get('#close-sidebar-btn').click();
-    findRowByCode(codiceCliente);
+    cy.findDataTableRow(codiceCliente);
     cy.get('#data-table').contains('td', codiceCliente).closest('tr').within(() => {
       cy.get('.btn-delete').click();
     });
 
     cy.get('.btn-confirm-yes').click();
+    cy.wait(1000);
 
-    cy.get('input[type="search"], .datatable-input, .dataTable-input', { timeout: 10000 })
-      .first()
-      .clear()
-      .type(codiceCliente, { delay: 0 });
-    cy.get('#data-table', { timeout: 10000 }).contains(codiceCliente).should('not.exist');
+    cy.searchDataTable(codiceCliente);
+    cy.get('#data-table', { timeout: 20000 }).should('not.contain', codiceCliente);
   });
 
   it('dovrebbe annullare la cancellazione di un cliente', () => {
     const adminEmail = `admin.cancel.${Date.now()}@test.local`;
     const adminPassword = 'AdminPass123!';
 
-    createAuthUser(adminEmail, adminPassword)
-      .then(({ uid, idToken }) => setUserRole(uid, 'admin', idToken, adminEmail));
+    cy.createAuthUser(adminEmail, adminPassword)
+      .then(({ uid, idToken }) => cy.setUserRole(uid, 'admin', idToken, adminEmail));
 
-    login(adminEmail, adminPassword);
+    cy.login(adminEmail, adminPassword);
 
     cy.visit('/anagrafica-clienti', { failOnStatusCode: false });
     cy.get('#new-entity-btn').click();
@@ -203,13 +124,16 @@ describe('Anagrafica Clienti - update e delete', () => {
     cy.get('#entity-id', { timeout: 10000 }).invoke('val').should('match', /.+/);
     cy.get('#save-message', { timeout: 10000 }).should('contain', 'Salvato');
     cy.get('#close-sidebar-btn').click();
-    findRowByCode(codiceCliente);
+    cy.wait(1000);
+    cy.findDataTableRow(codiceCliente, { timeout: 20000 });
     cy.get('#data-table').contains('td', codiceCliente).closest('tr').within(() => {
       cy.get('.btn-delete').click();
     });
 
     cy.get('.btn-confirm-no').click();
+    cy.wait(1000);
 
-    cy.get('#data-table', { timeout: 10000 }).contains(codiceCliente).should('exist');
+    cy.searchDataTable(codiceCliente);
+    cy.get('#data-table', { timeout: 20000 }).should('contain', codiceCliente);
   });
 });

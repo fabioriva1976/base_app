@@ -1,24 +1,6 @@
 describe('Profile', () => {
-  const apiKey = 'AIzaSyD8Wqok8hADg9bipYln3KpQbQ99nHVI-4s';
   const projectId = Cypress.env('FIREBASE_PROJECT_ID') || 'base-app-12108';
-  const authEmulatorUrl = 'http://localhost:9099';
   const firestoreEmulatorUrl = 'http://localhost:8080';
-
-  function createAuthUser(email, password) {
-    return cy.request({
-      method: 'POST',
-      url: `${authEmulatorUrl}/identitytoolkit.googleapis.com/v1/accounts:signUp?key=${apiKey}`,
-      body: {
-        email,
-        password,
-        returnSecureToken: true
-      },
-      failOnStatusCode: false
-    }).then((response) => ({
-      uid: response.body.localId,
-      idToken: response.body.idToken
-    }));
-  }
 
   function setUserProfile(uid, role, idToken, profile) {
     const now = new Date().toISOString();
@@ -59,14 +41,6 @@ describe('Profile', () => {
     });
   }
 
-  function login(email, password) {
-    cy.visit('/login', { failOnStatusCode: false });
-    cy.get('#email').clear().type(email);
-    cy.get('#password').clear().type(password);
-    cy.get('#login-btn').click();
-    cy.location('pathname', { timeout: 10000 }).should('eq', '/dashboard');
-  }
-
   function getUserFromFirestore(uid, idToken) {
     return cy.request({
       method: 'GET',
@@ -93,13 +67,13 @@ describe('Profile', () => {
     deleteAllUsers();
 
     // 2. Crea solo l'utente in Auth (senza profilo Firestore)
-    createAuthUser(email, password).then((result) => {
+    cy.createAuthUser(email, password).then((result) => {
       uid = result.uid;
       idToken = result.idToken;
     });
 
     // 3. Login con email e password usando il form standard
-    login(email, password);
+    cy.login(email, password);
 
     // 4. Visita la pagina profilo
     cy.visit('/profile', { failOnStatusCode: false });
@@ -166,11 +140,11 @@ describe('Profile', () => {
     };
 
     // Crea utente in Auth E Firestore con ruolo admin
-    createAuthUser(email, password)
+    cy.createAuthUser(email, password)
       .then(({ uid, idToken }) => setUserProfile(uid, 'admin', idToken, profile));
 
     // Login e visita profilo
-    login(email, password);
+    cy.login(email, password);
     cy.visit('/profile', { failOnStatusCode: false });
 
     // Attendi che il form sia completamente caricato
@@ -194,11 +168,11 @@ describe('Profile', () => {
     };
 
     // Crea utente in Auth E Firestore con ruolo admin
-    createAuthUser(email, password)
+    cy.createAuthUser(email, password)
       .then(({ uid, idToken }) => setUserProfile(uid, 'admin', idToken, profile));
 
     // Login e visita profilo
-    login(email, password);
+    cy.login(email, password);
     cy.visit('/profile', { failOnStatusCode: false });
 
     // Attendi che il form sia completamente caricato con i dati originali
@@ -232,10 +206,10 @@ describe('Profile', () => {
       telefono: '+39 333 5555555'
     };
 
-    createAuthUser(email, password)
+    cy.createAuthUser(email, password)
       .then(({ uid, idToken }) => setUserProfile(uid, 'admin', idToken, profile));
 
-    login(email, password);
+    cy.login(email, password);
     cy.visit('/profile', { failOnStatusCode: false });
 
     cy.get('#profile-email').should('have.value', profile.email);
