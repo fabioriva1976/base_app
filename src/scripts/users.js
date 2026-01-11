@@ -1,16 +1,17 @@
-import { db, storage, auth, functions } from '../lib/firebase-client';
-import { collection, getDocs, doc, getDoc } from "firebase/firestore";
+import { db, auth, functions } from '../lib/firebase-client';
 import { httpsCallable } from "firebase/functions";
 import * as actionUtils from './utils/actionUtils.js';
 import { Multiselect } from './utils/multiSelectUtils.js';
 import { getAvailableRoles, getRoleLabel } from '../lib/roles.ts';
 import * as ui from './utils/uiUtils.js';
+import { usersStore, initUsersListener, stopUsersListener } from '../stores/usersStore.js';
 
 let entities = [];
 let collection_name = 'users';
 let currentEntityId = null;
 let dataTable = null;
 let ruoloMultiselect = null;
+let unsubscribeStore = null;
 
 const labelNewEntity = 'Nuovo Utente';
 
@@ -25,7 +26,15 @@ export function initUsersPage() {
         multiple: false
     });
     setupEventListeners();
-    loadEntities();
+
+    // Inizializza il listener Firebase per aggiornamenti real-time
+    initUsersListener();
+
+    // Subscribe allo store per aggiornare la tabella quando cambiano i dati
+    unsubscribeStore = usersStore.subscribe((users) => {
+        entities = users;
+        renderTable();
+    });
 }
 
 function setupEventListeners() {
@@ -52,10 +61,13 @@ function setupEventListeners() {
     }));
 }
 
-async function loadEntities() {
-    const snapshot = await getDocs(collection(db, collection_name));
-    entities = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-    renderTable();
+// Funzione di cleanup per fermare i listener quando si esce dalla pagina
+export function cleanupUsersPage() {
+    if (unsubscribeStore) {
+        unsubscribeStore();
+        unsubscribeStore = null;
+    }
+    stopUsersListener();
 }
 
 function renderTable() {
@@ -196,7 +208,7 @@ async function saveEntity(e) {
             showSaveMessage('save-message');
         }
 
-        loadEntities();
+        // Non serve più loadEntities() - la tabella si aggiorna automaticamente tramite lo store
 
     } catch (error) {
         console.error('Errore nel salvare l\'utente:', error);
@@ -235,8 +247,14 @@ function resetToFirstTab(sidebarId) {
 
 const editEntity = async (id) => {
     currentEntityId = id;
-    const docSnap = await getDoc(doc(db, collection_name, id));
-    const data = docSnap.data();
+
+    // Usa i dati dallo store invece di fare una query a Firestore
+    const data = entities.find(e => e.id === id);
+
+    if (!data) {
+        console.error('Utente non trovato nello store:', id);
+        return;
+    }
 
     // Crea il titolo con nome e cognome
     const fullName = [data.nome, data.cognome].filter(Boolean).join(' ') || 'Utente';
@@ -273,7 +291,7 @@ async function deleteEntity(id) {
         const userDeleteApi = httpsCallable(functions, 'userDeleteApi');
         await userDeleteApi({ uid: id });
 
-        loadEntities();
+        // Non serve più loadEntities() - la tabella si aggiorna automaticamente tramite lo store
     } catch (error) {
         console.error('Errore nell\'eliminare l\'utente:', error);
         alert('Errore: ' + (error.message || 'Impossibile eliminare l\'utente'));

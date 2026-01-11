@@ -24,6 +24,7 @@
     "firebase": "^10.12.3",
     "firebase-admin": "^12.2.0",
     "firebase-functions": "^5.0.1",
+    "nanostores": "^1.1.0",
     "tailwindcss": "^3.4.4"
   },
   "workspaces": [
@@ -32,10 +33,10 @@
   ],
   "devDependencies": {
     "@faker-js/faker": "^8.4.1",
+    "chai": "^4.3.7",
     "cypress": "15.8.2",
     "eslint-plugin-jest": "^28.6.0",
-    "jest": "^29.7.0",
-    "chai": "^4.3.7",
-    "firebase-functions-test": "^3.1.0"
+    "firebase-functions-test": "^3.1.0",
+    "jest": "^29.7.0"
   }
 }

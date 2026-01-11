@@ -38,7 +38,6 @@ export { astroSSR } from "./astro.js";
 
 // === FUNZIONI API - PROFILO UTENTE ===
 export {
-    userListApi,
     userCreateApi,
     userUpdateApi,
     userSelfUpdateApi,

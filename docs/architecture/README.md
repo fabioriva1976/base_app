@@ -4,6 +4,19 @@ Questa directory contiene la documentazione tecnica dell'architettura e dei patt
 
 ## Documenti Disponibili
 
+### [REALTIME_STORES.md](REALTIME_STORES.md)
+Pattern per aggiornamenti real-time UI con nano-stores + Firebase snapshots.
+
+**Quando usare:** Quando vuoi che tabelle/form si aggiornino automaticamente quando i dati cambiano su Firestore.
+
+**Key Points:**
+- State management: nano-stores (<1KB)
+- Real-time: Firebase `onSnapshot()`
+- Auto-update: UI si aggiorna quando Firestore cambia
+- Meno codice: Elimina `loadEntities()`, polling, manual refresh
+
+---
+
 ### [FACTORIES_SYNC.md](FACTORIES_SYNC.md)
 Sistema di sincronizzazione delle factory functions tra frontend (ES6 modules) e backend (CommonJS).
 
@@ -58,6 +71,7 @@ Utility functions centralizzate per formattazione dati (date, file size, tags, e
 ### Per Sviluppatori Nuovi al Progetto
 1. Leggi [/PATTERNS.md](../../PATTERNS.md) prima di tutto
 2. Poi leggi questi documenti nell'ordine:
+   - REALTIME_STORES.md (come aggiornare UI in tempo reale)
    - FACTORIES_SYNC.md (come funzionano i dati)
    - SERVER_SIDE_VALIDATION.md (come validare)
    - FORMATTERS_CONSOLIDATION.md (come presentare i dati)
@@ -65,11 +79,13 @@ Utility functions centralizzate per formattazione dati (date, file size, tags, e
 
 ### Per AI che Estendono il Progetto
 1. Leggi [/PATTERNS.md](../../PATTERNS.md) per i pattern CRUD
-2. Consulta SERVER_SIDE_VALIDATION.md per la sicurezza
-3. Consulta FACTORIES_SYNC.md per la struttura dati
-4. Usa FORMATTERS_CONSOLIDATION.md per la UI
+2. Consulta REALTIME_STORES.md per state management real-time
+3. Consulta SERVER_SIDE_VALIDATION.md per la sicurezza
+4. Consulta FACTORIES_SYNC.md per la struttura dati
+5. Usa FORMATTERS_CONSOLIDATION.md per la UI
 
 ### Per Manutenzione
+- **Aggiungere real-time updates:** REALTIME_STORES.md
 - **Modificare struttura entità:** FACTORIES_SYNC.md
 - **Aggiungere validazione:** SERVER_SIDE_VALIDATION.md
 - **Ottimizzare performance:** CACHE_SYSTEM.md

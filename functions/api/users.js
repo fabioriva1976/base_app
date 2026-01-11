@@ -13,7 +13,6 @@
  * - CREATE: userCreateApi (solo admin, con gestione duplicati)
  * - UPDATE: userUpdateApi (solo admin, con controllo permessi)
  * - DELETE: userDeleteApi (solo admin, con verifica ruoli)
- * - LIST: userListApi (solo admin)
  *
  * NOTA: Users è un'entità speciale che usa Firebase Auth + Firestore
  *
@@ -81,32 +80,6 @@ function validateUserUpdateData(data) {
     throw new HttpsError('invalid-argument', 'telefono deve essere una stringa');
   }
 }
-
-/**
- * 🎯 LIST API: Lista tutti gli utenti
- *
- * Permessi richiesti: ADMIN
- * Output: { users: [...] }
- */
-export const userListApi = onCall({ region, cors: corsOrigins, ...runtimeOpts }, async (request) => {
-  await requireAdmin(request);
-
-  try {
-    const userRecords = await auth.listUsers(100);
-    const users = userRecords.users.map((user) => ({
-      uid: user.uid,
-      email: user.email,
-      displayName: user.displayName,
-      disabled: user.disabled
-    }));
-
-    console.log(`Admin ${request.auth.uid} ha listato ${users.length} utenti`);
-    return { users };
-  } catch (error) {
-    console.error("Errore nel listare gli utenti:", error);
-    throw new HttpsError("internal", "Impossibile recuperare gli utenti.");
-  }
-});
 
 /**
  * 🎯 CREATE API: Crea nuovo utente

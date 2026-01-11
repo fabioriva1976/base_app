@@ -1,23 +1,44 @@
-import { db, auth, functions } from '../lib/firebase-client';
-import { doc, getDoc, getDocFromServer } from "firebase/firestore";
+import { auth, functions } from '../lib/firebase-client';
 import { updatePassword } from "firebase/auth";
 import { httpsCallable } from "firebase/functions";
 import { getRoleLabel } from '../lib/roles';
-
-const collection_name = 'users';
+import { currentUserProfileStore } from '../stores/currentUserStore.js';
 let currentUserId = null;
+let unsubscribeStore = null;
 
 export function initProfilePage() {
     setupEventListeners();
 
-    // Attendi che l'autenticazione sia pronta prima di caricare il profilo
+    // Subscribe allo store per aggiornare il form quando cambiano i dati
+    unsubscribeStore = currentUserProfileStore.subscribe((profileData) => {
+        if (profileData) {
+            updateProfileForm(profileData);
+        }
+    });
+
+    // Attendi che l'autenticazione sia pronta
     auth.onAuthStateChanged((user) => {
         if (user) {
-            loadCurrentUserProfile();
+            currentUserId = user.uid;
+            document.getElementById('profile-user-id').value = currentUserId;
+
+            // Se lo store ha già i dati, aggiorna il form
+            const currentProfile = currentUserProfileStore.get();
+            if (currentProfile) {
+                updateProfileForm(currentProfile);
+            }
         } else {
             console.error('Utente non autenticato');
         }
     });
+}
+
+// Funzione di cleanup
+export function cleanupProfilePage() {
+    if (unsubscribeStore) {
+        unsubscribeStore();
+        unsubscribeStore = null;
+    }
 }
 
 function setupEventListeners() {
@@ -34,100 +55,27 @@ function setupEventListeners() {
     document.getElementById('profile-form').addEventListener('submit', saveProfile);
 }
 
-async function loadCurrentUserProfile(forceReload = false) {
+// Aggiorna il form del profilo con i dati dallo store
+function updateProfileForm(data) {
     const user = auth.currentUser;
 
-    if (!user) {
-        console.error('Utente non autenticato');
-        return;
-    }
+    console.log('✅ Aggiornamento form profilo con dati dallo store:', data);
 
-    currentUserId = user.uid;
-    document.getElementById('profile-user-id').value = currentUserId;
+    const nomeInput = document.getElementById('profile-nome');
+    const cognomeInput = document.getElementById('profile-cognome');
+    const emailInput = document.getElementById('profile-email');
+    const telefonoInput = document.getElementById('profile-telefono');
+    const ruoloInput = document.getElementById('profile-ruolo');
 
-    console.log('📝 Caricamento profilo per utente:', currentUserId);
+    if (nomeInput) nomeInput.value = data.nome || '';
+    if (cognomeInput) cognomeInput.value = data.cognome || '';
+    if (emailInput) emailInput.value = data.email || user?.email || '';
+    if (telefonoInput) telefonoInput.value = data.telefono || '';
 
-    try {
-        const docRef = doc(db, collection_name, currentUserId);
-        let docSnap;
-        try {
-            docSnap = await getDocFromServer(docRef);
-        } catch {
-            docSnap = await getDoc(docRef);
-        }
-
-        if (docSnap.exists()) {
-            const data = docSnap.data();
-            console.log('✅ Dati profilo trovati in Firestore:', data);
-            console.log('📋 Dati individuali da Firestore:', {
-                nome: data.nome,
-                cognome: data.cognome,
-                email: data.email,
-                telefono: data.telefono,
-                ruolo: data.ruolo
-            });
-
-            const nomeInput = document.getElementById('profile-nome');
-            const cognomeInput = document.getElementById('profile-cognome');
-            const emailInput = document.getElementById('profile-email');
-            const telefonoInput = document.getElementById('profile-telefono');
-            const ruoloInput = document.getElementById('profile-ruolo');
-
-            console.log('📝 Valori attuali nei campi PRIMA dell\'aggiornamento:', {
-                nome: nomeInput.value,
-                cognome: cognomeInput.value,
-                email: emailInput.value,
-                telefono: telefonoInput.value,
-                ruolo: ruoloInput?.value
-            });
-
-            const hasExistingValues = Boolean(
-                nomeInput.value || cognomeInput.value || emailInput.value || telefonoInput.value
-            );
-
-            console.log('🔄 forceReload:', forceReload, 'fromCache:', docSnap.metadata?.fromCache, 'hasExistingValues:', hasExistingValues);
-
-            // Aggiorna sempre se forceReload è true (dopo un salvataggio)
-            if (forceReload || !docSnap.metadata?.fromCache || !hasExistingValues) {
-                console.log('✏️ Aggiornamento campi in corso...');
-                nomeInput.value = data.nome || '';
-                console.log('✏️ Nome impostato a:', nomeInput.value, '(da data.nome:', data.nome, ')');
-                cognomeInput.value = data.cognome || '';
-                console.log('✏️ Cognome impostato a:', cognomeInput.value, '(da data.cognome:', data.cognome, ')');
-                emailInput.value = data.email || user.email || '';
-                console.log('✏️ Email impostato a:', emailInput.value);
-                telefonoInput.value = data.telefono || '';
-                console.log('✏️ Telefono impostato a:', telefonoInput.value);
-
-                // Aggiorna il campo ruolo con il valore da Firestore
-                if (ruoloInput && data.ruolo) {
-                    const roleLabel = getRoleLabel(data.ruolo);
-                    ruoloInput.value = roleLabel;
-                    console.log('✏️ Ruolo impostato a:', ruoloInput.value, '(label da ruolo:', data.ruolo, ')');
-                }
-            } else {
-                console.log('⏭️ Aggiornamento saltato (condizioni non soddisfatte)');
-            }
-
-            console.log('✅ Campi popolati DOPO l\'aggiornamento:', {
-                nome: nomeInput.value,
-                cognome: cognomeInput.value,
-                email: emailInput.value,
-                telefono: telefonoInput.value,
-                ruolo: ruoloInput?.value
-            });
-
-        } else {
-            console.log('⚠️ Profilo utente non trovato in Firestore, uso i dati da Auth');
-            console.log('Auth user:', { email: user.email, displayName: user.displayName });
-
-            document.getElementById('profile-email').value = user.email || '';
-            document.getElementById('profile-nome').value = user.displayName?.split(' ')[0] || '';
-            document.getElementById('profile-cognome').value = user.displayName?.split(' ').slice(1).join(' ') || '';
-        }
-    } catch (error) {
-        console.error('❌ Errore nel caricamento del profilo:', error);
-        alert('Errore nel caricamento del profilo');
+    // Aggiorna il campo ruolo con il valore da Firestore
+    if (ruoloInput && data.ruolo) {
+        const roleLabel = getRoleLabel(data.ruolo);
+        ruoloInput.value = roleLabel;
     }
 }
 
@@ -177,26 +125,11 @@ async function saveProfile(e) {
         try {
             const apiResult = await userSelfUpdateApi(updateData);
             console.log('✅ Profilo aggiornato tramite API, result:', apiResult);
-
-            // Attendi che Firestore rifletta gli aggiornamenti
-            console.log('⏳ Attesa che Firestore rifletta gli aggiornamenti...');
-            await waitForProfileUpdate({
-                nome,
-                cognome,
-                email,
-                telefono
-            });
-            console.log('✅ Firestore aggiornato');
+            // Non serve più attendere o ricaricare - lo store si aggiorna automaticamente tramite onSnapshot
         } catch (apiError) {
             console.error('❌ Errore API userSelfUpdateApi:', apiError);
             throw apiError;
         }
-
-        // Ricarica il profilo da Firestore per ottenere tutti i dati aggiornati
-        // (importante per il primo utente che diventa SUPERUSER e ottiene il ruolo)
-        console.log('🔄 Ricaricamento profilo da Firestore con forceReload=true...');
-        await loadCurrentUserProfile(true);
-        console.log('✅ Profilo ricaricato');
 
         // Se è stata inserita una password, aggiornala lato client (Auth non ha API server-side per questo)
         if (password && password.trim() !== '') {
@@ -207,15 +140,9 @@ async function saveProfile(e) {
         // Pulisci il campo password dopo il salvataggio
         document.getElementById('profile-password').value = '';
 
-        // Aggiorna l'avatar nell'header senza ricaricare la pagina
-        const userIcon = document.getElementById('avatar-icon');
-        if (userIcon) {
-            const url = `https://ui-avatars.com/api/?name=${nome}&background=3b82f6&color=fff&rounded=true`;
-            userIcon.setAttribute('src', url);
-            userIcon.setAttribute('alt', `${nome} ${cognome}`);
-        }
+        // Non serve più aggiornare manualmente l'avatar - lo store lo fa automaticamente
 
-        // Mostra il messaggio di successo DOPO aver aggiornato i campi
+        // Mostra il messaggio di successo
         showSaveMessage(saveMessage);
 
     } catch (error) {
@@ -264,55 +191,4 @@ function showErrorMessage(message) {
     errorMsg.style.display = 'inline';
 
     // Non nascondere automaticamente gli errori
-}
-
-async function waitForProfileUpdate(expected) {
-    if (!currentUserId) return;
-
-    console.log('⏳ waitForProfileUpdate - Valori attesi:', expected);
-
-    const docRef = doc(db, collection_name, currentUserId);
-    const deadline = Date.now() + 3000;
-    let attempt = 0;
-
-    while (Date.now() < deadline) {
-        try {
-            attempt++;
-            const snap = await getDocFromServer(docRef);
-            if (snap.exists()) {
-                const data = snap.data() || {};
-                console.log(`🔍 waitForProfileUpdate - Tentativo ${attempt}, dati da Firestore:`, {
-                    nome: data.nome,
-                    cognome: data.cognome,
-                    email: data.email,
-                    telefono: data.telefono
-                });
-
-                const matches =
-                    (expected.nome === '' || data.nome === expected.nome) &&
-                    (expected.cognome === '' || data.cognome === expected.cognome) &&
-                    (expected.email === '' || data.email === expected.email) &&
-                    (expected.telefono === '' || data.telefono === expected.telefono);
-
-                console.log(`🔍 waitForProfileUpdate - Tentativo ${attempt}, match:`, {
-                    nomeMatch: expected.nome === '' || data.nome === expected.nome,
-                    cognomeMatch: expected.cognome === '' || data.cognome === expected.cognome,
-                    emailMatch: expected.email === '' || data.email === expected.email,
-                    telefonoMatch: expected.telefono === '' || data.telefono === expected.telefono,
-                    overallMatch: matches
-                });
-
-                if (matches) {
-                    console.log('✅ waitForProfileUpdate - Dati corrispondono, uscita');
-                    return;
-                }
-            } else {
-                console.log(`🔍 waitForProfileUpdate - Tentativo ${attempt}, documento non esiste ancora`);
-            }
-        } catch (error) {
-            console.warn(`⚠️ waitForProfileUpdate - Tentativo ${attempt}, errore:`, error);
-        }
-        await new Promise((resolve) => setTimeout(resolve, 200));
-    }
-    console.warn('⚠️ waitForProfileUpdate - Timeout raggiunto, uscita senza match');
 }

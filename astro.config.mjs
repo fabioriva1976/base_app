@@ -19,9 +19,9 @@ export default defineConfig({
   vite: {
     server: {
       host: '0.0.0.0',
-      // Permetti connessioni da qualsiasi host (per Docker e testing)
+      // HMR configurato per sviluppo locale
       hmr: {
-        host: 'firebase-cli',
+        host: 'localhost',
         clientPort: 3000
       },
       // Disabilita il controllo dell'host per permettere richieste da Docker

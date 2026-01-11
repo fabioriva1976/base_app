@@ -56,28 +56,32 @@ service cloud.firestore {
     }
 
     // ═══════════════════════════════════════════════════════════════════════
+    // COLLEZIONE UTENTI
+    // ═══════════════════════════════════════════════════════════════════════
+    match /users/{userId} {
+      // Chiunque sia autenticato può leggere il profilo di un altro utente (necessario per funzioni come getUserRole).
+      allow get: if request.auth != null;
+
+      // Permetti la lettura lista a tutti gli utenti autenticati (per real-time stores)
+      // Nota: gli operatori devono poter vedere la lista utenti nella UI
+      allow list: if request.auth != null;
+
+      // Un utente può creare/aggiornare solo il proprio profilo
+      // Admin/Superuser possono creare/aggiornare qualsiasi profilo
+      // IMPORTANTE: create permette self-registration senza controllare isAdmin()
+      allow create: if ((request.auth != null && request.auth.uid == userId)
+        || isAdmin()) && hasValidUserEmail() && hasUserSystemFields();
+      allow update: if ((request.auth != null && request.auth.uid == userId)
+        || isAdmin()) && hasValidUserEmail() && hasUserSystemFields();
+
+      // Solo admin può eliminare
+      allow delete: if isAdmin();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
     // REGOLA DI FALLBACK - NEGA TUTTO IL RESTO
     // ═══════════════════════════════════════════════════════════════════════
     match /{document=**} {
-      // COLLEZIONE UTENTI
-      match /users/{userId} {
-        // Chiunque sia autenticato può leggere il profilo di un altro utente (necessario per funzioni come getUserRole).
-        allow get: if request.auth != null;
-
-        // Admin/Superuser possono leggere la lista completa
-        allow list: if isAdmin();
-
-        // Un utente può creare/aggiornare solo il proprio profilo
-        // Admin/Superuser possono creare/aggiornare qualsiasi profilo
-        // IMPORTANTE: create permette self-registration senza controllare isAdmin()
-        allow create: if ((request.auth != null && request.auth.uid == userId)
-          || isAdmin()) && hasValidUserEmail() && hasUserSystemFields();
-        allow update: if ((request.auth != null && request.auth.uid == userId)
-          || isAdmin()) && hasValidUserEmail() && hasUserSystemFields();
-
-        // Solo admin può eliminare
-        allow delete: if isAdmin();
-      }
 
       // COLLEZIONE SETTINGS (SMTP, AI, ecc.)
       // ⚠️ CONTIENE DATI SENSIBILI: API keys, password SMTP, secrets
