@@ -878,4 +878,54 @@ Questo pattern si integra con:
 
 ---
 
-**Prossimi passi:** Applicare questo pattern a `clienti`, `prodotti` e altre entità del progetto.
+## 🎯 Implementazioni Esistenti
+
+### ✅ Entità implementate con questo pattern:
+
+1. **Users** (`src/stores/usersStore.js`)
+   - Collection store per lista utenti
+   - Implementato in: `src/scripts/users.js`
+   - Listener inizializzato in: `initUsersPage()`
+
+2. **Current User Profile** (`src/stores/currentUserStore.js`)
+   - Document store per profilo utente corrente
+   - Implementato in: `src/scripts/profile.js`, `src/layouts/BaseLayout.astro`
+   - Listener inizializzato in: `BaseLayout.astro` (onAuthStateChanged)
+   - Side effect: Aggiorna automaticamente avatar nell'header
+
+3. **Clienti** (`src/stores/clientiStore.js`)
+   - Collection store per anagrafica clienti
+   - Implementato in: `src/scripts/anagrafica-clienti.js`
+   - Listener inizializzato in: `initPageAnagraficaClientiPage()`
+
+### 🔄 Cloud Functions modificate:
+
+#### Rimosse API di lettura (READ operations)
+- ❌ `userListApi` - Rimossa, lista gestita client-side con onSnapshot
+- ❌ `listClientiApi` - Rimossa, lista gestita client-side con onSnapshot
+
+#### Mantenute API di scrittura (CUD operations)
+- ✅ `userCreateApi`, `userUpdateApi`, `userDeleteApi`
+- ✅ `createClienteApi`, `updateClienteApi`, `deleteClienteApi`
+
+### 📐 Security Rules aggiornate:
+
+```javascript
+// Users collection
+match /users/{userId} {
+  allow get: if request.auth != null;
+  allow list: if request.auth != null;  // ✅ Permesso per onSnapshot
+  // ...
+}
+
+// Clienti collection
+match /anagrafica_clienti/{clientId} {
+  allow get: if request.auth != null;
+  allow list: if request.auth != null;  // ✅ Permesso per onSnapshot
+  allow write: if false;  // ❌ Solo tramite Cloud Functions
+}
+```
+
+---
+
+**Pattern completato e testato!** Pronto per essere applicato ad altre entità del progetto.

@@ -6,11 +6,13 @@ import * as actionUtils from './utils/actionUtils.js';
 import * as commentUtils from './utils/commentUtils.js';
 import { httpsCallable } from "firebase/functions";
 import { createCliente } from './schemas/entityFactory.js';
+import { clientiStore, initClientiListener, stopClientiListener } from '../stores/clientiStore.js';
 
 let entities = [];
 let collection_name = 'anagrafica_clienti';
 let currentEntityId = null;
 let dataTable = null;
+let unsubscribeStore = null;
 
 export function initPageAnagraficaClientiPage() {
     const db = getFirestore();
@@ -18,7 +20,24 @@ export function initPageAnagraficaClientiPage() {
     actionUtils.setup({ db, auth, functions, entityCollection: collection_name });
     commentUtils.setup({ db, auth, functions, entityCollection: collection_name });
     setupEventListeners();
-    loadEntities();
+
+    // Inizializza il listener Firebase per aggiornamenti real-time
+    initClientiListener();
+
+    // Subscribe allo store per aggiornare la tabella quando cambiano i dati
+    unsubscribeStore = clientiStore.subscribe((clienti) => {
+        entities = clienti;
+        renderTable();
+    });
+}
+
+// Funzione di cleanup per fermare i listener quando si esce dalla pagina
+export function cleanupClientiPage() {
+    if (unsubscribeStore) {
+        unsubscribeStore();
+        unsubscribeStore = null;
+    }
+    stopClientiListener();
 }
 
 function setupEventListeners() {
@@ -40,13 +59,6 @@ function setupEventListeners() {
         sidebar.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
         sidebar.querySelector(`#tab-${tabName}`).classList.add('active');
     }));
-}
-
-async function loadEntities() {
-    const listApi = httpsCallable(functions, 'listClientiApi');
-    const result = await listApi();
-    entities = result.data?.clienti || [];
-    renderTable();
 }
 
 function renderTable() {
@@ -135,7 +147,6 @@ async function saveEntity(e) {
         }
 
         showSaveMessage('save-message');
-        await loadEntities();
     } catch (error) {
         console.error('Errore nel salvare il cliente:', error);
         showSaveMessage('save-message', 'Errore: ' + (error.message || 'Impossibile salvare il cliente'), true);
@@ -189,9 +200,13 @@ const editEntity = async (id) => {
 };
 
 async function deleteEntity(id) {
-    const deleteApi = httpsCallable(functions, 'deleteClienteApi');
-    await deleteApi({ id: id });
-    loadEntities();
+    try {
+        const deleteApi = httpsCallable(functions, 'deleteClienteApi');
+        await deleteApi({ id: id });
+    } catch (error) {
+        console.error('Errore nell\'eliminare il cliente:', error);
+        alert('Errore: ' + (error.message || 'Impossibile eliminare il cliente'));
+    }
 }
 
 function setupTableClickHandlers() {

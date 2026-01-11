@@ -125,7 +125,6 @@ async function saveProfile(e) {
         try {
             const apiResult = await userSelfUpdateApi(updateData);
             console.log('✅ Profilo aggiornato tramite API, result:', apiResult);
-            // Non serve più attendere o ricaricare - lo store si aggiorna automaticamente tramite onSnapshot
         } catch (apiError) {
             console.error('❌ Errore API userSelfUpdateApi:', apiError);
             throw apiError;
@@ -140,9 +139,6 @@ async function saveProfile(e) {
         // Pulisci il campo password dopo il salvataggio
         document.getElementById('profile-password').value = '';
 
-        // Non serve più aggiornare manualmente l'avatar - lo store lo fa automaticamente
-
-        // Mostra il messaggio di successo
         showSaveMessage(saveMessage);
 
     } catch (error) {

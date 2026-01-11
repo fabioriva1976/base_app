@@ -96,12 +96,13 @@ service cloud.firestore {
 
       // COLLEZIONE ANAGRAFICA CLIENTI
       match /anagrafica_clienti/{clientId} {
-        // Lettura: permessa a tutti gli utenti autenticati (per dettagli singolo cliente).
-        allow read: if request.auth != null;
+        // Lettura: permessa a tutti gli utenti autenticati (per real-time stores)
+        allow get: if request.auth != null;
+        allow list: if request.auth != null;
 
-        // Scrittura (create, update, delete) e lettura di liste bloccate.
-        // Queste operazioni devono passare obbligatoriamente tramite le Cloud Functions.
-        allow write, list: if false;
+        // Scrittura (create, update, delete) NON permessa ai client.
+        // Le modifiche devono passare obbligatoriamente tramite le Cloud Functions.
+        allow write: if false;
       }
 
       // COLLEZIONE ATTACHMENTS

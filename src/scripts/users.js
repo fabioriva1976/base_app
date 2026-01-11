@@ -207,9 +207,6 @@ async function saveEntity(e) {
 
             showSaveMessage('save-message');
         }
-
-        // Non serve più loadEntities() - la tabella si aggiorna automaticamente tramite lo store
-
     } catch (error) {
         console.error('Errore nel salvare l\'utente:', error);
         alert('Errore: ' + (error.message || 'Impossibile salvare l\'utente'));
@@ -290,8 +287,6 @@ async function deleteEntity(id) {
         // Elimina l'utente da Firebase Auth tramite Cloud Function
         const userDeleteApi = httpsCallable(functions, 'userDeleteApi');
         await userDeleteApi({ uid: id });
-
-        // Non serve più loadEntities() - la tabella si aggiorna automaticamente tramite lo store
     } catch (error) {
         console.error('Errore nell\'eliminare l\'utente:', error);
         alert('Errore: ' + (error.message || 'Impossibile eliminare l\'utente'));

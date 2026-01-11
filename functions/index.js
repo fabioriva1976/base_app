@@ -55,8 +55,7 @@ export {
 export {
     createClienteApi,
     updateClienteApi,
-    deleteClienteApi,
-    listClientiApi
+    deleteClienteApi
 } from "./api/clienti.js";
 
 // === FUNZIONI API - ATTACHMENTS ===

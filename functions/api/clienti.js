@@ -13,7 +13,8 @@
  * - CREATE: createClienteApi (solo admin)
  * - UPDATE: updateClienteApi (solo admin)
  * - DELETE: deleteClienteApi (solo admin)
- * - LIST: listClientiApi (operatore+)
+ *
+ * NOTA: La lettura (LIST/GET) è gestita client-side tramite real-time stores (nanostores + Firebase onSnapshot)
  *
  * Vedi: PATTERNS.md per la guida completa
  */
@@ -21,7 +22,7 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { getApps, initializeApp } from "firebase-admin/app";
-import { requireAdmin, requireOperator } from "../utils/authHelpers.js";
+import { requireAdmin } from "../utils/authHelpers.js";
 import { createCliente } from "../../shared/schemas/entityFactory.js";
 import { region, corsOrigins } from "../config.js";
 import { logAudit, AuditAction } from "../utils/auditLogger.js";
@@ -236,50 +237,3 @@ export const deleteClienteApi = onCall({
     }
 });
 
-/**
- * API per listare i clienti con paginazione.
- * Solo gli utenti con ruolo 'admin' o 'superuser' possono accedervi.
- */
-export const listClientiApi = onCall({
-    region: region,
-    cors: corsOrigins
-}, async (request) => {
-    // Permettiamo a qualsiasi utente con ruolo (operatore, admin, superuser)
-    // di leggere la lista dei clienti.
-    await requireOperator(request);
-
-    const { pageSize = 25, pageToken } = request.data || {};
-
-    try {
-        let query = db.collection(COLLECTION_NAME).orderBy('ragione_sociale').limit(Number(pageSize));
-
-        if (pageToken) {
-            // Per la paginazione, recuperiamo l'ultimo documento della pagina precedente
-            // per sapere da dove iniziare la nuova query.
-            const lastVisibleDoc = await db.collection(COLLECTION_NAME).doc(pageToken).get();
-            if (lastVisibleDoc.exists) {
-                query = query.startAfter(lastVisibleDoc);
-            }
-        }
-
-        const snapshot = await query.get();
-
-        const clienti = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-        }));
-
-        // Se il numero di documenti restituiti è uguale alla dimensione della pagina,
-        // è probabile che ci sia una pagina successiva.
-        const nextPageToken = snapshot.docs.length === Number(pageSize) ? snapshot.docs[snapshot.docs.length - 1].id : null;
-
-        return { clienti, nextPageToken };
-    } catch (error) {
-        if (error instanceof HttpsError) {
-            // Se l'errore è di permessi (lanciato da requireOperator), lo propaghiamo al client.
-            throw error;
-        }
-        console.error("Errore durante il recupero della lista clienti:", error);
-        throw new HttpsError('internal', 'Impossibile recuperare la lista dei clienti.');
-    }
-});
