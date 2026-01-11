@@ -1,6 +1,12 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, connectAuthEmulator } from 'firebase/auth';
-import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
+import {
+  getFirestore,
+  initializeFirestore,
+  connectFirestoreEmulator,
+  persistentLocalCache,
+  persistentMultipleTabManager
+} from 'firebase/firestore';
 import { getStorage, connectStorageEmulator } from 'firebase/storage';
 import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
 
@@ -20,7 +26,13 @@ const region = 'europe-west1';
 
 export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-export const db = getFirestore(app);
+export const db = typeof window !== 'undefined'
+  ? initializeFirestore(app, {
+      localCache: persistentLocalCache({
+        tabManager: persistentMultipleTabManager()
+      })
+    })
+  : getFirestore(app);
 export const storage = getStorage(app);
 export const functions = getFunctions(app, region);
 

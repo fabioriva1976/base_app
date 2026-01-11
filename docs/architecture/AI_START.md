@@ -54,6 +54,22 @@ Usa i file in `templates/` come base per nuove entita:
 Generazione automatica:
 `npm run generate:entity <entita_plural> <EntityName>`
 
+## Attachments (Documenti)
+- Backend: `functions/api/attachments.js` (`createAttachmentRecordApi`, `updateAttachmentApi`, `deleteAttachmentApi`)
+- Dati: Firestore `attachments` + file in Storage.
+- Frontend: `src/scripts/utils/attachmentUtils.js`
+- Setup: `attachmentUtils.setup({ db, storage, auth, functions, entityCollection })`
+- Realtime: `attachmentUtils.listenForAttachments(entityId)`
+- UI richiesti: `#file-drop-area`, `#document-upload`, `#document-preview-list`
+
+## Comments (Note)
+- Backend: `functions/api/comments.js` (`createCommentApi`, `getEntityCommentsApi`, `deleteCommentApi`)
+- Dati: Firestore `comments`
+- Frontend: `src/scripts/utils/commentUtils.js`
+- Setup: `commentUtils.setup({ db, auth, functions, entityCollection })`
+- Realtime: `commentUtils.listenForComments(entityId)`
+- UI richiesti: `#comment-text`, `#save-comment-btn`, `#comment-list`
+
 ## Cosa evitare
 - Duplicare logiche di formattazione: usa `src/scripts/utils/formatters.js`
 - Aggirare i pattern di audit log: usa `functions/utils/auditLogger.js`

@@ -13,6 +13,7 @@ let collection_name = 'anagrafica_clienti';
 let currentEntityId = null;
 let dataTable = null;
 let unsubscribeStore = null;
+let listenerReady = false;
 
 export function initPageAnagraficaClientiPage() {
     const db = getFirestore();
@@ -21,13 +22,23 @@ export function initPageAnagraficaClientiPage() {
     commentUtils.setup({ db, auth, functions, entityCollection: collection_name });
     setupEventListeners();
 
-    // Inizializza il listener Firebase per aggiornamenti real-time
-    initClientiListener();
+    // Inizializza il listener solo dopo auth pronta
+    auth.onAuthStateChanged((user) => {
+        if (!user) {
+            cleanupClientiPage();
+            return;
+        }
 
-    // Subscribe allo store per aggiornare la tabella quando cambiano i dati
-    unsubscribeStore = clientiStore.subscribe((clienti) => {
-        entities = clienti;
-        renderTable();
+        if (listenerReady) {
+            return;
+        }
+        listenerReady = true;
+        initClientiListener();
+
+        unsubscribeStore = clientiStore.subscribe((clienti) => {
+            entities = clienti;
+            renderTable();
+        });
     });
 }
 
@@ -37,6 +48,7 @@ export function cleanupClientiPage() {
         unsubscribeStore();
         unsubscribeStore = null;
     }
+    listenerReady = false;
     stopClientiListener();
 }
 

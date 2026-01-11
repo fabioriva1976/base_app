@@ -12,6 +12,7 @@ let currentEntityId = null;
 let dataTable = null;
 let ruoloMultiselect = null;
 let unsubscribeStore = null;
+let listenerReady = false;
 
 const labelNewEntity = 'Nuovo Utente';
 
@@ -27,13 +28,23 @@ export function initUsersPage() {
     });
     setupEventListeners();
 
-    // Inizializza il listener Firebase per aggiornamenti real-time
-    initUsersListener();
+    // Inizializza il listener solo dopo auth pronta
+    auth.onAuthStateChanged((user) => {
+        if (!user) {
+            cleanupUsersPage();
+            return;
+        }
 
-    // Subscribe allo store per aggiornare la tabella quando cambiano i dati
-    unsubscribeStore = usersStore.subscribe((users) => {
-        entities = users;
-        renderTable();
+        if (listenerReady) {
+            return;
+        }
+        listenerReady = true;
+        initUsersListener();
+
+        unsubscribeStore = usersStore.subscribe((users) => {
+            entities = users;
+            renderTable();
+        });
     });
 }
 
@@ -67,6 +78,7 @@ export function cleanupUsersPage() {
         unsubscribeStore();
         unsubscribeStore = null;
     }
+    listenerReady = false;
     stopUsersListener();
 }
 
