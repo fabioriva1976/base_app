@@ -26,6 +26,9 @@ export function initProfilePage() {
             const currentProfile = currentUserProfileStore.get();
             if (currentProfile) {
                 updateProfileForm(currentProfile);
+            } else {
+                // Fallback per primo accesso senza profilo Firestore
+                applyAuthFallback(user);
             }
         } else {
             console.error('Utente non autenticato');
@@ -76,6 +79,13 @@ function updateProfileForm(data) {
     if (ruoloInput && data.ruolo) {
         const roleLabel = getRoleLabel(data.ruolo);
         ruoloInput.value = roleLabel;
+    }
+}
+
+function applyAuthFallback(user) {
+    const emailInput = document.getElementById('profile-email');
+    if (emailInput && user?.email) {
+        emailInput.value = user.email;
     }
 }
 

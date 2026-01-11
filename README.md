@@ -3,11 +3,13 @@
 App Astro SSR + Firebase (Functions, Firestore, Auth, Storage) con gestione utenti.
 
 **Template AI-Ready:** Questo progetto è strutturato per essere facilmente estendibile da AI.
-Vedi [PATTERNS.md](PATTERNS.md) per i pattern standard da replicare.
+Vedi [docs/architecture/AI_START.md](docs/architecture/AI_START.md) per iniziare e
+[docs/architecture/PATTERNS.md](docs/architecture/PATTERNS.md) per i pattern standard da replicare.
 
 ## 📚 Documentazione
 
-- [PATTERNS.md](PATTERNS.md) - Pattern CRUD per creare nuove entità
+- [docs/architecture/AI_START.md](docs/architecture/AI_START.md) - Guida rapida per sviluppo AI-first
+- [docs/architecture/PATTERNS.md](docs/architecture/PATTERNS.md) - Pattern CRUD per creare nuove entità
 - [docs/architecture/](docs/architecture/) - Documentazione tecnica dell'architettura
   - [FACTORIES_SYNC.md](docs/architecture/FACTORIES_SYNC.md) - Sistema di sincronizzazione factory frontend/backend
   - [CACHE_SYSTEM.md](docs/architecture/CACHE_SYSTEM.md) - Sistema di cache Firestore in-memory

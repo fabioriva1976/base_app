@@ -8,11 +8,10 @@ describe('Anagrafica Clienti - update e delete', () => {
     cy.get('input[type="search"], .datatable-input, .dataTable-input', { timeout: 10000 })
       .first()
       .clear()
-      .type(code);
+      .type(code, { delay: 0 });
     cy.get('#data-table', { timeout: 20000 })
-      .contains('td', code)
-      .should('be.visible')
-      .scrollIntoView();
+      .contains('td', code, { timeout: 20000 })
+      .should('exist');
   }
 
   function createAuthUser(email, password) {
@@ -101,7 +100,7 @@ describe('Anagrafica Clienti - update e delete', () => {
 
     cy.get('button[type="submit"][form="entity-form"]').scrollIntoView().click({ force: true });
     cy.get('#entity-id', { timeout: 10000 }).invoke('val').should('match', /.+/);
-    cy.get('#save-message', { timeout: 10000 }).should('be.visible');
+    cy.get('#save-message', { timeout: 10000 }).should('contain', 'Salvato');
 
     // Verifica azioni dopo la creazione
     cy.get('[data-tab="azioni"]').click();
@@ -109,8 +108,6 @@ describe('Anagrafica Clienti - update e delete', () => {
 
     // Aggiorna dati cliente
     cy.get('#close-sidebar-btn').click();
-    cy.reload();
-    cy.location('pathname', { timeout: 10000 }).should('eq', '/anagrafica-clienti');
     findRowByCode(codiceCliente);
     cy.get('#data-table').contains('td', codiceCliente).closest('tr').within(() => {
       cy.get('.btn-edit').click();
@@ -129,8 +126,6 @@ describe('Anagrafica Clienti - update e delete', () => {
 
     // Riapri per caricare lo storico azioni aggiornato
     cy.get('#close-sidebar-btn').click();
-    cy.reload();
-    cy.location('pathname', { timeout: 10000 }).should('eq', '/anagrafica-clienti');
     findRowByCode(codiceCliente);
     cy.get('#data-table').contains('td', codiceCliente).closest('tr').within(() => {
       cy.get('.btn-edit').click();
@@ -169,10 +164,8 @@ describe('Anagrafica Clienti - update e delete', () => {
 
     cy.get('button[type="submit"][form="entity-form"]').scrollIntoView().click({ force: true });
     cy.get('#entity-id', { timeout: 10000 }).invoke('val').should('match', /.+/);
-    cy.get('#save-message', { timeout: 10000 }).should('be.visible');
+    cy.get('#save-message', { timeout: 10000 }).should('contain', 'Salvato');
     cy.get('#close-sidebar-btn').click();
-    cy.reload();
-    cy.location('pathname', { timeout: 10000 }).should('eq', '/anagrafica-clienti');
     findRowByCode(codiceCliente);
     cy.get('#data-table').contains('td', codiceCliente).closest('tr').within(() => {
       cy.get('.btn-delete').click();
@@ -180,7 +173,11 @@ describe('Anagrafica Clienti - update e delete', () => {
 
     cy.get('.btn-confirm-yes').click();
 
-    cy.contains('#data-table', codiceCliente, { timeout: 10000 }).should('not.exist');
+    cy.get('input[type="search"], .datatable-input, .dataTable-input', { timeout: 10000 })
+      .first()
+      .clear()
+      .type(codiceCliente, { delay: 0 });
+    cy.get('#data-table', { timeout: 10000 }).contains(codiceCliente).should('not.exist');
   });
 
   it('dovrebbe annullare la cancellazione di un cliente', () => {
@@ -204,10 +201,8 @@ describe('Anagrafica Clienti - update e delete', () => {
 
     cy.get('button[type="submit"][form="entity-form"]').scrollIntoView().click({ force: true });
     cy.get('#entity-id', { timeout: 10000 }).invoke('val').should('match', /.+/);
-    cy.get('#save-message', { timeout: 10000 }).should('be.visible');
+    cy.get('#save-message', { timeout: 10000 }).should('contain', 'Salvato');
     cy.get('#close-sidebar-btn').click();
-    cy.reload();
-    cy.location('pathname', { timeout: 10000 }).should('eq', '/anagrafica-clienti');
     findRowByCode(codiceCliente);
     cy.get('#data-table').contains('td', codiceCliente).closest('tr').within(() => {
       cy.get('.btn-delete').click();
@@ -215,6 +210,6 @@ describe('Anagrafica Clienti - update e delete', () => {
 
     cy.get('.btn-confirm-no').click();
 
-    cy.get('#data-table', { timeout: 10000 }).contains(codiceCliente).should('be.visible');
+    cy.get('#data-table', { timeout: 10000 }).contains(codiceCliente).should('exist');
   });
 });

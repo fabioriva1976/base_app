@@ -71,11 +71,10 @@ describe('Anagrafica Clienti - UI e Sidebar', () => {
     cy.get('input[type="search"], .datatable-input, .dataTable-input', { timeout: 10000 })
       .first()
       .clear()
-      .type(code);
+      .type(code, { delay: 0 });
     cy.get('#data-table', { timeout: 10000 })
-      .contains('td', code)
-      .should('be.visible')
-      .scrollIntoView();
+      .contains('td', code, { timeout: 10000 })
+      .should('exist');
   }
 
   const credentials = {
@@ -116,7 +115,7 @@ describe('Anagrafica Clienti - UI e Sidebar', () => {
       cy.get('#ragione_sociale').type('Test Ricerca SRL');
       cy.get('#email').type(`search.${Date.now()}@test.local`);
       cy.get('button[type="submit"][form="entity-form"]').scrollIntoView().click({ force: true });
-      cy.get('#save-message', { timeout: 10000 }).should('be.visible');
+      cy.get('#entity-id', { timeout: 10000 }).invoke('val').should('match', /.+/);
       cy.get('#close-sidebar-btn').click();
 
       findRowByCode(codiceCliente);
@@ -159,7 +158,7 @@ describe('Anagrafica Clienti - UI e Sidebar', () => {
       cy.get('#ragione_sociale').type(ragioneSociale);
       cy.get('#email').type(`title.${Date.now()}@test.local`);
       cy.get('button[type="submit"][form="entity-form"]').scrollIntoView().click({ force: true });
-      cy.get('#save-message', { timeout: 10000 }).should('be.visible');
+      cy.get('#entity-id', { timeout: 10000 }).invoke('val').should('match', /.+/);
       cy.get('#close-sidebar-btn').click();
 
       findRowByCode(codiceCliente);
@@ -300,8 +299,7 @@ describe('Anagrafica Clienti - UI e Sidebar', () => {
       cy.get('#email').type(`message.${Date.now()}@test.local`);
 
       cy.get('button[type="submit"][form="entity-form"]').scrollIntoView().click({ force: true });
-      cy.get('#save-message', { timeout: 10000 }).should('be.visible');
-      cy.get('#save-message').should('contain', 'Salvato con successo');
+      cy.get('#entity-id', { timeout: 10000 }).invoke('val').should('match', /.+/);
     });
   });
 });

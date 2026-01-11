@@ -1,0 +1,93 @@
+---
+import AuthLayout from '../layouts/AuthLayout.astro';
+---
+
+<AuthLayout title="__ENTITA_LABEL_PLURAL__">
+  <div class="container">
+    <div class="header">
+      <h1>__ENTITA_LABEL_PLURAL__</h1>
+      <button class="btn" id="new-entity-btn">Nuovo __ENTITY_LABEL__</button>
+    </div>
+    <table id="data-table"></table>
+  </div>
+
+  <div id="entity-form-sidebar" class="form-sidebar">
+    <div class="sidebar-header">
+      <h2 id="entity-form-title">Nuovo __ENTITY_LABEL__</h2>
+      <button id="close-sidebar-btn" class="close-btn">&times;</button>
+    </div>
+    <div id="entity-form-container">
+      <form id="entity-form">
+        <div class="tab-nav">
+          <button type="button" class="tab-link active" data-tab="anagrafica">Anagrafica</button>
+          <button type="button" class="tab-link" data-tab="attachments">Documenti</button>
+          <button type="button" class="tab-link" data-tab="note">Note</button>
+          <button type="button" class="tab-link" data-tab="azioni">Azioni</button>
+        </div>
+        <input type="hidden" id="entity-id">
+        <div class="form-scroll-area">
+          <div id="tab-anagrafica" class="tab-content active">
+            <div class="form-group">
+              <label for="codice">Codice</label>
+              <input type="text" id="codice" required>
+            </div>
+            <div class="form-group">
+              <label for="nome">Nome</label>
+              <input type="text" id="nome" required>
+            </div>
+            <!-- Aggiungi qui i campi specifici dell'entita -->
+            <div class="form-group">
+              <label class="form-label">Attivo</label>
+              <div class="toggle-group">
+                <label for="toggle-stato" class="toggle-label">
+                  <input type="checkbox" id="toggle-stato" class="hidden-toggle" checked>
+                  <span class="toggle-switch"></span>Attivo
+                </label>
+              </div>
+            </div>
+          </div>
+          <div id="tab-attachments" class="tab-content">
+            <div class="form-group">
+              <label>Aggiungi documenti</label>
+              <div class="file-drop-area" id="file-drop-area">
+                <p class="file-message">Trascina i file qui o <strong>clicca</strong></p>
+                <input type="file" id="document-upload" multiple>
+              </div>
+            </div>
+            <div id="document-preview-list"></div>
+          </div>
+          <div id="tab-note" class="tab-content">
+            <div class="form-group">
+              <label for="comment-text">Aggiungi una nota</label>
+              <textarea id="comment-text" rows="4" placeholder="Scrivi una nota..."></textarea>
+            </div>
+            <div class="form-group">
+              <button type="button" id="save-comment-btn" class="btn btn-small">Salva Nota</button>
+            </div>
+            <div id="comment-form" style="display: none;"></div>
+            <div id="comment-list"></div>
+          </div>
+          <div id="tab-azioni" class="tab-content">
+            <div class="action-list-container">
+              <h5 class="action-list-title">Storico Azioni</h5>
+              <div id="action-list"></div>
+            </div>
+          </div>
+        </div>
+      </form>
+      <div class="form-footer">
+        <button type="submit" form="entity-form" class="btn">Salva</button>
+        <span id="save-message" class="save-message"></span>
+      </div>
+    </div>
+  </div>
+</AuthLayout>
+
+<script>
+  import { init__ENTITA_PASCAL__Page } from '../scripts/__ENTITA_SNAKE__.js';
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init__ENTITA_PASCAL__Page);
+  } else {
+    init__ENTITA_PASCAL__Page();
+  }
+</script>

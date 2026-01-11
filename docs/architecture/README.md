@@ -4,6 +4,16 @@ Questa directory contiene la documentazione tecnica dell'architettura e dei patt
 
 ## Documenti Disponibili
 
+### [AI_START.md](AI_START.md)
+Guida rapida AI-first con checklist e percorsi di riferimento.
+
+**Quando usare:** Prima di aggiungere una nuova entita o modificare pattern esistenti.
+
+**Key Points:**
+- Checklist operativa per AI
+- Percorsi e file "source of truth"
+- Niente modifiche a file generati
+
 ### [REALTIME_STORES.md](REALTIME_STORES.md)
 Pattern per aggiornamenti real-time UI con nano-stores + Firebase snapshots.
 
@@ -66,10 +76,16 @@ Utility functions centralizzate per formattazione dati (date, file size, tags, e
 
 ---
 
+### Template API CRUD
+Template pronto per nuove entita (stile clienti): `functions/api/_template-entity.js`
+
+### Template pack AI
+Set completo di template (API, test, pagina, script, store): `templates/`
+
 ## Pattern di Lettura Consigliato
 
 ### Per Sviluppatori Nuovi al Progetto
-1. Leggi [/PATTERNS.md](../../PATTERNS.md) prima di tutto
+1. Leggi [PATTERNS.md](PATTERNS.md) prima di tutto
 2. Poi leggi questi documenti nell'ordine:
    - REALTIME_STORES.md (come aggiornare UI in tempo reale)
    - FACTORIES_SYNC.md (come funzionano i dati)
@@ -78,7 +94,8 @@ Utility functions centralizzate per formattazione dati (date, file size, tags, e
    - CACHE_SYSTEM.md (come ottimizzare)
 
 ### Per AI che Estendono il Progetto
-1. Leggi [/PATTERNS.md](../../PATTERNS.md) per i pattern CRUD
+1. Leggi [AI_START.md](AI_START.md)
+2. Leggi [PATTERNS.md](PATTERNS.md) per i pattern CRUD
 2. Consulta REALTIME_STORES.md per state management real-time
 3. Consulta SERVER_SIDE_VALIDATION.md per la sicurezza
 4. Consulta FACTORIES_SYNC.md per la struttura dati
@@ -96,4 +113,4 @@ Utility functions centralizzate per formattazione dati (date, file size, tags, e
 ## Note
 
 Questi documenti descrivono pattern già implementati nel progetto.
-Per creare nuove entità seguendo questi pattern, consulta [/PATTERNS.md](../../PATTERNS.md).
+Per creare nuove entità seguendo questi pattern, consulta [PATTERNS.md](PATTERNS.md).

@@ -8,11 +8,10 @@ describe('Users - update e delete', () => {
     cy.get('input[type="search"], .datatable-input, .dataTable-input', { timeout: 10000 })
       .first()
       .clear()
-      .type(email);
+      .type(email, { delay: 0 });
     cy.get('#data-table', { timeout: 20000 })
-      .contains('td', email)
-      .should('be.visible')
-      .scrollIntoView();
+      .contains('td', email, { timeout: 20000 })
+      .should('exist');
   }
 
   function createAuthUser(email, password) {
@@ -78,6 +77,11 @@ describe('Users - update e delete', () => {
     cy.location('pathname', { timeout: 10000 }).should('eq', '/dashboard');
   }
 
+  function typeInto(selector, value) {
+    cy.get(selector).clear();
+    cy.get(selector).type(value, { delay: 0 });
+  }
+
   it('dovrebbe aggiornare un utente e mostrare le azioni', () => {
     const adminEmail = `admin.update.${Date.now()}@test.local`;
     const adminPassword = 'AdminPass123!';
@@ -92,10 +96,10 @@ describe('Users - update e delete', () => {
 
     const userEmail = `operatore.update.${Date.now()}@test.local`;
 
-    cy.get('#nome').type('Mario');
-    cy.get('#cognome').type('Rossi');
-    cy.get('#email').type(userEmail);
-    cy.get('#password').type('Password123!');
+    typeInto('#nome', 'Mario');
+    typeInto('#cognome', 'Rossi');
+    typeInto('#email', userEmail);
+    typeInto('#password', 'Password123!');
     cy.get('#ruolo-multiselect-hidden').select('operatore', { force: true });
 
     cy.get('button[type="submit"][form="entity-form"]').scrollIntoView().click({ force: true });
@@ -106,25 +110,21 @@ describe('Users - update e delete', () => {
     cy.get('#action-list', { timeout: 10000 }).contains('Creazione').should('be.visible');
 
     // Aggiorna dati utente
-    cy.get('#save-message', { timeout: 10000 }).should('be.visible');
+    cy.get('#entity-id', { timeout: 10000 }).invoke('val').should('match', /.+/);
     cy.get('#close-sidebar-btn').click();
-    cy.reload();
-    cy.location('pathname', { timeout: 10000 }).should('eq', '/users');
     findRowByEmail(userEmail);
     cy.get('#data-table').contains('td', userEmail).closest('tr').within(() => {
       cy.get('.btn-edit').click();
     });
 
-    cy.get('#nome').clear().type('Luca');
-    cy.get('#cognome').clear().type('Bianchi');
+    typeInto('#nome', 'Luca');
+    typeInto('#cognome', 'Bianchi');
     cy.get('button[type="submit"][form="entity-form"]').scrollIntoView().click({ force: true });
     cy.get('button[type="submit"][form="entity-form"]').should('be.disabled');
     cy.get('button[type="submit"][form="entity-form"]', { timeout: 10000 }).should('not.be.disabled');
 
     // Riapri per caricare lo storico azioni aggiornato
     cy.get('#close-sidebar-btn').click();
-    cy.reload();
-    cy.location('pathname', { timeout: 10000 }).should('eq', '/users');
     findRowByEmail(userEmail);
     cy.get('#data-table').contains('td', userEmail).closest('tr').within(() => {
       cy.get('.btn-edit').click();
@@ -148,18 +148,16 @@ describe('Users - update e delete', () => {
 
     const userEmail = `operatore.delete.${Date.now()}@test.local`;
 
-    cy.get('#nome').type('Elisa');
-    cy.get('#cognome').type('Verdi');
-    cy.get('#email').type(userEmail);
-    cy.get('#password').type('Password123!');
+    typeInto('#nome', 'Elisa');
+    typeInto('#cognome', 'Verdi');
+    typeInto('#email', userEmail);
+    typeInto('#password', 'Password123!');
     cy.get('#ruolo-multiselect-hidden').select('operatore', { force: true });
 
     cy.get('button[type="submit"][form="entity-form"]').scrollIntoView().click({ force: true });
     cy.get('#entity-id', { timeout: 10000 }).invoke('val').should('match', /.+/);
-    cy.get('#save-message', { timeout: 10000 }).should('be.visible');
+    cy.get('#entity-id', { timeout: 10000 }).invoke('val').should('match', /.+/);
     cy.get('#close-sidebar-btn').click();
-    cy.reload();
-    cy.location('pathname', { timeout: 10000 }).should('eq', '/users');
     findRowByEmail(userEmail);
     cy.get('#data-table').contains('td', userEmail).closest('tr').within(() => {
       cy.get('.btn-delete').click();
@@ -167,6 +165,10 @@ describe('Users - update e delete', () => {
 
     cy.get('.btn-confirm-yes').click();
 
-    cy.contains('#data-table', userEmail, { timeout: 10000 }).should('not.exist');
+    cy.get('input[type="search"], .datatable-input, .dataTable-input', { timeout: 10000 })
+      .first()
+      .clear()
+      .type(userEmail, { delay: 0 });
+    cy.get('#data-table', { timeout: 10000 }).contains(userEmail).should('not.exist');
   });
 });

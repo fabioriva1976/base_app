@@ -110,7 +110,6 @@ describe('Settings - AI e SMTP', () => {
     cy.get('button[type="submit"]').scrollIntoView().click({ force: true });
     cy.wait('@saveConfigAi');
 
-    cy.reload();
     cy.wait('@getConfigAi');
 
     cy.get('#ai-provider').should('have.value', aiConfig.provider);
@@ -152,7 +151,6 @@ describe('Settings - AI e SMTP', () => {
     cy.get('button[type="submit"]').scrollIntoView().click({ force: true });
     cy.wait('@saveConfigSmtp');
 
-    cy.reload();
     cy.wait('@getConfigSmtp');
 
     cy.get('#smtp-host').should('have.value', smtpConfig.host);

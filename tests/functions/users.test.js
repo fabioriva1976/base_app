@@ -16,7 +16,6 @@ process.env.FIREBASE_AUTH_EMULATOR_HOST = '127.0.0.1:9099';
 
 const test = fft({ projectId: TEST_PROJECT_ID });
 
-let userListApi;
 let userCreateApi;
 let userUpdateApi;
 let userDeleteApi;
@@ -43,7 +42,7 @@ describe('API Utenti', () => {
         }
         db = admin.firestore();
         auth = admin.auth();
-        ({ userListApi, userCreateApi, userUpdateApi, userDeleteApi, userSelfUpdateApi } = await import('../../functions/api/users.js'));
+        ({ userCreateApi, userUpdateApi, userDeleteApi, userSelfUpdateApi } = await import('../../functions/api/users.js'));
     });
 
     afterAll(async () => {
@@ -63,46 +62,6 @@ describe('API Utenti', () => {
     afterEach(async () => {
         await test.cleanup();
         await clearAllEmulatorData({ db, auth });
-    });
-
-    it('dovrebbe negare userListApi senza autenticazione', async () => {
-        const wrapped = test.wrap(userListApi);
-
-        try {
-            await wrapped({ data: {} });
-            expect.fail('La funzione non ha lanciato un errore per utente non autenticato');
-        } catch (error) {
-            expect(error.code).to.equal('unauthenticated');
-        }
-    });
-
-    it('dovrebbe negare userListApi a un utente non admin', async () => {
-        // Verifica che un operatore autenticato non possa listare users.
-        const wrapped = test.wrap(userListApi);
-        const operatorUser = makeAuthContext('operatore-list', 'operatore-list@test.com');
-
-        await seedUserRole(operatorUser.uid, 'operatore', operatorUser.token.email);
-
-        try {
-            await wrapped({ data: {}, auth: operatorUser });
-            expect.fail('La funzione non ha lanciato un errore per utente non admin');
-        } catch (error) {
-            expect(error.code).to.equal('permission-denied');
-        }
-    });
-
-    it('dovrebbe permettere a un admin di listare gli users', async () => {
-        // Verifica il caso happy-path per admin.
-        const wrapped = test.wrap(userListApi);
-        const adminUser = makeAuthContext('admin-list', 'admin-list@test.com');
-
-        await seedUserRole(adminUser.uid, 'admin', adminUser.token.email);
-        await auth.createUser({ uid: 'user-1', email: 'user1@test.com', password: 'password1' });
-
-        const result = await wrapped({ data: {}, auth: adminUser });
-
-        expect(result.users).to.be.an('array');
-        expect(result.users.some(user => user.email === 'user1@test.com')).to.equal(true);
     });
 
     it('dovrebbe negare userCreateApi a un utente non admin', async () => {

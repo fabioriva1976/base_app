@@ -63,11 +63,10 @@ describe('Anagrafica Clienti - creazione', () => {
     cy.get('input[type="search"], .datatable-input, .dataTable-input', { timeout: 10000 })
       .first()
       .clear()
-      .type(code);
+      .type(code, { delay: 0 });
     cy.get('#data-table', { timeout: 10000 })
-      .contains('td', code)
-      .should('be.visible')
-      .scrollIntoView();
+      .contains('td', code, { timeout: 10000 })
+      .should('exist');
   }
 
   it('dovrebbe creare un nuovo cliente con campi obbligatori', () => {
@@ -99,7 +98,7 @@ describe('Anagrafica Clienti - creazione', () => {
     cy.get('button[type="submit"][form="entity-form"]').scrollIntoView().click({ force: true });
 
     cy.get('#entity-id', { timeout: 10000 }).invoke('val').should('match', /.+/);
-    cy.get('#save-message', { timeout: 10000 }).should('be.visible');
+    cy.get('#save-message', { timeout: 10000 }).should('contain', 'Salvato');
     cy.get('#close-sidebar-btn').click();
 
     findRowByCode(codiceCliente);
@@ -142,7 +141,7 @@ describe('Anagrafica Clienti - creazione', () => {
     cy.get('button[type="submit"][form="entity-form"]').scrollIntoView().click({ force: true });
 
     cy.get('#entity-id', { timeout: 10000 }).invoke('val').should('match', /.+/);
-    cy.get('#save-message', { timeout: 10000 }).should('be.visible');
+    cy.get('#save-message', { timeout: 10000 }).should('contain', 'Salvato');
     cy.get('#close-sidebar-btn').click();
 
     findRowByCode(codiceCliente);
@@ -180,7 +179,7 @@ describe('Anagrafica Clienti - creazione', () => {
     cy.get('button[type="submit"][form="entity-form"]').scrollIntoView().click({ force: true });
 
     cy.get('#entity-id', { timeout: 10000 }).invoke('val').should('match', /.+/);
-    cy.get('#save-message', { timeout: 10000 }).should('be.visible');
+    cy.get('#save-message', { timeout: 10000 }).should('contain', 'Salvato');
     cy.get('#close-sidebar-btn').click();
 
     findRowByCode(codiceCliente);

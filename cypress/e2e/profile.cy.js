@@ -221,4 +221,34 @@ describe('Profile', () => {
     cy.get('#profile-cognome').should('have.value', 'Bianchi');
     cy.get('#profile-telefono').should('have.value', '+39 333 2222222');
   });
+
+  it('dovrebbe aggiornare l\'avatar quando cambia il nome profilo', () => {
+    const email = `avatar.profile.${Date.now()}@test.local`;
+    const password = 'AdminPass123!';
+    const profile = {
+      email,
+      nome: 'Marco',
+      cognome: 'Neri',
+      telefono: '+39 333 5555555'
+    };
+
+    createAuthUser(email, password)
+      .then(({ uid, idToken }) => setUserProfile(uid, 'admin', idToken, profile));
+
+    login(email, password);
+    cy.visit('/profile', { failOnStatusCode: false });
+
+    cy.get('#profile-email').should('have.value', profile.email);
+
+    // Cambia il nome e salva
+    cy.get('#profile-nome').invoke('val', 'Luigi');
+    cy.get('button[type="submit"]').scrollIntoView().click({ force: true });
+    cy.get('#profile-save-message', { timeout: 10000 }).should('be.visible');
+
+    // L'avatar deve aggiornarsi con il nuovo nome
+    const expected = encodeURIComponent('Luigi');
+    cy.get('#avatar-icon', { timeout: 10000 })
+      .should('have.attr', 'src')
+      .and('include', `name=${expected}`);
+  });
 });

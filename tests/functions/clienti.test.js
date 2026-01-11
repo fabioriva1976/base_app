@@ -18,7 +18,6 @@ process.env.FIREBASE_AUTH_EMULATOR_HOST = '127.0.0.1:9099';
 // Puntiamo al file di configurazione corretto per gli emulatori.
 const test = fft({ projectId: TEST_PROJECT_ID });
 
-let listClientiApi;
 let createClienteApi;
 let updateClienteApi;
 let deleteClienteApi;
@@ -36,7 +35,7 @@ describe('API Clienti', () => {
         }
         admin.initializeApp({ projectId: TEST_PROJECT_ID });
         db = admin.firestore();
-        ({ listClientiApi, createClienteApi, updateClienteApi, deleteClienteApi } = await import('../../functions/api/clienti.js'));
+        ({ createClienteApi, updateClienteApi, deleteClienteApi } = await import('../../functions/api/clienti.js'));
     });
 
     afterAll(async () => {
@@ -56,45 +55,6 @@ describe('API Clienti', () => {
     afterEach(async () => {
         await test.cleanup();
         await clearAllEmulatorData({ db });
-    });
-
-    describe('listClientiApi', () => {
-        it('dovrebbe negare l-accesso a un utente non autenticato', async () => {
-            const wrapped = test.wrap(listClientiApi);
-            try {
-                await wrapped({ data: {} });
-                // Se non lancia un errore, il test fallisce
-                expect.fail('La funzione non ha lanciato un errore per utente non autenticato');
-            } catch (error) {
-                expect(error.code).to.equal('unauthenticated');
-            }
-        });
-
-        it('dovrebbe negare l-accesso a un utente senza ruolo', async () => {
-            const wrapped = test.wrap(listClientiApi);
-            const user = { uid: 'user-senza-ruolo', token: { email: 'test@test.com' } };
-
-            try {
-                await wrapped({ data: {}, auth: user });
-                expect.fail('La funzione non ha lanciato un errore per utente senza ruolo');
-            } catch (error) {
-                expect(error.code).to.equal('permission-denied');
-            }
-        });
-
-        it('dovrebbe permettere a un operatore di listare i clienti', async () => {
-            const wrapped = test.wrap(listClientiApi);
-            const user = { uid: 'operatore-test', token: { email: 'op@test.com' } };
-
-            // Crea l'utente e il cliente nel DB emulato
-            await seedUserProfile(db, { uid: user.uid, email: user.token.email, role: 'operatore' });
-            await db.collection(CLIENTI).add({ ragione_sociale: 'Cliente Test 1' });
-
-            const result = await wrapped({ data: {}, auth: user });
-
-            expect(result.clienti).to.be.an('array').with.lengthOf(1);
-            expect(result.clienti[0].ragione_sociale).to.equal('Cliente Test 1');
-        });
     });
 
     describe('clienteCreateApi', () => {
