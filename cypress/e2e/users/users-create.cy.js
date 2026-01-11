@@ -1,36 +1,11 @@
 describe('Users - creazione', () => {
-  const apiKey = 'AIzaSyD8Wqok8hADg9bipYln3KpQbQ99nHVI-4s';
-  const authEmulatorUrl = 'http://localhost:9099';
-
-  function setCustomClaims(uid, claims) {
-    // Usa l'API REST dell'emulatore per settare custom claims
-    return cy.request({
-      method: 'POST',
-      url: `${authEmulatorUrl}/identitytoolkit.googleapis.com/v1/accounts:update?key=${apiKey}`,
-      body: {
-        localId: uid,
-        customAttributes: JSON.stringify(claims)
-      },
-      failOnStatusCode: false
-    });
-  }
-
-  function setUserRole(uid, role, idToken, email) {
-    return setCustomClaims(uid, { role: role })
-      .then(() => cy.setUserRole(uid, role, idToken, email));
-  }
-
   it('dovrebbe creare un nuovo utente operatore', () => {
     const adminEmail = `admin.${Date.now()}@test.local`;
     const adminPassword = 'AdminPass123!';
 
-    cy.createAuthUser(adminEmail, adminPassword)
-      .then(({ uid, idToken }) => setUserRole(uid, 'admin', idToken, adminEmail));
+    cy.seedAdmin(adminEmail, adminPassword);
 
     cy.login(adminEmail, adminPassword);
-
-    // Attendi che i custom claims siano caricati
-    cy.wait(500);
 
     cy.visit('/users', { failOnStatusCode: false });
 
@@ -53,12 +28,8 @@ describe('Users - creazione', () => {
     cy.get('button[type="submit"][form="entity-form"]').scrollIntoView().click({ force: true });
 
     cy.get('#entity-id', { timeout: 10000 }).invoke('val').should('match', /.+/);
-    cy.get('#entity-id', { timeout: 10000 }).invoke('val').should('match', /.+/);
     cy.get('#close-sidebar-btn').click();
 
-    // Attendi che la tabella si aggiorni dopo la creazione
-    cy.wait(1000);
-
-    cy.findDataTableRow(userEmail);
+    cy.waitForTableSync(userEmail, { exists: true });
   });
 });

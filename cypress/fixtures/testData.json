@@ -1,0 +1,70 @@
+{
+  "users": {
+    "admin": {
+      "nome": "Mario",
+      "cognome": "Rossi",
+      "password": "AdminPass123!",
+      "ruolo": "admin",
+      "telefono": "+39 333 0000000"
+    },
+    "operatore": {
+      "nome": "Luigi",
+      "cognome": "Verdi",
+      "password": "OperatorePass123!",
+      "ruolo": "operatore",
+      "telefono": "+39 333 1111111"
+    },
+    "superuser": {
+      "nome": "Super",
+      "cognome": "Admin",
+      "password": "SuperPass123!",
+      "ruolo": "superuser",
+      "telefono": "+39 333 9999999"
+    }
+  },
+  "clienti": {
+    "basic": {
+      "codicePrefix": "CLI",
+      "ragioneSociale": "Test SRL",
+      "stato": true
+    },
+    "complete": {
+      "codicePrefix": "CLI-FULL",
+      "ragioneSociale": "Azienda Completa SRL",
+      "piva": "12345678901",
+      "cf": "RSSMRA80A01H501U",
+      "telefono": "+39 333 1234567",
+      "indirizzo": "Via Roma 123",
+      "citta": "Milano",
+      "cap": "20100",
+      "stato": true
+    },
+    "inactive": {
+      "codicePrefix": "CLI-INACTIVE",
+      "ragioneSociale": "Cliente Disattivato SRL",
+      "stato": false
+    }
+  },
+  "settings": {
+    "ai": {
+      "provider": "openai",
+      "apiKey": "test-ai-key",
+      "model": "gpt-4",
+      "temperature": "1.1",
+      "maxTokens": "1024",
+      "timeout": "15",
+      "systemPrompt": "Prompt di test",
+      "ragCorpusId": "12345",
+      "ragLocation": "europe-west1"
+    },
+    "smtp": {
+      "host": "smtp.test.local",
+      "port": "587",
+      "user": "user@test.local",
+      "password": "secret123",
+      "from": "noreply@test.local",
+      "fromName": "Test SMTP",
+      "secure": true
+    }
+  }
+}

@@ -3,8 +3,7 @@ describe('Anagrafica Clienti - creazione', () => {
     const adminEmail = `admin.${Date.now()}@test.local`;
     const adminPassword = 'AdminPass123!';
 
-    cy.createAuthUser(adminEmail, adminPassword)
-      .then(({ uid, idToken }) => cy.setUserRole(uid, 'admin', idToken, adminEmail));
+    cy.seedAdmin(adminEmail, adminPassword);
 
     cy.login(adminEmail, adminPassword);
 
@@ -15,9 +14,9 @@ describe('Anagrafica Clienti - creazione', () => {
     const codiceCliente = `CLI-${Date.now()}`;
     const emailCliente = `cliente.${Date.now()}@test.local`;
 
-    cy.get('#codice').type(codiceCliente);
-    cy.get('#ragione_sociale').type('Test SRL');
-    cy.get('#email').type(emailCliente);
+    cy.typeInto('#codice', codiceCliente);
+    cy.typeInto('#ragione_sociale', 'Test SRL');
+    cy.typeInto('#email', emailCliente);
 
     cy.get('button[type="submit"][form="entity-form"]').scrollIntoView().click({ force: true });
 
@@ -33,8 +32,7 @@ describe('Anagrafica Clienti - creazione', () => {
     const adminEmail = `admin.full.${Date.now()}@test.local`;
     const adminPassword = 'AdminPass123!';
 
-    cy.createAuthUser(adminEmail, adminPassword)
-      .then(({ uid, idToken }) => cy.setUserRole(uid, 'admin', idToken, adminEmail));
+    cy.seedAdmin(adminEmail, adminPassword);
 
     cy.login(adminEmail, adminPassword);
 
@@ -45,15 +43,15 @@ describe('Anagrafica Clienti - creazione', () => {
     const codiceCliente = `CLI-FULL-${Date.now()}`;
     const emailCliente = `cliente.full.${Date.now()}@test.local`;
 
-    cy.get('#codice').type(codiceCliente);
-    cy.get('#ragione_sociale').type('Azienda Completa SRL');
-    cy.get('#piva').type('12345678901');
-    cy.get('#cf').type('RSSMRA80A01H501U');
-    cy.get('#email').type(emailCliente);
-    cy.get('#telefono').type('+39 333 1234567');
-    cy.get('#indirizzo').type('Via Roma 123');
-    cy.get('#citta').type('Milano');
-    cy.get('#cap').type('20100');
+    cy.typeInto('#codice', codiceCliente);
+    cy.typeInto('#ragione_sociale', 'Azienda Completa SRL');
+    cy.typeInto('#piva', '12345678901');
+    cy.typeInto('#cf', 'RSSMRA80A01H501U');
+    cy.typeInto('#email', emailCliente);
+    cy.typeInto('#telefono', '+39 333 1234567');
+    cy.typeInto('#indirizzo', 'Via Roma 123');
+    cy.typeInto('#citta', 'Milano');
+    cy.typeInto('#cap', '20100');
     cy.get('#toggle-stato').should('be.checked');
 
     cy.get('button[type="submit"][form="entity-form"]').scrollIntoView().click({ force: true });
@@ -71,8 +69,7 @@ describe('Anagrafica Clienti - creazione', () => {
     const adminEmail = `admin.inactive.${Date.now()}@test.local`;
     const adminPassword = 'AdminPass123!';
 
-    cy.createAuthUser(adminEmail, adminPassword)
-      .then(({ uid, idToken }) => cy.setUserRole(uid, 'admin', idToken, adminEmail));
+    cy.seedAdmin(adminEmail, adminPassword);
 
     cy.login(adminEmail, adminPassword);
 
@@ -83,9 +80,9 @@ describe('Anagrafica Clienti - creazione', () => {
     const codiceCliente = `CLI-INACTIVE-${Date.now()}`;
     const emailCliente = `cliente.inactive.${Date.now()}@test.local`;
 
-    cy.get('#codice').type(codiceCliente);
-    cy.get('#ragione_sociale').type('Cliente Disattivato SRL');
-    cy.get('#email').type(emailCliente);
+    cy.typeInto('#codice', codiceCliente);
+    cy.typeInto('#ragione_sociale', 'Cliente Disattivato SRL');
+    cy.typeInto('#email', emailCliente);
     cy.get('#toggle-stato').uncheck({ force: true });
 
     cy.get('button[type="submit"][form="entity-form"]').scrollIntoView().click({ force: true });

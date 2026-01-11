@@ -5,8 +5,7 @@ describe('Anagrafica Clienti - UI e Sidebar', () => {
   };
 
   before(() => {
-    cy.createAuthUser(credentials.email, credentials.password)
-      .then(({ uid, idToken }) => cy.setUserRole(uid, 'admin', idToken, credentials.email));
+    cy.seedAdmin(credentials.email, credentials.password);
   });
 
   beforeEach(() => {
@@ -33,9 +32,9 @@ describe('Anagrafica Clienti - UI e Sidebar', () => {
       cy.get('#new-entity-btn').click();
 
       const codiceCliente = `CLI-SEARCH-${Date.now()}`;
-      cy.get('#codice').type(codiceCliente);
-      cy.get('#ragione_sociale').type('Test Ricerca SRL');
-      cy.get('#email').type(`search.${Date.now()}@test.local`);
+      cy.typeInto('#codice', codiceCliente);
+      cy.typeInto('#ragione_sociale', 'Test Ricerca SRL');
+      cy.typeInto('#email', `search.${Date.now()}@test.local`);
       cy.get('button[type="submit"][form="entity-form"]').scrollIntoView().click({ force: true });
       cy.get('#entity-id', { timeout: 10000 }).invoke('val').should('match', /.+/);
       cy.get('#close-sidebar-btn').click();
@@ -76,9 +75,9 @@ describe('Anagrafica Clienti - UI e Sidebar', () => {
 
       const codiceCliente = `CLI-TITLE-${Date.now()}`;
       const ragioneSociale = 'Test Titolo SRL';
-      cy.get('#codice').type(codiceCliente);
-      cy.get('#ragione_sociale').type(ragioneSociale);
-      cy.get('#email').type(`title.${Date.now()}@test.local`);
+      cy.typeInto('#codice', codiceCliente);
+      cy.typeInto('#ragione_sociale', ragioneSociale);
+      cy.typeInto('#email', `title.${Date.now()}@test.local`);
       cy.get('button[type="submit"][form="entity-form"]').scrollIntoView().click({ force: true });
       cy.get('#entity-id', { timeout: 10000 }).invoke('val').should('match', /.+/);
       cy.get('#close-sidebar-btn').click();
@@ -106,9 +105,9 @@ describe('Anagrafica Clienti - UI e Sidebar', () => {
       cy.get('#new-entity-btn').click();
 
       const codiceCliente = `CLI-TABS-${Date.now()}`;
-      cy.get('#codice').type(codiceCliente);
-      cy.get('#ragione_sociale').type('Test Tab SRL');
-      cy.get('#email').type(`tabs.${Date.now()}@test.local`);
+      cy.typeInto('#codice', codiceCliente);
+      cy.typeInto('#ragione_sociale', 'Test Tab SRL');
+      cy.typeInto('#email', `tabs.${Date.now()}@test.local`);
       cy.get('button[type="submit"][form="entity-form"]').scrollIntoView().click({ force: true });
       cy.get('#entity-id', { timeout: 10000 }).invoke('val').should('match', /.+/);
 
@@ -124,9 +123,9 @@ describe('Anagrafica Clienti - UI e Sidebar', () => {
       cy.get('#new-entity-btn').click();
 
       const codiceCliente = `CLI-NAV-${Date.now()}`;
-      cy.get('#codice').type(codiceCliente);
-      cy.get('#ragione_sociale').type('Test Nav SRL');
-      cy.get('#email').type(`nav.${Date.now()}@test.local`);
+      cy.typeInto('#codice', codiceCliente);
+      cy.typeInto('#ragione_sociale', 'Test Nav SRL');
+      cy.typeInto('#email', `nav.${Date.now()}@test.local`);
       cy.get('button[type="submit"][form="entity-form"]').scrollIntoView().click({ force: true });
       cy.get('#entity-id', { timeout: 10000 }).invoke('val').should('match', /.+/);
 
@@ -153,9 +152,9 @@ describe('Anagrafica Clienti - UI e Sidebar', () => {
       cy.get('#new-entity-btn').click();
 
       const codiceCliente = `CLI-RESET-${Date.now()}`;
-      cy.get('#codice').type(codiceCliente);
-      cy.get('#ragione_sociale').type('Test Reset SRL');
-      cy.get('#email').type(`reset.${Date.now()}@test.local`);
+      cy.typeInto('#codice', codiceCliente);
+      cy.typeInto('#ragione_sociale', 'Test Reset SRL');
+      cy.typeInto('#email', `reset.${Date.now()}@test.local`);
       cy.get('button[type="submit"][form="entity-form"]').scrollIntoView().click({ force: true });
       cy.get('#entity-id', { timeout: 10000 }).invoke('val').should('match', /.+/);
 
@@ -187,9 +186,9 @@ describe('Anagrafica Clienti - UI e Sidebar', () => {
     it('dovrebbe resettare il form quando si apre Nuovo Cliente', () => {
       cy.get('#new-entity-btn').click();
 
-      cy.get('#codice').type('TEST123');
-      cy.get('#ragione_sociale').type('Test');
-      cy.get('#email').type('test@test.local');
+      cy.typeInto('#codice', 'TEST123');
+      cy.typeInto('#ragione_sociale', 'Test');
+      cy.typeInto('#email', 'test@test.local');
 
       cy.get('#close-sidebar-btn').click();
       cy.get('#new-entity-btn').click();
@@ -203,9 +202,9 @@ describe('Anagrafica Clienti - UI e Sidebar', () => {
       cy.get('#new-entity-btn').click();
 
       const codiceCliente = `CLI-BTN-${Date.now()}`;
-      cy.get('#codice').type(codiceCliente);
-      cy.get('#ragione_sociale').type('Test Button SRL');
-      cy.get('#email').type(`button.${Date.now()}@test.local`);
+      cy.typeInto('#codice', codiceCliente);
+      cy.typeInto('#ragione_sociale', 'Test Button SRL');
+      cy.typeInto('#email', `button.${Date.now()}@test.local`);
 
       cy.get('button[type="submit"][form="entity-form"]').scrollIntoView().click({ force: true });
       cy.get('button[type="submit"][form="entity-form"]').should('be.disabled');
@@ -216,9 +215,9 @@ describe('Anagrafica Clienti - UI e Sidebar', () => {
       cy.get('#new-entity-btn').click();
 
       const codiceCliente = `CLI-MSG-${Date.now()}`;
-      cy.get('#codice').type(codiceCliente);
-      cy.get('#ragione_sociale').type('Test Message SRL');
-      cy.get('#email').type(`message.${Date.now()}@test.local`);
+      cy.typeInto('#codice', codiceCliente);
+      cy.typeInto('#ragione_sociale', 'Test Message SRL');
+      cy.typeInto('#email', `message.${Date.now()}@test.local`);
 
       cy.get('button[type="submit"][form="entity-form"]').scrollIntoView().click({ force: true });
       cy.get('#entity-id', { timeout: 10000 }).invoke('val').should('match', /.+/);

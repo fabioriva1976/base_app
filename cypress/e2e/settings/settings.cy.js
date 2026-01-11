@@ -6,8 +6,7 @@ describe('Settings - AI e SMTP', () => {
   };
 
   before(() => {
-    cy.createAuthUser(credentials.email, credentials.password)
-      .then(({ uid, idToken }) => cy.setUserRole(uid, 'superuser', idToken, credentials.email));
+    cy.seedSuperuser(credentials.email, credentials.password);
   });
 
   function login() {
@@ -34,14 +33,14 @@ describe('Settings - AI e SMTP', () => {
     };
 
     cy.get('#ai-provider').select(aiConfig.provider);
-    cy.get('#ai-api-key').clear().type(aiConfig.apiKey);
+    cy.typeInto('#ai-api-key', aiConfig.apiKey);
     cy.get('#ai-model').select(aiConfig.model);
-    cy.get('#ai-temperature').clear().type(aiConfig.temperature);
-    cy.get('#ai-max-tokens').clear().type(aiConfig.maxTokens);
-    cy.get('#ai-timeout').clear().type(aiConfig.timeout);
-    cy.get('#ai-system-prompt').clear().type(aiConfig.systemPrompt);
-    cy.get('#ai-rag-corpus-id').clear().type(aiConfig.ragCorpusId);
-    cy.get('#ai-rag-location').clear().type(aiConfig.ragLocation);
+    cy.typeInto('#ai-temperature', aiConfig.temperature);
+    cy.typeInto('#ai-max-tokens', aiConfig.maxTokens);
+    cy.typeInto('#ai-timeout', aiConfig.timeout);
+    cy.typeInto('#ai-system-prompt', aiConfig.systemPrompt);
+    cy.typeInto('#ai-rag-corpus-id', aiConfig.ragCorpusId);
+    cy.typeInto('#ai-rag-location', aiConfig.ragLocation);
 
     cy.intercept('POST', '**/saveConfigAiApi').as('saveConfigAi');
     cy.get('button[type="submit"]').scrollIntoView().click({ force: true });
@@ -76,12 +75,12 @@ describe('Settings - AI e SMTP', () => {
       fromName: 'Test SMTP'
     };
 
-    cy.get('#smtp-host').clear().type(smtpConfig.host);
-    cy.get('#smtp-port').clear().type(smtpConfig.port);
-    cy.get('#smtp-user').clear().type(smtpConfig.user);
-    cy.get('#smtp-password').clear().type(smtpConfig.password);
-    cy.get('#smtp-from').clear().type(smtpConfig.from);
-    cy.get('#smtp-from-name').clear().type(smtpConfig.fromName);
+    cy.typeInto('#smtp-host', smtpConfig.host);
+    cy.typeInto('#smtp-port', smtpConfig.port);
+    cy.typeInto('#smtp-user', smtpConfig.user);
+    cy.typeInto('#smtp-password', smtpConfig.password);
+    cy.typeInto('#smtp-from', smtpConfig.from);
+    cy.typeInto('#smtp-from-name', smtpConfig.fromName);
     cy.get('#smtp-secure').check({ force: true });
 
     cy.intercept('POST', '**/saveConfigSmtpApi').as('saveConfigSmtp');

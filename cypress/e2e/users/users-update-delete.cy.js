@@ -1,15 +1,13 @@
 describe('Users - update e delete', () => {
-  function typeInto(selector, value) {
-    cy.get(selector).clear();
-    cy.get(selector).type(value, { delay: 0 });
+  function setFieldValue(selector, value) {
+    cy.get(selector).invoke('val', value).trigger('input', { force: true });
   }
 
   it('dovrebbe aggiornare un utente e mostrare le azioni', () => {
     const adminEmail = `admin.update.${Date.now()}@test.local`;
     const adminPassword = 'AdminPass123!';
 
-    cy.createAuthUser(adminEmail, adminPassword)
-      .then(({ uid, idToken }) => cy.setUserRole(uid, 'admin', idToken, adminEmail));
+    cy.seedAdmin(adminEmail, adminPassword);
 
     cy.login(adminEmail, adminPassword);
 
@@ -18,10 +16,10 @@ describe('Users - update e delete', () => {
 
     const userEmail = `operatore.update.${Date.now()}@test.local`;
 
-    typeInto('#nome', 'Mario');
-    typeInto('#cognome', 'Rossi');
-    typeInto('#email', userEmail);
-    typeInto('#password', 'Password123!');
+    setFieldValue('#nome', 'Mario');
+    setFieldValue('#cognome', 'Rossi');
+    setFieldValue('#email', userEmail);
+    setFieldValue('#password', 'Password123!');
     cy.get('#ruolo-multiselect-hidden').select('operatore', { force: true });
 
     cy.get('button[type="submit"][form="entity-form"]').scrollIntoView().click({ force: true });
@@ -39,8 +37,8 @@ describe('Users - update e delete', () => {
       cy.get('.btn-edit').click();
     });
 
-    typeInto('#nome', 'Luca');
-    typeInto('#cognome', 'Bianchi');
+    setFieldValue('#nome', 'Luca');
+    setFieldValue('#cognome', 'Bianchi');
     cy.get('button[type="submit"][form="entity-form"]').scrollIntoView().click({ force: true });
     cy.get('button[type="submit"][form="entity-form"]').should('be.disabled');
     cy.get('button[type="submit"][form="entity-form"]', { timeout: 10000 }).should('not.be.disabled');
@@ -60,8 +58,7 @@ describe('Users - update e delete', () => {
     const adminEmail = `admin.delete.${Date.now()}@test.local`;
     const adminPassword = 'AdminPass123!';
 
-    cy.createAuthUser(adminEmail, adminPassword)
-      .then(({ uid, idToken }) => cy.setUserRole(uid, 'admin', idToken, adminEmail));
+    cy.seedAdmin(adminEmail, adminPassword);
 
     cy.login(adminEmail, adminPassword);
 
@@ -70,10 +67,10 @@ describe('Users - update e delete', () => {
 
     const userEmail = `operatore.delete.${Date.now()}@test.local`;
 
-    typeInto('#nome', 'Elisa');
-    typeInto('#cognome', 'Verdi');
-    typeInto('#email', userEmail);
-    typeInto('#password', 'Password123!');
+    setFieldValue('#nome', 'Elisa');
+    setFieldValue('#cognome', 'Verdi');
+    setFieldValue('#email', userEmail);
+    setFieldValue('#password', 'Password123!');
     cy.get('#ruolo-multiselect-hidden').select('operatore', { force: true });
 
     cy.get('button[type="submit"][form="entity-form"]').scrollIntoView().click({ force: true });
@@ -87,10 +84,7 @@ describe('Users - update e delete', () => {
 
     cy.get('.btn-confirm-yes').click();
 
-    cy.get('input[type="search"], .datatable-input, .dataTable-input', { timeout: 10000 })
-      .first()
-      .clear()
-      .type(userEmail, { delay: 0 });
-    cy.get('#data-table', { timeout: 10000 }).contains(userEmail).should('not.exist');
+    cy.searchDataTable(userEmail);
+    cy.get('#data-table', { timeout: 10000 }).should('not.contain', userEmail);
   });
 });

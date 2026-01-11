@@ -6,8 +6,8 @@ describe('Flusso di Autenticazione', () => {
   });
 
   it('dovrebbe mostrare un errore con credenziali sbagliate', () => {
-    cy.get('#email').type('wrong@email.com');
-    cy.get('#password').type('wrongpassword');
+    cy.typeInto('#email', 'wrong@email.com');
+    cy.typeInto('#password', 'wrongpassword');
     cy.get('#login-btn').click();
 
     cy.contains(/Email o password non corretti|Utente non trovato/).should('be.visible');
@@ -19,8 +19,8 @@ describe('Flusso di Autenticazione', () => {
 
     cy.createAuthUser(email, password);
 
-    cy.get('#email').type(email);
-    cy.get('#password').type(password);
+    cy.typeInto('#email', email);
+    cy.typeInto('#password', password);
     cy.get('#login-btn').click();
 
     // Dopo il login, l'utente viene rediretto alla dashboard
