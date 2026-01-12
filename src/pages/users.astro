@@ -94,7 +94,7 @@ const showCreateButton = canManageUsers(user);
 </ProfileLayout>
 
 <script>
-  import { initUsersPage } from '../scripts/users.js';
+  import { initUsersPage } from '../scripts/users.ts';
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initUsersPage);
   } else {

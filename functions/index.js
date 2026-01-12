@@ -1,19 +1,12 @@
-// functions/index.js
-
+// functions/index.ts
 // --- INIZIALIZZAZIONE ADMIN SDK ---
 import admin from "firebase-admin";
-import { onRequest } from "firebase-functions/v2/https";
 import { initializeApp } from "firebase-admin/app";
-import { getFirestore } from "firebase-admin/firestore";
-
 if (admin.apps.length === 0) {
     initializeApp();
 }
-
 // --- CONFIGURAZIONE GLOBALE ---
-
 // Esporta le configurazioni globali in modo che altri file possano importarle.
-
 // ============================================================================
 // NOTA IMPORTANTE: MIGRAZIONE A FIRESTORE COMPLETATA
 // ============================================================================
@@ -30,70 +23,24 @@ if (admin.apps.length === 0) {
 // ✅ Audit trail completo (updatedBy, changed, updatedByEmail)
 // ✅ Gestione centralizzata e sicura con Firestore Security Rules
 // ============================================================================
-
 // --- ESPORTAZIONE DELLE FUNZIONI ---
-
 // === ASTRO SSR - APPLICAZIONE WEB ===
 export { astroSSR } from "./astro.js";
-
 // === FUNZIONI API - PROFILO UTENTE ===
-export {
-    userCreateApi,
-    userUpdateApi,
-    userSelfUpdateApi,
-    userDeleteApi
-} from "./api/users.js";
-
+export { userCreateApi, userUpdateApi, userSelfUpdateApi, userDeleteApi } from "./api/users.js";
 // === FUNZIONI API - AUDIT LOGS ===
-export {
-    getEntityAuditLogsApi,
-    getUserAuditLogsApi,
-    searchAuditLogsApi
-} from "./api/audit.js";
-
+export { getEntityAuditLogsApi, getUserAuditLogsApi, searchAuditLogsApi } from "./api/audit.js";
 // === FUNZIONI API - CLIENTI ===
-export {
-    createClienteApi,
-    updateClienteApi,
-    deleteClienteApi
-} from "./api/clienti.js";
-
+export { createClienteApi, updateClienteApi, deleteClienteApi } from "./api/clienti.js";
 // === FUNZIONI API - ATTACHMENTS ===
-export {
-    createAttachmentRecordApi,
-    deleteAttachmentApi,
-    updateAttachmentApi
-} from "./api/attachments.js";
-
+export { createAttachmentRecordApi, deleteAttachmentApi, updateAttachmentApi } from "./api/attachments.js";
 // === FUNZIONI API - COMMENTS ===
-export {
-    createCommentApi,
-    getEntityCommentsApi,
-    deleteCommentApi
-} from "./api/comments.js";
-
+export { createCommentApi, getEntityCommentsApi, deleteCommentApi } from "./api/comments.js";
 // === FUNZIONI API - SETTINGS ===
-export {
-    getConfigSmtpApi,
-    saveConfigSmtpApi
-} from "./api/settings-smtp.js";
-
-export {
-    getConfigAiApi,
-    saveConfigAiApi
-} from "./api/settings-ai.js";
-
+export { getConfigSmtpApi, saveConfigSmtpApi } from "./api/settings-smtp.js";
+export { getConfigAiApi, saveConfigAiApi } from "./api/settings-ai.js";
 export { checkSettingsSmtpApi } from "./api/checkSettings-smtp.js";
-
 export { checkSettingsAiApi } from "./api/checkSettings-ai.js";
-
 // Triggers Firestore
 export { onUtentiChange } from "./triggers/onUtentiChange.js";
-export {
-    onAnagraficaClientiCreate,
-    onAnagraficaClientiUpdate,
-    onAnagraficaClientiDelete,
-    onAttachmentsCreate,
-    onAttachmentsUpdate,
-    onAttachmentsDelete
-} from "./triggers/onAnagraficaChange.js";
+export { onAnagraficaClientiCreate, onAnagraficaClientiUpdate, onAnagraficaClientiDelete, onAttachmentsCreate, onAttachmentsUpdate, onAttachmentsDelete } from "./triggers/onAnagraficaChange.js";

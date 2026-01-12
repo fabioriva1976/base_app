@@ -33,9 +33,9 @@ Sistema di sincronizzazione delle factory functions tra frontend (ES6 modules) e
 **Quando usare:** Quando devi modificare o creare nuove factory functions per entita.
 
 **Key Points:**
-- File sorgente unico: `shared/schemas/entityFactory.js`
+- File sorgente unico: `shared/schemas/entityFactory.ts`
 - Script di sync automatico: `npm run sync-factories`
-- Target auto-generato: `functions/schemas/entityFactory.js`
+- Target auto-generato: `functions/schemas/entityFactory.ts`
 
 ---
 
@@ -46,7 +46,7 @@ Cache legacy in-memory per Firestore. Il default attuale e realtime store + pers
 
 **Key Points:**
 - Default: realtime store + persistence Firestore
-- Legacy: `src/scripts/utils/firestoreCache.js`
+- Legacy: `src/scripts/utils/firestoreCache.ts`
 - Funzioni: `getCached()`, `invalidateCache()`
 
 ---
@@ -70,14 +70,14 @@ Utility functions centralizzate per formattazione dati (date, file size, tags, e
 **Quando usare:** Quando devi formattare dati per la UI in modo consistente.
 
 **Key Points:**
-- File unico: `src/scripts/utils/formatters.js`
+- File unico: `src/scripts/utils/formatters.ts`
 - Funzioni: `formatDate()`, `formatFileSize()`, `formatTags()`, etc.
 - Evita duplicazione codice
 
 ---
 
 ### Template API CRUD
-Template pronto per nuove entita (stile clienti): `functions/api/_template-entity.js`
+Template pronto per nuove entita (stile clienti): `functions/api/_template-entity.ts`
 
 ### Template pack AI
 Set completo di template (API, test, pagina, script, store): `templates/`

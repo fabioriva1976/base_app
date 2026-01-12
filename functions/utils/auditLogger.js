@@ -1,13 +1,10 @@
-// functions/utils/auditLogger.js
-
+// functions/utils/auditLogger.ts
 import admin from "firebase-admin";
 import { COLLECTIONS } from "../../shared/constants/collections.js";
-
 // Lazy initialization - ottiene Firestore solo quando serve
 function getDb() {
     return admin.firestore();
 }
-
 /**
  * Enum per i tipi di azioni
  */
@@ -17,7 +14,6 @@ export const AuditAction = {
     DELETE: "delete",
     READ: "read", // Opzionale: per tracciare anche le letture sensibili
 };
-
 /**
  * Registra un'azione di audit nel database Firestore
  *
@@ -34,27 +30,15 @@ export const AuditAction = {
  *
  * @returns {Promise<string>} ID del documento di audit creato
  */
-export async function logAudit({
-    entityType,
-    entityId,
-    action,
-    userId = null,
-    userEmail = null,
-    oldData = null,
-    newData = null,
-    metadata = null,
-    source = null
-}) {
+export async function logAudit({ entityType, entityId, action, userId = null, userEmail = null, oldData = null, newData = null, metadata = null, source = null, details = null }) {
     try {
         // Validazione parametri obbligatori
         if (!entityType || !entityId || !action) {
             throw new Error("entityType, entityId e action sono obbligatori");
         }
-
         if (!Object.values(AuditAction).includes(action)) {
             throw new Error(`Azione non valida. Usa uno di: ${Object.values(AuditAction).join(", ")}`);
         }
-
         // Crea il documento di audit
         const auditLog = {
             entityType,
@@ -66,22 +50,20 @@ export async function logAudit({
             oldData: oldData ? sanitizeData(oldData) : null,
             newData: newData ? sanitizeData(newData) : null,
             metadata: metadata || {},
-            source: source || "unknown"
+            source: source || "unknown",
+            details: details || null
         };
-
         // Salva nel database nella collection 'audit_logs'
         const docRef = await getDb().collection(COLLECTIONS.AUDIT_LOGS).add(auditLog);
-
         console.log(`Audit log creato: ${docRef.id} - ${action} su ${entityType}/${entityId}`);
         return docRef.id;
-
-    } catch (error) {
+    }
+    catch (error) {
         // Log dell'errore ma non blocca l'operazione principale
         console.error("Errore durante la creazione dell'audit log:", error);
         throw error; // Puoi decidere se propagare l'errore o gestirlo silenziosamente
     }
 }
-
 /**
  * Sanitizza i dati rimuovendo campi sensibili prima del salvataggio
  *
@@ -92,10 +74,8 @@ function sanitizeData(data) {
     if (!data || typeof data !== "object") {
         return data;
     }
-
     // Crea una copia profonda per evitare modifiche all'oggetto originale
     const sanitized = JSON.parse(JSON.stringify(data));
-
     // Lista di campi sensibili da rimuovere o mascherare
     const sensitiveFields = [
         "password",
@@ -110,32 +90,28 @@ function sanitizeData(data) {
         "cvv",
         "pin"
     ];
-
     // Funzione ricorsiva per pulire gli oggetti annidati
     function cleanObject(obj) {
         if (Array.isArray(obj)) {
             return obj.map(item => cleanObject(item));
         }
-
         if (obj && typeof obj === "object") {
             const cleaned = {};
             for (const [key, value] of Object.entries(obj)) {
                 // Se il campo è sensibile, mascheralo
                 if (sensitiveFields.some(field => key.toLowerCase().includes(field))) {
                     cleaned[key] = "***REDACTED***";
-                } else {
+                }
+                else {
                     cleaned[key] = cleanObject(value);
                 }
             }
             return cleaned;
         }
-
         return obj;
     }
-
     return cleanObject(sanitized);
 }
-
 /**
  * Recupera i log di audit per una specifica entità
  *
@@ -152,7 +128,6 @@ export async function getAuditLogs(entityType, entityId, limit = 50) {
             .orderBy("timestamp", "desc")
             .limit(limit)
             .get();
-
         const logs = [];
         snapshot.forEach(doc => {
             logs.push({
@@ -160,14 +135,13 @@ export async function getAuditLogs(entityType, entityId, limit = 50) {
                 ...doc.data()
             });
         });
-
         return logs;
-    } catch (error) {
+    }
+    catch (error) {
         console.error("Errore nel recupero degli audit logs:", error);
         throw error;
     }
 }
-
 /**
  * Recupera i log di audit per un utente specifico
  *
@@ -182,7 +156,6 @@ export async function getAuditLogsByUser(userId, limit = 50) {
             .orderBy("timestamp", "desc")
             .limit(limit)
             .get();
-
         const logs = [];
         snapshot.forEach(doc => {
             logs.push({
@@ -190,55 +163,34 @@ export async function getAuditLogsByUser(userId, limit = 50) {
                 ...doc.data()
             });
         });
-
         return logs;
-    } catch (error) {
+    }
+    catch (error) {
         console.error("Errore nel recupero degli audit logs per utente:", error);
         throw error;
     }
 }
-
-/**
- * Recupera tutti i log di audit con filtri opzionali
- *
- * @param {Object} filters - Filtri opzionali
- * @param {string} filters.entityType - Filtra per tipo di entità
- * @param {string} filters.action - Filtra per tipo di azione
- * @param {string} filters.userId - Filtra per utente
- * @param {Date} filters.startDate - Data inizio
- * @param {Date} filters.endDate - Data fine
- * @param {number} filters.limit - Numero massimo di risultati (default: 100)
- * @returns {Promise<Array>} Array di log di audit
- */
 export async function getAuditLogsWithFilters(filters = {}) {
     try {
         let query = getDb().collection(COLLECTIONS.AUDIT_LOGS);
-
         if (filters.entityType) {
             query = query.where("entityType", "==", filters.entityType);
         }
-
         if (filters.action) {
             query = query.where("action", "==", filters.action);
         }
-
         if (filters.userId) {
             query = query.where("userId", "==", filters.userId);
         }
-
         if (filters.startDate) {
             query = query.where("timestamp", ">=", filters.startDate);
         }
-
         if (filters.endDate) {
             query = query.where("timestamp", "<=", filters.endDate);
         }
-
         query = query.orderBy("timestamp", "desc");
         query = query.limit(filters.limit || 100);
-
         const snapshot = await query.get();
-
         const logs = [];
         snapshot.forEach(doc => {
             logs.push({
@@ -246,14 +198,13 @@ export async function getAuditLogsWithFilters(filters = {}) {
                 ...doc.data()
             });
         });
-
         return logs;
-    } catch (error) {
+    }
+    catch (error) {
         console.error("Errore nel recupero degli audit logs con filtri:", error);
         throw error;
     }
 }
-
 /**
  * Elimina i log di audit più vecchi di un certo numero di giorni
  * Utile per essere chiamata da un cron job
@@ -263,29 +214,26 @@ export async function getAuditLogsWithFilters(filters = {}) {
  */
 export async function cleanOldAuditLogs(daysToKeep = 90) {
     try {
+        const db = getDb();
         const cutoffDate = new Date();
         cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
-
         const snapshot = await getDb().collection(COLLECTIONS.AUDIT_LOGS)
             .where("timestamp", "<", cutoffDate)
             .get();
-
         if (snapshot.empty) {
             console.log("Nessun log da eliminare");
             return 0;
         }
-
         // Elimina in batch per efficienza
         const batch = db.batch();
         snapshot.docs.forEach(doc => {
             batch.delete(doc.ref);
         });
-
         await batch.commit();
         console.log(`Eliminati ${snapshot.size} audit logs più vecchi di ${daysToKeep} giorni`);
-
         return snapshot.size;
-    } catch (error) {
+    }
+    catch (error) {
         console.error("Errore nell'eliminazione degli audit logs vecchi:", error);
         throw error;
     }

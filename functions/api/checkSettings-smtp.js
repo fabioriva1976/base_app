@@ -1,41 +1,32 @@
-// functions/api/checkSettings-smtp.js
-
+// functions/api/checkSettings-smtp.ts
 import { onCall } from "firebase-functions/v2/https";
 import admin from "firebase-admin";
 import nodemailer from "nodemailer";
 import { region, corsOrigins, runtimeOpts } from "../config.js";
 import { requireSuperUser } from "../utils/authHelpers.js";
 import { COLLECTIONS } from "../../shared/constants/collections.js";
-
 if (admin.apps.length === 0) {
     admin.initializeApp();
 }
-
 /**
  * Test configurazione SMTP - SOLO SUPERUSER
  * Solo i superuser possono testare la configurazione SMTP per sicurezza
  */
 export const checkSettingsSmtpApi = onCall({ region, cors: corsOrigins, ...runtimeOpts }, async (request) => {
     console.log("🔍 checkSettingsSmtpApi chiamata con request.data:", request.data);
-
     // ✅ SECURITY: Richiede ruolo superuser
     await requireSuperUser(request);
-
     const { testEmail } = request.data;
     console.log("📧 Email di test:", testEmail);
-
     try {
         const db = admin.firestore();
-
         // Carica la configurazione SMTP da Firestore
         console.log("📋 Caricamento configurazione SMTP da Firestore...");
         const smtpConfigDoc = await db.collection(COLLECTIONS.CONFIG).doc("smtp").get();
-
         if (!smtpConfigDoc.exists) {
             console.error("❌ Documento configurazione SMTP non trovato");
             throw new Error("❌ Configurazione SMTP non trovata in Firestore. Configura SMTP prima di testare la connessione.");
         }
-
         const smtpConfig = smtpConfigDoc.data();
         console.log("✅ Configurazione SMTP caricata:", {
             host: smtpConfig.host,
@@ -44,7 +35,6 @@ export const checkSettingsSmtpApi = onCall({ region, cors: corsOrigins, ...runti
             secure: smtpConfig.secure,
             hasPassword: !!smtpConfig.password
         });
-
         // Verifica che tutti i parametri necessari siano presenti
         if (!smtpConfig.host || !smtpConfig.port || !smtpConfig.user || !smtpConfig.password) {
             console.error("❌ Configurazione incompleta:", {
@@ -55,9 +45,7 @@ export const checkSettingsSmtpApi = onCall({ region, cors: corsOrigins, ...runti
             });
             throw new Error("❌ Configurazione SMTP incompleta. Verifica host, port, user e password in Firestore.");
         }
-
         console.log(`📧 Testing SMTP configuration: ${smtpConfig.host}:${smtpConfig.port}`);
-
         // Crea il transporter con la configurazione da Firestore
         const transporter = nodemailer.createTransport({
             host: smtpConfig.host,
@@ -68,20 +56,16 @@ export const checkSettingsSmtpApi = onCall({ region, cors: corsOrigins, ...runti
                 pass: smtpConfig.password,
             },
         });
-
         // STEP 1: Verifica la connessione SMTP
         console.log("🔍 Verifica connessione SMTP...");
         await transporter.verify();
         console.log("✅ Connessione SMTP verificata con successo!");
-
         // STEP 2: Invia email di test (se specificato un indirizzo)
         if (testEmail) {
             console.log(`📨 Invio email di test a: ${testEmail}`);
-
             const fromAddress = smtpConfig.fromName
                 ? `"${smtpConfig.fromName}" <${smtpConfig.from}>`
                 : smtpConfig.from;
-
             const mailOptions = {
                 from: fromAddress,
                 to: testEmail,
@@ -115,10 +99,8 @@ export const checkSettingsSmtpApi = onCall({ region, cors: corsOrigins, ...runti
                     </div>
                 `,
             };
-
             await transporter.sendMail(mailOptions);
             console.log("✅ Email di test inviata con successo!");
-
             return {
                 success: true,
                 message: `Test completato con successo! Email di test inviata a ${testEmail}`,
@@ -130,7 +112,8 @@ export const checkSettingsSmtpApi = onCall({ region, cors: corsOrigins, ...runti
                     testEmailRecipient: testEmail
                 }
             };
-        } else {
+        }
+        else {
             // Solo verifica connessione, nessuna email di test
             return {
                 success: true,
@@ -143,13 +126,11 @@ export const checkSettingsSmtpApi = onCall({ region, cors: corsOrigins, ...runti
                 }
             };
         }
-
-    } catch (error) {
+    }
+    catch (error) {
         console.error("❌ Errore nel test SMTP:", error);
-
         // Fornisci messaggi di errore più specifici
         let errorMessage = "Errore durante il test della configurazione SMTP.";
-
         // Controlla prima se è un nostro errore personalizzato
         if (error.message && error.message.startsWith("❌")) {
             errorMessage = error.message;
@@ -157,22 +138,28 @@ export const checkSettingsSmtpApi = onCall({ region, cors: corsOrigins, ...runti
         // Gestisci gli errori di nodemailer
         else if (error.code === 'EAUTH') {
             errorMessage = "❌ Autenticazione fallita. Verifica username e password SMTP.";
-        } else if (error.code === 'ECONNREFUSED') {
+        }
+        else if (error.code === 'ECONNREFUSED') {
             errorMessage = "❌ Connessione rifiutata. Verifica host e porta SMTP.";
-        } else if (error.code === 'ETIMEDOUT' || error.code === 'ESOCKET') {
+        }
+        else if (error.code === 'ETIMEDOUT' || error.code === 'ESOCKET') {
             errorMessage = "❌ Timeout della connessione. Verifica che il server SMTP sia raggiungibile.";
-        } else if (error.code === 'EDNS') {
+        }
+        else if (error.code === 'EDNS') {
             errorMessage = "❌ Host SMTP non trovato. Verifica l'indirizzo del server.";
-        } else if (error.code === 'ENOTFOUND') {
+        }
+        else if (error.code === 'ENOTFOUND') {
             errorMessage = "❌ Server SMTP non trovato. Verifica l'host configurato.";
-        } else if (error.responseCode === 535) {
+        }
+        else if (error.responseCode === 535) {
             errorMessage = "❌ Credenziali SMTP non valide. Verifica username e password.";
-        } else if (error.message && error.message.includes("Invalid login")) {
+        }
+        else if (error.message && error.message.includes("Invalid login")) {
             errorMessage = "❌ Login non valido. Verifica le credenziali SMTP.";
-        } else if (error.message) {
+        }
+        else if (error.message) {
             errorMessage = `❌ Errore SMTP: ${error.message}`;
         }
-
         // Log dettagliato per debugging
         console.error("Dettagli errore SMTP:", {
             code: error.code,
@@ -180,7 +167,6 @@ export const checkSettingsSmtpApi = onCall({ region, cors: corsOrigins, ...runti
             responseCode: error.responseCode,
             command: error.command
         });
-
         throw new Error(errorMessage);
     }
 });

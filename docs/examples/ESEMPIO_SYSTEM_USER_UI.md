@@ -27,12 +27,12 @@ Questo documento mostra esempi pratici di come usare i nuovi helper per distingu
 </table>
 ```
 
-### JavaScript (anagrafica-clienti.js)
+### JavaScript (anagrafica-clienti.ts)
 
 ```javascript
-import { clientiStore } from './stores/clientiStore.js';
-import { getAuditInfo } from './utils/systemUserHelper.js';
-import { formatDate } from './utils/formatters.js';
+import { clientiStore } from './stores/clientiStore.ts';
+import { getAuditInfo } from './utils/systemUserHelper.ts';
+import { formatDate } from './utils/formatters.ts';
 
 function renderClientiTable() {
   const clienti = clientiStore.get();
@@ -157,8 +157,8 @@ td .text-muted {
 ### JavaScript
 
 ```javascript
-import { getAuditInfo } from './utils/systemUserHelper.js';
-import { formatDate } from './utils/formatters.js';
+import { getAuditInfo } from './utils/systemUserHelper.ts';
+import { formatDate } from './utils/formatters.ts';
 
 function renderAuditInfo(entity) {
   const audit = getAuditInfo(entity);
@@ -307,8 +307,8 @@ function renderAuditWarning(audit) {
 ### JavaScript
 
 ```javascript
-import { clientiStore } from './stores/clientiStore.js';
-import { isSystemCreated } from './utils/systemUserHelper.js';
+import { clientiStore } from './stores/clientiStore.ts';
+import { isSystemCreated } from './utils/systemUserHelper.ts';
 
 let currentFilter = 'all';
 
@@ -384,8 +384,8 @@ clientiStore.subscribe(renderFilteredClienti);
 ### JavaScript
 
 ```javascript
-import { clientiStore } from './stores/clientiStore.js';
-import { isSystemCreated } from './utils/systemUserHelper.js';
+import { clientiStore } from './stores/clientiStore.ts';
+import { isSystemCreated } from './utils/systemUserHelper.ts';
 
 function updateDashboardStats() {
   const clienti = clientiStore.get();
@@ -453,7 +453,7 @@ clientiStore.subscribe(updateDashboardStats);
 ### JavaScript
 
 ```javascript
-import { getCreatorDisplayName } from './utils/systemUserHelper.js';
+import { getCreatorDisplayName } from './utils/systemUserHelper.ts';
 
 function showCreatedNotification(entity) {
   const creator = getCreatorDisplayName(entity);
@@ -550,7 +550,7 @@ Per aggiungere tracking operazioni sistema a una pagina esistente:
 
 1. **Import helper**:
    ```javascript
-   import { getAuditInfo } from './utils/systemUserHelper.js';
+   import { getAuditInfo } from './utils/systemUserHelper.ts';
    ```
 
 2. **Usa nei render**:
@@ -566,6 +566,6 @@ Per aggiungere tracking operazioni sistema a una pagina esistente:
 
 ## 📚 Risorse
 
-- **Helper completo**: [src/scripts/utils/systemUserHelper.js](../../src/scripts/utils/systemUserHelper.js)
+- **Helper completo**: [src/scripts/utils/systemUserHelper.ts](../../src/scripts/utils/systemUserHelper.ts)
 - **Guida tecnica**: [docs/architecture/SYSTEM_USER.md](../architecture/SYSTEM_USER.md)
-- **Factory**: [shared/schemas/entityFactory.js](../../shared/schemas/entityFactory.js)
+- **Factory**: [shared/schemas/entityFactory.ts](../../shared/schemas/entityFactory.ts)

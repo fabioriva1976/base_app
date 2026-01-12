@@ -46,6 +46,11 @@ cleanup() {
 trap 'cleanup $?' SIGTERM SIGINT
 
 echo "🚀 Avvio Firebase Emulators (import: $DATA_DIR, export-on-exit: $DATA_DIR)..."
+npm run build:scripts
+npm run sync-factories
+npm --prefix shared run build
+npm --prefix functions run build
+
 firebase emulators:start \
   --import="$DATA_DIR" \
   --export-on-exit="$EXPORT_TMP" \

@@ -94,7 +94,7 @@ const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(display
   // Auth token refresh - incluso inline per evitare duplicazioni
   import { auth } from '../lib/firebase-client';
   import { onAuthStateChanged } from 'firebase/auth';
-  import { initCurrentUserListener, stopCurrentUserListener } from '../stores/currentUserStore.js';
+  import { initCurrentUserListener, stopCurrentUserListener } from '../stores/currentUserStore.ts';
 
   const REFRESH_INTERVAL = 50 * 60 * 1000; // 50 minuti
 

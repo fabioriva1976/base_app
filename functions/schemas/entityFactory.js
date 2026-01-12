@@ -1,14 +1,24 @@
 /**
- * Factory functions per creare entità con struttura consistente
+ * Factory functions per creare entità con struttura consistente.
  *
- * NOTA: Questo file è AUTO-GENERATO da /shared/schemas/entityFactory.js
+ * NOTA: Questo file è AUTO-GENERATO da /shared/schemas/entityFactory.ts
  * Non modificare direttamente questo file! Modifica il file sorgente e riesegui:
  * npm run sync-factories
- *
- * Mantiene la stessa logica ma usa CommonJS (module.exports) invece di ES6 modules (export)
- * per compatibilità con le Cloud Functions Node.js.
  */
-
+/**
+ * Factory functions condivise per creare entità con struttura consistente.
+ * Fonte unica per frontend e backend (copiata in functions/schemas tramite script di sync).
+ *
+ * 🕐 STRATEGIA TIMESTAMP:
+ * - Factory: Ritornano `null` per created/changed
+ * - Backend API: Sostituiscono null con FieldValue.serverTimestamp() prima di salvare
+ * - Questo garantisce timestamp server-side consistenti e sicuri
+ *
+ * MOTIVAZIONE:
+ * - Client timestamp può essere manipolato (clock locale errato)
+ * - FieldValue.serverTimestamp() garantisce timestamp server affidabile
+ * - null è placeholder che indica "usa server timestamp"
+ */
 /**
  * Placeholder per timestamp che deve essere sostituito con FieldValue.serverTimestamp()
  * quando si salva in Firestore.
@@ -24,7 +34,6 @@
  * await db.collection('clienti').add(entityData);
  */
 export const SERVER_TIMESTAMP = null;
-
 /**
  * 🤖 COSTANTI PER OPERAZIONI DI SISTEMA
  *
@@ -36,10 +45,9 @@ export const SERVER_TIMESTAMP = null;
  * - lastModifiedByEmail === 'system@internal'
  */
 export const SYSTEM_USER = {
-  id: 'SYSTEM',
-  email: 'system@internal'
+    id: 'SYSTEM',
+    email: 'system@internal'
 };
-
 /**
  * 🎯 Helper: Normalizza campi audit
  *
@@ -51,17 +59,15 @@ export const SYSTEM_USER = {
  * @returns {object} Oggetto con createdBy, createdByEmail, lastModifiedBy, lastModifiedByEmail
  */
 function normalizeAuditFields(createdBy, createdByEmail) {
-  const userId = createdBy ? String(createdBy) : SYSTEM_USER.id;
-  const userEmail = createdByEmail ? String(createdByEmail).toLowerCase() : SYSTEM_USER.email;
-
-  return {
-    createdBy: userId,
-    createdByEmail: userEmail,
-    lastModifiedBy: userId,
-    lastModifiedByEmail: userEmail
-  };
+    const userId = createdBy ? String(createdBy) : SYSTEM_USER.id;
+    const userEmail = createdByEmail ? String(createdByEmail).toLowerCase() : SYSTEM_USER.email;
+    return {
+        createdBy: userId,
+        createdByEmail: userEmail,
+        lastModifiedBy: userId,
+        lastModifiedByEmail: userEmail
+    };
 }
-
 /**
  * 📎 Factory: Attachment
  *
@@ -76,56 +82,39 @@ function normalizeAuditFields(createdBy, createdByEmail) {
  * @param {string|null} params.createdByEmail - Email utente creatore (null = SYSTEM)
  * @returns {object} Oggetto attachment validato
  */
-function createAttachment({
-  nome,
-  tipo,
-  storagePath,
-  metadata = {},
-  createdBy = null,
-  createdByEmail = null
-} = {}) {
-  if (!nome || !tipo || !storagePath) {
-    throw new Error('nome, tipo e storagePath sono obbligatori');
-  }
-
-  const auditFields = normalizeAuditFields(createdBy, createdByEmail);
-
-  return {
-    nome: String(nome),
-    tipo: String(tipo),
-    storagePath: String(storagePath),
-    metadata: {
-      entityId: metadata.entityId ? String(metadata.entityId) : null,
-      entityCollection: metadata.entityCollection ? String(metadata.entityCollection) : null,
-      url: metadata.url ? String(metadata.url) : '',
-      size: Number(metadata.size) || 0,
-      description: metadata.description ? String(metadata.description) : ''
-    },
-    created: SERVER_TIMESTAMP,
-    changed: SERVER_TIMESTAMP,
-    createdBy: auditFields.createdBy,
-    createdByEmail: auditFields.createdByEmail,
-    lastModifiedBy: auditFields.lastModifiedBy,
-    lastModifiedByEmail: auditFields.lastModifiedByEmail
-  };
+export function createAttachment({ nome, tipo, storagePath, metadata = {}, createdBy = null, createdByEmail = null } = {}) {
+    if (!nome || !tipo || !storagePath) {
+        throw new Error('nome, tipo e storagePath sono obbligatori');
+    }
+    const auditFields = normalizeAuditFields(createdBy, createdByEmail);
+    return {
+        nome: String(nome),
+        tipo: String(tipo),
+        storagePath: String(storagePath),
+        metadata: {
+            entityId: metadata.entityId ? String(metadata.entityId) : null,
+            entityCollection: metadata.entityCollection ? String(metadata.entityCollection) : null,
+            url: metadata.url ? String(metadata.url) : '',
+            size: Number(metadata.size) || 0,
+            description: metadata.description ? String(metadata.description) : ''
+        },
+        created: SERVER_TIMESTAMP,
+        changed: SERVER_TIMESTAMP,
+        createdBy: auditFields.createdBy,
+        createdByEmail: auditFields.createdByEmail,
+        lastModifiedBy: auditFields.lastModifiedBy,
+        lastModifiedByEmail: auditFields.lastModifiedByEmail
+    };
 }
-
-function createAttachmentMetadata({
-  entityId = null,
-  entityCollection = null,
-  url = '',
-  size = 0,
-  description = ''
-} = {}) {
-  return {
-    entityId: entityId ? String(entityId) : null,
-    entityCollection: entityCollection ? String(entityCollection) : null,
-    url: url ? String(url) : '',
-    size: Number(size) || 0,
-    description: description ? String(description) : ''
-  };
+export function createAttachmentMetadata({ entityId = null, entityCollection = null, url = '', size = 0, description = '' } = {}) {
+    return {
+        entityId: entityId ? String(entityId) : null,
+        entityCollection: entityCollection ? String(entityCollection) : null,
+        url: url ? String(url) : '',
+        size: Number(size) || 0,
+        description: description ? String(description) : ''
+    };
 }
-
 /**
  * 👥 Factory: Cliente
  *
@@ -148,53 +137,35 @@ function createAttachmentMetadata({
  * @param {string|null} params.createdByEmail - Email utente creatore (null = SYSTEM)
  * @returns {object} Oggetto cliente validato
  */
-function createCliente({
-  ragione_sociale,
-  codice,
-  email = null,
-  telefono = null,
-  partita_iva = null,
-  codice_fiscale = null,
-  indirizzo = null,
-  citta = null,
-  cap = null,
-  provincia = null,
-  note = null,
-  status = true,
-  createdBy = null,
-  createdByEmail = null
-} = {}) {
-  if (!ragione_sociale) {
-    throw new Error('ragione_sociale è obbligatorio');
-  }
-  if (!codice) {
-    throw new Error('codice è obbligatorio');
-  }
-
-  const auditFields = normalizeAuditFields(createdBy, createdByEmail);
-
-  return {
-    ragione_sociale: String(ragione_sociale),
-    codice: String(codice),
-    email: email ? String(email).toLowerCase() : null,
-    telefono: telefono ? String(telefono) : null,
-    partita_iva: partita_iva ? String(partita_iva) : null,
-    codice_fiscale: codice_fiscale ? String(codice_fiscale).toUpperCase() : null,
-    indirizzo: indirizzo ? String(indirizzo) : null,
-    citta: citta ? String(citta) : null,
-    cap: cap ? String(cap) : null,
-    provincia: provincia ? String(provincia) : null,
-    note: note ? String(note) : null,
-    status: Boolean(status),
-    created: SERVER_TIMESTAMP,
-    changed: SERVER_TIMESTAMP,
-    createdBy: auditFields.createdBy,
-    createdByEmail: auditFields.createdByEmail,
-    lastModifiedBy: auditFields.lastModifiedBy,
-    lastModifiedByEmail: auditFields.lastModifiedByEmail
-  };
+export function createCliente({ ragione_sociale, codice, email = null, telefono = null, partita_iva = null, codice_fiscale = null, indirizzo = null, citta = null, cap = null, provincia = null, note = null, status = true, createdBy = null, createdByEmail = null } = {}) {
+    if (!ragione_sociale) {
+        throw new Error('ragione_sociale è obbligatorio');
+    }
+    if (!codice) {
+        throw new Error('codice è obbligatorio');
+    }
+    const auditFields = normalizeAuditFields(createdBy, createdByEmail);
+    return {
+        ragione_sociale: String(ragione_sociale),
+        codice: String(codice),
+        email: email ? String(email).toLowerCase() : null,
+        telefono: telefono ? String(telefono) : null,
+        partita_iva: partita_iva ? String(partita_iva) : null,
+        codice_fiscale: codice_fiscale ? String(codice_fiscale).toUpperCase() : null,
+        indirizzo: indirizzo ? String(indirizzo) : null,
+        citta: citta ? String(citta) : null,
+        cap: cap ? String(cap) : null,
+        provincia: provincia ? String(provincia) : null,
+        note: note ? String(note) : null,
+        status: Boolean(status),
+        created: SERVER_TIMESTAMP,
+        changed: SERVER_TIMESTAMP,
+        createdBy: auditFields.createdBy,
+        createdByEmail: auditFields.createdByEmail,
+        lastModifiedBy: auditFields.lastModifiedBy,
+        lastModifiedByEmail: auditFields.lastModifiedByEmail
+    };
 }
-
 /**
  * 👤 Factory: Utente
  *
@@ -212,40 +183,27 @@ function createCliente({
  * @param {string|null} params.createdByEmail - Email utente creatore (null = SYSTEM)
  * @returns {object} Oggetto utente validato
  */
-function createUtente({
-  uid,
-  email,
-  ruolo = 'operatore',
-  displayName = '',
-  disabled = false,
-  photoURL = null,
-  metadata = {},
-  createdBy = null,
-  createdByEmail = null
-} = {}) {
-  if (!uid || !email) {
-    throw new Error('uid ed email sono obbligatori');
-  }
-
-  const auditFields = normalizeAuditFields(createdBy, createdByEmail);
-
-  return {
-    uid: String(uid),
-    email: String(email).toLowerCase(),
-    ruolo: Array.isArray(ruolo) ? ruolo.map(String) : [String(ruolo)],
-    displayName: displayName ? String(displayName) : '',
-    disabled: Boolean(disabled),
-    photoURL: photoURL ? String(photoURL) : null,
-    metadata: metadata && typeof metadata === 'object' ? { ...metadata } : {},
-    created: SERVER_TIMESTAMP,
-    changed: SERVER_TIMESTAMP,
-    createdBy: auditFields.createdBy,
-    createdByEmail: auditFields.createdByEmail,
-    lastModifiedBy: auditFields.lastModifiedBy,
-    lastModifiedByEmail: auditFields.lastModifiedByEmail
-  };
+export function createUtente({ uid, email, ruolo = 'operatore', displayName = '', disabled = false, photoURL = null, metadata = {}, createdBy = null, createdByEmail = null } = {}) {
+    if (!uid || !email) {
+        throw new Error('uid ed email sono obbligatori');
+    }
+    const auditFields = normalizeAuditFields(createdBy, createdByEmail);
+    return {
+        uid: String(uid),
+        email: String(email).toLowerCase(),
+        ruolo: Array.isArray(ruolo) ? ruolo.map(String) : [String(ruolo)],
+        displayName: displayName ? String(displayName) : '',
+        disabled: Boolean(disabled),
+        photoURL: photoURL ? String(photoURL) : null,
+        metadata: metadata && typeof metadata === 'object' ? { ...metadata } : {},
+        created: SERVER_TIMESTAMP,
+        changed: SERVER_TIMESTAMP,
+        createdBy: auditFields.createdBy,
+        createdByEmail: auditFields.createdByEmail,
+        lastModifiedBy: auditFields.lastModifiedBy,
+        lastModifiedByEmail: auditFields.lastModifiedByEmail
+    };
 }
-
 /**
  * 💬 Factory: Comment
  *
@@ -259,37 +217,20 @@ function createUtente({
  * @param {string|null} params.createdByEmail - Email utente creatore (null = SYSTEM)
  * @returns {object} Oggetto comment validato
  */
-function createComment({
-  text,
-  entityId,
-  entityCollection,
-  createdBy = null,
-  createdByEmail = null
-} = {}) {
-  if (!text || !entityId || !entityCollection) {
-    throw new Error('text, entityId e entityCollection sono obbligatori');
-  }
-
-  const auditFields = normalizeAuditFields(createdBy, createdByEmail);
-
-  return {
-    text: String(text),
-    entityId: String(entityId),
-    entityCollection: String(entityCollection),
-    created: SERVER_TIMESTAMP,
-    changed: SERVER_TIMESTAMP,
-    createdBy: auditFields.createdBy,
-    createdByEmail: auditFields.createdByEmail,
-    lastModifiedBy: auditFields.lastModifiedBy,
-    lastModifiedByEmail: auditFields.lastModifiedByEmail
-  };
+export function createComment({ text, entityId, entityCollection, createdBy = null, createdByEmail = null } = {}) {
+    if (!text || !entityId || !entityCollection) {
+        throw new Error('text, entityId e entityCollection sono obbligatori');
+    }
+    const auditFields = normalizeAuditFields(createdBy, createdByEmail);
+    return {
+        text: String(text),
+        entityId: String(entityId),
+        entityCollection: String(entityCollection),
+        created: SERVER_TIMESTAMP,
+        changed: SERVER_TIMESTAMP,
+        createdBy: auditFields.createdBy,
+        createdByEmail: auditFields.createdByEmail,
+        lastModifiedBy: auditFields.lastModifiedBy,
+        lastModifiedByEmail: auditFields.lastModifiedByEmail
+    };
 }
-
-module.exports = {
-  normalizeAuditFields,
-  createAttachment,
-  createAttachmentMetadata,
-  createCliente,
-  createUtente,
-  createComment,
-};

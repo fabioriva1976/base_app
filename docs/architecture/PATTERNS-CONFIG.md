@@ -23,18 +23,18 @@ Ogni nuova configurazione DEVE seguire questi pattern per garantire:
 Quando crei una nuova configurazione (es: `database`, `payment`), devi creare questi file:
 
 ### 1. API Backend
-- [ ] `functions/api/settings-[nome].js` - GET/SAVE per la configurazione
-- [ ] `functions/api/checkSettings-[nome].js` - Test funzionale della configurazione
+- [ ] `functions/api/settings-[nome].ts` - GET/SAVE per la configurazione
+- [ ] `functions/api/checkSettings-[nome].ts` - Test funzionale della configurazione
 
 ### 2. Frontend
 - [ ] `src/pages/settings-[nome].astro` - Pagina configurazione
-- [ ] `src/scripts/settings-[nome].js` - Logica frontend
+- [ ] `src/scripts/settings-[nome].ts` - Logica frontend
 
 ### 3. Firestore Document
 - [ ] Documento in `settings/[nome]` - Salvataggio parametri
 
-### 4. Export in index.js
-- [ ] `functions/index.js` - Export delle API
+### 4. Export in index.ts
+- [ ] `functions/index.ts` - Export delle API
 
 ---
 
@@ -45,10 +45,10 @@ Il progetto include 2 settings completamente documentate:
 ### 1. **SMTP** (Configurazione Email)
 File di riferimento più completo per settings con secrets.
 
-- 📄 **API Config**: [functions/api/settings-smtp.js](functions/api/settings-smtp.js)
-- 🧪 **API Test**: [functions/api/checkSettings-smtp.js](functions/api/checkSettings-smtp.js)
+- 📄 **API Config**: [functions/api/settings-smtp.ts](functions/api/settings-smtp.ts)
+- 🧪 **API Test**: [functions/api/checkSettings-smtp.ts](functions/api/checkSettings-smtp.ts)
 - 🎨 **Frontend Page**: [src/pages/settings-smtp.astro](src/pages/settings-smtp.astro)
-- 📜 **Frontend Script**: [src/scripts/settings-smtp.js](src/scripts/settings-smtp.js)
+- 📜 **Frontend Script**: [src/scripts/settings-smtp.ts](src/scripts/settings-smtp.ts)
 - 🗄️ **Document**: `settings/smtp`
 - 👥 **Permessi**: Admin per R, Superuser per W
 - 🔐 **Secrets**: `password`, `user`
@@ -79,10 +79,10 @@ File di riferimento più completo per settings con secrets.
 ### 2. **AI** (Configurazione AI Provider)
 Template per settings multi-provider.
 
-- 📄 **API Config**: [functions/api/settings-ai.js](functions/api/settings-ai.js)
-- 🧪 **API Test**: [functions/api/checkSettings-ai.js](functions/api/checkSettings-ai.js)
+- 📄 **API Config**: [functions/api/settings-ai.ts](functions/api/settings-ai.ts)
+- 🧪 **API Test**: [functions/api/checkSettings-ai.ts](functions/api/checkSettings-ai.ts)
 - 🎨 **Frontend Page**: [src/pages/settings-ai.astro](src/pages/settings-ai.astro)
-- 📜 **Frontend Script**: [src/scripts/settings-ai.js](src/scripts/settings-ai.js)
+- 📜 **Frontend Script**: [src/scripts/settings-ai.ts](src/scripts/settings-ai.ts)
 - 🗄️ **Document**: `settings/ai`
 - 👥 **Permessi**: Admin per R, Superuser per W
 - 🔐 **Secrets**: `apiKey`
@@ -118,15 +118,15 @@ Template per settings multi-provider.
 
 ## 🏗️ PATTERN 1: API Config (GET/SAVE)
 
-**File:** `functions/api/settings-[nome].js`
+**File:** `functions/api/settings-[nome].ts`
 
 ### Template Base:
 
 ```javascript
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import admin from "firebase-admin";
-import { region, corsOrigins, runtimeOpts } from "../config.js";
-import { requireSuperUser, requireAdmin } from "../utils/authHelpers.js";
+import { region, corsOrigins, runtimeOpts } from "../config.ts";
+import { requireSuperUser, requireAdmin } from "../utils/authHelpers.ts";
 
 if (admin.apps.length === 0) {
   admin.initializeApp();
@@ -214,15 +214,15 @@ export const saveConfig[Name]Api = onCall(
 
 ## 🧪 PATTERN 2: API Check (Test Configurazione)
 
-**File:** `functions/api/checkSettings-[nome].js`
+**File:** `functions/api/checkSettings-[nome].ts`
 
 ### Template Base:
 
 ```javascript
 import { onCall } from "firebase-functions/v2/https";
 import admin from "firebase-admin";
-import { region, corsOrigins, runtimeOpts } from "../config.js";
-import { requireSuperUser } from "../utils/authHelpers.js";
+import { region, corsOrigins, runtimeOpts } from "../config.ts";
+import { requireSuperUser } from "../utils/authHelpers.ts";
 
 if (admin.apps.length === 0) {
     admin.initializeApp();
@@ -327,7 +327,7 @@ async function performTest(config, testParam) {
 
 ## 🎨 PATTERN 3: Frontend Script
 
-**File:** `src/scripts/settings-[nome].js`
+**File:** `src/scripts/settings-[nome].ts`
 
 ### Template Base:
 
@@ -536,9 +536,9 @@ function showMessage(message, type) {
 
 ---
 
-## 🚀 Export in index.js
+## 🚀 Export in index.ts
 
-**File:** `functions/index.js`
+**File:** `functions/index.ts`
 
 Ogni configurazione richiede 3 export:
 
@@ -547,9 +547,9 @@ Ogni configurazione richiede 3 export:
 export {
     getConfig[Name]Api,
     saveConfig[Name]Api
-} from "./api/settings-[nome].js";
+} from "./api/settings-[nome].ts";
 
-export { checkSettings[Name]Api } from "./api/checkSettings-[nome].js";
+export { checkSettings[Name]Api } from "./api/checkSettings-[nome].ts";
 ```
 
 **Esempio concreto (SMTP):**
@@ -557,9 +557,9 @@ export { checkSettings[Name]Api } from "./api/checkSettings-[nome].js";
 export {
     getConfigSmtpApi,
     saveConfigSmtpApi
-} from "./api/settings-smtp.js";
+} from "./api/settings-smtp.ts";
 
-export { checkSmtpApi } from "./api/checkSettings-smtp.js";
+export { checkSmtpApi } from "./api/checkSettings-smtp.ts";
 ```
 
 ---
@@ -568,13 +568,13 @@ export { checkSmtpApi } from "./api/checkSettings-smtp.js";
 
 ### 1. Backend API Config
 
-**File:** `functions/api/settings-database.js`
+**File:** `functions/api/settings-database.ts`
 
 ```javascript
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import admin from "firebase-admin";
-import { region, corsOrigins, runtimeOpts } from "../config.js";
-import { requireSuperUser, requireAdmin } from "../utils/authHelpers.js";
+import { region, corsOrigins, runtimeOpts } from "../config.ts";
+import { requireSuperUser, requireAdmin } from "../utils/authHelpers.ts";
 
 if (admin.apps.length === 0) {
   admin.initializeApp();
@@ -637,14 +637,14 @@ export const saveConfigDatabaseApi = onCall(
 
 ### 2. Backend API Check
 
-**File:** `functions/api/checkSettings-database.js`
+**File:** `functions/api/checkSettings-database.ts`
 
 ```javascript
 import { onCall } from "firebase-functions/v2/https";
 import admin from "firebase-admin";
 import { createConnection } from "mysql2/promise";
-import { region, corsOrigins, runtimeOpts } from "../config.js";
-import { requireSuperUser } from "../utils/authHelpers.js";
+import { region, corsOrigins, runtimeOpts } from "../config.ts";
+import { requireSuperUser } from "../utils/authHelpers.ts";
 
 if (admin.apps.length === 0) {
     admin.initializeApp();
@@ -706,15 +706,15 @@ export const checkDatabaseApi = onCall(
 });
 ```
 
-### 3. Export in index.js
+### 3. Export in index.ts
 
 ```javascript
 export {
     getConfigDatabaseApi,
     saveConfigDatabaseApi
-} from "./api/settings-database.js";
+} from "./api/settings-database.ts";
 
-export { checkDatabaseApi } from "./api/checkSettings-database.js";
+export { checkDatabaseApi } from "./api/checkSettings-database.ts";
 ```
 
 ---
@@ -730,16 +730,16 @@ export { checkDatabaseApi } from "./api/checkSettings-database.js";
 7. **Audit trail:** Salva sempre `changed`, `updatedBy`, `updatedByEmail`
 8. **Form read-only:** Se l'utente non è superuser, mostra form in sola lettura
 9. **Messaggi uniformi:** Usa la funzione `showMessage(message, type)` standard
-10. **CORS configurato:** Usa sempre `corsOrigins` da `config.js`
+10. **CORS configurato:** Usa sempre `corsOrigins` da `config.ts`
 
 ---
 
 ## 🚀 Convenzioni di Naming
 
 ### Configurazioni
-- **API Config File:** `functions/api/settings-[nome].js`
-- **API Check File:** `functions/api/checkSettings-[nome].js`
-- **Frontend Script:** `src/scripts/settings-[nome].js`
+- **API Config File:** `functions/api/settings-[nome].ts`
+- **API Check File:** `functions/api/checkSettings-[nome].ts`
+- **Frontend Script:** `src/scripts/settings-[nome].ts`
 - **Frontend Page:** `src/pages/settings-[nome].astro`
 - **Firestore Document:** `settings/[nome]`
 
@@ -757,8 +757,8 @@ Per aggiungere una nuova configurazione:
 1. Copia i pattern SMTP o AI (in base alle esigenze)
 2. Sostituisci `[nome]` e `[Name]` con il nome della tua configurazione
 3. Definisci i campi specifici necessari
-4. Implementa la funzione di test in `checkSettings-[nome].js`
-5. Aggiungi gli export in `functions/index.js`
+4. Implementa la funzione di test in `checkSettings-[nome].ts`
+5. Aggiungi gli export in `functions/index.ts`
 6. Testa la configurazione dal frontend
 
 **Tempo stimato per nuova configurazione:** 1-2 ore seguendo questi pattern.

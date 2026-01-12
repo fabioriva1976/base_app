@@ -1,5 +1,5 @@
 import { sequence, defineMiddleware } from 'astro:middleware';
-import { COLLECTIONS } from '../../shared/constants/collections.js';
+import { COLLECTIONS } from '../../shared/constants/collections.ts';
 
 const publicPaths = ['/login', '/api/'];
 const assetPaths = ['/assets/', '/favicon', '/_astro/'];
@@ -81,15 +81,40 @@ const authMiddleware = defineMiddleware(async (context, next) => {
     // Usa verifySessionCookie per i cookie di sessione e abilita il controllo di revoca
     const decodedToken = await adminAuth.verifySessionCookie(idToken, true);
 
+    // Verifica che l'utente esista ancora in Firebase Auth
+    try {
+      await adminAuth.getUser(decodedToken.uid);
+    } catch (authError: any) {
+      // Se l'utente non esiste in Auth, invalida la sessione
+      if (authError.code === 'auth/user-not-found') {
+        console.log('[MIDDLEWARE] Utente eliminato da Firebase Auth - redirect a login');
+        return redirect('/login');
+      }
+      throw authError;
+    }
+
     // Recupera il ruolo dell'utente da Firestore
     let userRole = undefined;
     try {
       const userDoc = await adminDb.collection(COLLECTIONS.USERS).doc(decodedToken.uid).get();
       if (userDoc.exists) {
-        userRole = userDoc.data()?.ruolo;
+        const userData = userDoc.data();
+        userRole = userData?.ruolo;
+
+        // Verifica se l'utente è disabilitato in Firestore
+        if (userData?.disabled === true) {
+          console.log('[MIDDLEWARE] Utente disabilitato in Firestore - redirect a login');
+          return redirect('/login');
+        }
+      } else {
+        // Se l'utente non esiste in Firestore (eliminato), invalida la sessione
+        console.log('[MIDDLEWARE] Utente non trovato in Firestore - redirect a login');
+        return redirect('/login');
       }
     } catch (error) {
       console.error('[MIDDLEWARE] Errore recupero ruolo:', error);
+      // In caso di errore, permetti l'accesso ma senza ruolo
+      // (verrà gestito dalle API che richiedono permessi specifici)
     }
 
     locals.user = {
@@ -100,7 +125,8 @@ const authMiddleware = defineMiddleware(async (context, next) => {
     };
 
     return next();
-  } catch {
+  } catch (error) {
+    console.error('[MIDDLEWARE] Errore verifica token:', error);
     return redirect('/login');
   }
 });

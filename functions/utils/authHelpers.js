@@ -1,7 +1,6 @@
 import { HttpsError } from "firebase-functions/v2/https";
 import admin from "firebase-admin";
 import { COLLECTIONS } from "../../shared/constants/collections.js";
-
 // Normalizza il campo ruolo (può essere string o array) in un array di stringhe
 export function normalizeRoles(ruoloField) {
     if (Array.isArray(ruoloField)) {
@@ -12,7 +11,6 @@ export function normalizeRoles(ruoloField) {
     }
     return [];
 }
-
 /**
  * Ottiene il ruolo principale dell'utente da Firestore
  * Restituisce il primo ruolo disponibile oppure null.
@@ -23,22 +21,19 @@ export async function getUserRole(uid) {
     try {
         const db = admin.firestore();
         const userDoc = await db.collection(COLLECTIONS.USERS).doc(uid).get();
-
         if (!userDoc.exists) {
             console.warn(`Utente ${uid} non trovato in collezione users`);
             return null;
         }
-
         const roles = normalizeRoles(userDoc.data().ruolo);
         const primaryRole = roles[0] || null;
-
         return primaryRole;
-    } catch (error) {
+    }
+    catch (error) {
         console.error(`Errore nel recupero ruolo per ${uid}:`, error);
         return null;
     }
 }
-
 /**
  * Verifica se un ruolo è superuser
  * @param {string} ruolo - Ruolo da verificare
@@ -47,7 +42,6 @@ export async function getUserRole(uid) {
 export function isSuperUser(ruolo) {
     return normalizeRoles(ruolo).includes('superuser');
 }
-
 /**
  * Verifica se un ruolo è admin o superiore
  * @param {string} ruolo - Ruolo da verificare
@@ -57,7 +51,6 @@ export function isAdmin(ruolo) {
     const roles = normalizeRoles(ruolo);
     return roles.includes('admin') || roles.includes('superuser');
 }
-
 /**
  * Verifica se un ruolo è operatore o superiore
  * @param {string} ruolo - Ruolo da verificare
@@ -67,7 +60,6 @@ export function isOperator(ruolo) {
     const roles = normalizeRoles(ruolo);
     return roles.includes('operatore') || roles.includes('admin') || roles.includes('superuser');
 }
-
 /**
  * Middleware per richiedere autenticazione
  * @param {Object} request - Request object della Cloud Function
@@ -78,7 +70,6 @@ export function requireAuth(request) {
         throw new HttpsError('unauthenticated', 'Devi essere autenticato per eseguire questa operazione.');
     }
 }
-
 /**
  * Middleware per richiedere ruolo superuser
  * @param {Object} request - Request object della Cloud Function
@@ -86,19 +77,12 @@ export function requireAuth(request) {
  */
 export async function requireSuperUser(request) {
     requireAuth(request);
-
     const role = await getUserRole(request.auth.uid);
-
     if (!isSuperUser(role)) {
-        throw new HttpsError(
-            'permission-denied',
-            'Solo i superuser possono eseguire questa operazione.'
-        );
+        throw new HttpsError('permission-denied', 'Solo i superuser possono eseguire questa operazione.');
     }
-
     return role;
 }
-
 /**
  * Middleware per richiedere ruolo admin o superiore
  * @param {Object} request - Request object della Cloud Function
@@ -106,19 +90,12 @@ export async function requireSuperUser(request) {
  */
 export async function requireAdmin(request) {
     requireAuth(request);
-
     const role = await getUserRole(request.auth.uid);
-
     if (!isAdmin(role)) {
-        throw new HttpsError(
-            'permission-denied',
-            'Solo gli amministratori possono eseguire questa operazione.'
-        );
+        throw new HttpsError('permission-denied', 'Solo gli amministratori possono eseguire questa operazione.');
     }
-
     return role;
 }
-
 /**
  * Middleware per richiedere ruolo operatore o superiore
  * @param {Object} request - Request object della Cloud Function
@@ -126,19 +103,12 @@ export async function requireAdmin(request) {
  */
 export async function requireOperator(request) {
     requireAuth(request);
-
     const role = await getUserRole(request.auth.uid);
-
     if (!isOperator(role)) {
-        throw new HttpsError(
-            'permission-denied',
-            'Non hai i permessi necessari per eseguire questa operazione.'
-        );
+        throw new HttpsError('permission-denied', 'Non hai i permessi necessari per eseguire questa operazione.');
     }
-
     return role;
 }
-
 /**
  * Verifica se l'utente può gestire un altro utente
  * Un admin può gestire solo operatori
@@ -152,15 +122,12 @@ export function canManageUser(callerRole, targetRole) {
     if (isSuperUser(callerRole)) {
         return true;
     }
-
     // Admin può gestire solo operatori
     if (isAdmin(callerRole)) {
         return targetRole === 'operatore';
     }
-
     return false;
 }
-
 /**
  * Verifica se l'utente può creare un utente con un certo ruolo
  * @param {string} callerRole - Ruolo dell'utente chiamante

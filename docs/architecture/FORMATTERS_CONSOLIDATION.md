@@ -6,7 +6,7 @@ Centralizzare le funzioni di formattazione per evitare duplicazione e comportame
 
 ## Stato Attuale
 
-- **File unico:** `src/scripts/utils/formatters.js`
+- **File unico:** `src/scripts/utils/formatters.ts`
 - **Uso consigliato:** tutte le nuove UI devono usare queste funzioni
 
 Se una pagina ha bisogno di formattazione, **non creare funzioni inline**.
@@ -37,7 +37,7 @@ Formatta valuta con simbolo.
 ## Esempio
 
 ```javascript
-import { formatDate, formatFileSize } from './utils/formatters.js';
+import { formatDate, formatFileSize } from './utils/formatters.ts';
 
 const createdText = formatDate(entity.created, { includeTime: true });
 const sizeText = formatFileSize(file.size);
@@ -45,6 +45,6 @@ const sizeText = formatFileSize(file.size);
 
 ## Linee Guida
 
-- **Usa sempre** `formatters.js` per nuova UI
+- **Usa sempre** `formatters.ts` per nuova UI
 - **Non duplicare** funzioni simili in script di pagina
 - Se serve un nuovo formatter, aggiungilo qui

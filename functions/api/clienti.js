@@ -7,7 +7,7 @@
  * 2. Sostituisci "clienti" con "prodotti"
  * 3. Aggiorna i campi di validazione nella funzione validate*Data()
  * 4. Aggiorna il COLLECTION_NAME
- * 5. Importa la factory corretta da entityFactory.js
+ * 5. Importa la factory corretta da entityFactory.ts
  *
  * Operazioni implementate:
  * - CREATE: createClienteApi (solo admin)
@@ -18,7 +18,6 @@
  *
  * Vedi: PATTERNS.md per la guida completa
  */
-
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { getApps, initializeApp } from "firebase-admin/app";
@@ -27,16 +26,13 @@ import { createCliente } from "../../shared/schemas/entityFactory.js";
 import { region, corsOrigins } from "../config.js";
 import { logAudit, AuditAction } from "../utils/auditLogger.js";
 import { COLLECTIONS } from "../../shared/constants/collections.js";
-
 // 🔧 Inizializza Firebase Admin (singleton pattern)
 if (getApps().length === 0) {
     initializeApp();
 }
 const db = getFirestore();
-
 // 📝 CONFIGURAZIONE: Nome collection in Firestore
 const COLLECTION_NAME = COLLECTIONS.CLIENTI;
-
 /**
  * 🎯 STEP 1: VALIDAZIONE
  *
@@ -57,7 +53,6 @@ function validateClienteData(data) {
         throw new HttpsError('invalid-argument', 'L\'email fornita non è valida.');
     }
 }
-
 /**
  * 🎯 CREATE API: Crea nuovo cliente
  *
@@ -79,31 +74,24 @@ export const createClienteApi = onCall({
 }, async (request) => {
     // 1. SICUREZZA: Verifica che l'utente sia un admin
     await requireAdmin(request);
-
     const { uid, token } = request.auth;
     const data = request.data;
-
     try {
         // 2. VALIDAZIONE: Controlla che i dati inviati siano validi
         validateClienteData(data);
-
         // 3. BUSINESS LOGIC: Crea l'oggetto cliente usando la factory condivisa
         const nuovoCliente = createCliente({
             ...data,
             createdBy: uid,
             createdByEmail: token.email,
         });
-
         // 3.1. TIMESTAMP: Sostituisce null con server timestamp
         nuovoCliente.created = FieldValue.serverTimestamp();
         nuovoCliente.changed = FieldValue.serverTimestamp();
-
         // 4. DATABASE: Salva il nuovo cliente in Firestore
         const docRef = await db.collection(COLLECTION_NAME).add(nuovoCliente);
-
         const newDoc = await docRef.get();
         const newData = newDoc.exists ? newDoc.data() : nuovoCliente;
-
         // 5. AUDIT LOG: Registra azione per tracciabilità
         await logAudit({
             entityType: COLLECTIONS.CLIENTI,
@@ -114,13 +102,11 @@ export const createClienteApi = onCall({
             newData: newData,
             source: 'web'
         });
-
         console.log(`Utente ${uid} ha creato il cliente ${docRef.id}`);
-
         // 6. RESPONSE: Ritorna ID + dati salvati
         return { id: docRef.id, ...nuovoCliente };
-
-    } catch (error) {
+    }
+    catch (error) {
         console.error("Errore durante la creazione del cliente:", error);
         if (error instanceof HttpsError) {
             throw error;
@@ -128,7 +114,6 @@ export const createClienteApi = onCall({
         throw new HttpsError('internal', 'Impossibile creare il cliente.');
     }
 });
-
 /**
  * API per aggiornare un cliente esistente.
  */
@@ -137,23 +122,17 @@ export const updateClienteApi = onCall({
     cors: corsOrigins
 }, async (request) => {
     await requireAdmin(request);
-
     const { uid } = request.auth;
     const { id, ...updateData } = request.data;
-
     if (!id) {
         throw new HttpsError('invalid-argument', 'L\'ID del cliente è obbligatorio.');
     }
-
     try {
         validateClienteData(updateData);
-
         const clienteRef = db.collection(COLLECTION_NAME).doc(id);
-
         // Recupera i dati attuali per l'audit log
         const oldDoc = await clienteRef.get();
         const oldData = oldDoc.exists ? oldDoc.data() : null;
-
         // Aggiunge il timestamp di aggiornamento e audit fields
         const dataToUpdate = {
             ...updateData,
@@ -161,11 +140,9 @@ export const updateClienteApi = onCall({
             lastModifiedBy: uid,
             lastModifiedByEmail: request.auth.token.email
         };
-
         await clienteRef.update(dataToUpdate);
         const newDoc = await clienteRef.get();
         const newData = newDoc.exists ? newDoc.data() : dataToUpdate;
-
         // AUDIT LOG: Registra modifica con dati before/after
         await logAudit({
             entityType: COLLECTIONS.CLIENTI,
@@ -177,12 +154,10 @@ export const updateClienteApi = onCall({
             newData: newData,
             source: 'web'
         });
-
         console.log(`Utente ${uid} ha aggiornato il cliente ${id}`);
-
         return { message: "Cliente aggiornato con successo." };
-
-    } catch (error) {
+    }
+    catch (error) {
         console.error(`Errore durante l'aggiornamento del cliente ${id}:`, error);
         if (error instanceof HttpsError) {
             throw error;
@@ -190,7 +165,6 @@ export const updateClienteApi = onCall({
         throw new HttpsError('internal', 'Impossibile aggiornare il cliente.');
     }
 });
-
 /**
  * API per eliminare un cliente.
  */
@@ -199,23 +173,17 @@ export const deleteClienteApi = onCall({
     cors: corsOrigins
 }, async (request) => {
     await requireAdmin(request);
-
     const { uid } = request.auth;
     const { id } = request.data;
-
     if (!id) {
         throw new HttpsError('invalid-argument', 'L\'ID del cliente è obbligatorio.');
     }
-
     try {
         const clienteRef = db.collection(COLLECTION_NAME).doc(id);
-
         // Recupera i dati prima di eliminare per l'audit log
         const oldDoc = await clienteRef.get();
         const oldData = oldDoc.exists ? oldDoc.data() : null;
-
         await clienteRef.delete();
-
         // AUDIT LOG: Registra eliminazione con dati rimossi
         await logAudit({
             entityType: COLLECTIONS.CLIENTI,
@@ -226,12 +194,11 @@ export const deleteClienteApi = onCall({
             oldData: oldData,
             source: 'web'
         });
-
         console.log(`Utente ${uid} ha eliminato il cliente ${id}`);
         return { message: "Cliente eliminato con successo." };
-    } catch (error) {
+    }
+    catch (error) {
         console.error(`Errore durante l'eliminazione del cliente ${id}:`, error);
         throw new HttpsError('internal', 'Impossibile eliminare il cliente.');
     }
 });
-

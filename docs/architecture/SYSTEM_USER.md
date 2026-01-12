@@ -2,7 +2,7 @@
 
 ## 🎯 Obiettivo
 
-Quando un'entità viene creata o modificata da processi automatici (cron jobs, trigger Firestore, migration scripts) invece che da utenti umani, è fondamentale tracciare questa informazione per:
+Quando un'entità viene creata o modificata da processi automatici (cron jobs, trigger Firestore) invece che da utenti umani, è fondamentale tracciare questa informazione per:
 
 1. **Audit completo**: Sapere sempre chi ha fatto cosa
 2. **Debug**: Identificare operazioni automatiche vs manuali
@@ -35,7 +35,7 @@ Tutte le entità hanno ora **4 campi audit obbligatori**:
 Quando un'operazione è eseguita dal sistema (non da un utente):
 
 ```javascript
-// shared/schemas/entityFactory.js
+// shared/schemas/entityFactory.ts
 export const SYSTEM_USER = {
   id: 'SYSTEM',
   email: 'system@internal'
@@ -47,7 +47,7 @@ export const SYSTEM_USER = {
 ### Esempio 1: Creazione da utente (normale)
 
 ```javascript
-import { createCliente } from '../shared/schemas/entityFactory.js';
+import { createCliente } from '../shared/schemas/entityFactory.ts';
 
 const nuovoCliente = createCliente({
   ragione_sociale: 'Acme Corp',
@@ -72,7 +72,7 @@ const nuovoCliente = createCliente({
 ### Esempio 2: Creazione da sistema (automatica)
 
 ```javascript
-import { createCliente } from '../shared/schemas/entityFactory.js';
+import { createCliente } from '../shared/schemas/entityFactory.ts';
 
 // NON passare createdBy/Email → automaticamente SYSTEM
 const clienteAutomatico = createCliente({
@@ -98,8 +98,8 @@ const clienteAutomatico = createCliente({
 ### Esempio 3: Cron Job che importa dati
 
 ```javascript
-// functions/cron/importClienti.js
-import { createCliente } from '../../shared/schemas/entityFactory.js';
+// functions/cron/importClienti.ts
+import { createCliente } from '../../shared/schemas/entityFactory.ts';
 import { getFirestore } from 'firebase-admin/firestore';
 
 export const importClientiCron = onSchedule('0 2 * * *', async () => {
@@ -123,7 +123,7 @@ export const importClientiCron = onSchedule('0 2 * * *', async () => {
 
 ### Helper Utilities
 
-File: [src/scripts/utils/systemUserHelper.js](../../src/scripts/utils/systemUserHelper.js)
+File: [src/scripts/utils/systemUserHelper.ts](../../src/scripts/utils/systemUserHelper.ts)
 
 ```javascript
 import {
@@ -132,7 +132,7 @@ import {
   getCreatorDisplayName,
   getModifierDisplayName,
   getAuditInfo
-} from './utils/systemUserHelper.js';
+} from './utils/systemUserHelper.ts';
 
 // Verifica se entità creata dal sistema
 if (isSystemCreated(cliente)) {
@@ -168,7 +168,7 @@ console.log(audit.creatorClass); // "system-created"
 </table>
 
 <script type="module">
-import { getAuditInfo } from './utils/systemUserHelper.js';
+import { getAuditInfo } from './utils/systemUserHelper.ts';
 
 function renderCliente(cliente) {
   const audit = getAuditInfo(cliente);
@@ -222,7 +222,7 @@ function renderCliente(cliente) {
 Quando aggiorni un'entità, **lastModifiedBy/Email** devono cambiare, ma **createdBy/Email** rimangono immutabili:
 
 ```javascript
-// functions/api/clienti.js - updateClienteApi
+// functions/api/clienti.ts - updateClienteApi
 const dataToUpdate = {
   ...updateData,
   changed: new Date().toISOString(),
@@ -276,7 +276,7 @@ Se fai query su questi campi, assicurati di avere gli indici in `firestore.index
 
 ```javascript
 // tests/unit/entityFactory.test.js
-import { createCliente, SYSTEM_USER } from '../../shared/schemas/entityFactory.js';
+import { createCliente, SYSTEM_USER } from '../../shared/schemas/entityFactory.ts';
 
 it('dovrebbe creare cliente con SYSTEM quando createdBy è null', () => {
   const cliente = createCliente({
@@ -355,57 +355,9 @@ I campi audit sono **trusted** perché settati solo da:
 
 Il client **non può** scrivere direttamente in queste collection.
 
-## 🚀 Migrazione Dati Esistenti
-
-Se hai dati esistenti senza i nuovi campi audit, esegui uno script di migrazione:
-
-```javascript
-// scripts/migrate-audit-fields.js
-import { getFirestore } from 'firebase-admin/firestore';
-import { SYSTEM_USER } from '../shared/schemas/entityFactory.js';
-
-const db = getFirestore();
-
-async function migrateAuditFields() {
-  const snapshot = await db.collection('anagrafica_clienti').get();
-
-  const batch = db.batch();
-  let count = 0;
-
-  for (const doc of snapshot.docs) {
-    const data = doc.data();
-
-    // Se manca lastModifiedBy, aggiungi campi SYSTEM
-    if (!data.lastModifiedBy) {
-      batch.update(doc.ref, {
-        createdBy: data.createdBy || SYSTEM_USER.id,
-        createdByEmail: data.createdByEmail || SYSTEM_USER.email,
-        lastModifiedBy: data.lastModifiedBy || data.createdBy || SYSTEM_USER.id,
-        lastModifiedByEmail: data.lastModifiedByEmail || data.createdByEmail || SYSTEM_USER.email
-      });
-      count++;
-    }
-
-    // Batch commit ogni 500 documenti
-    if (count > 0 && count % 500 === 0) {
-      await batch.commit();
-      console.log(`Migrati ${count} documenti...`);
-    }
-  }
-
-  if (count % 500 !== 0) {
-    await batch.commit();
-  }
-
-  console.log(`✅ Migrazione completata: ${count} documenti aggiornati`);
-}
-
-migrateAuditFields().catch(console.error);
-```
-
 ## 📚 File Correlati
 
-- Factory principale: [shared/schemas/entityFactory.js](../../shared/schemas/entityFactory.js)
-- Helper frontend: [src/scripts/utils/systemUserHelper.js](../../src/scripts/utils/systemUserHelper.js)
-- Esempio API: [functions/api/clienti.js](../../functions/api/clienti.js)
+- Factory principale: [shared/schemas/entityFactory.ts](../../shared/schemas/entityFactory.ts)
+- Helper frontend: [src/scripts/utils/systemUserHelper.ts](../../src/scripts/utils/systemUserHelper.ts)
+- Esempio API: [functions/api/clienti.ts](../../functions/api/clienti.ts)
 - Test: [tests/unit/entityFactory.test.js](../../tests/unit/entityFactory.test.js)

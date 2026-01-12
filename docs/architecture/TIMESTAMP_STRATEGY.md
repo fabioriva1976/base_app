@@ -25,7 +25,7 @@ Questo creava **inconsistenza** e problemi:
 
 **Factory → `null` (placeholder)**
 ```javascript
-// shared/schemas/entityFactory.js
+// shared/schemas/entityFactory.ts
 export const SERVER_TIMESTAMP = null;
 
 export function createCliente({...}) {
@@ -40,7 +40,7 @@ export function createCliente({...}) {
 
 **API → `FieldValue.serverTimestamp()`**
 ```javascript
-// functions/api/clienti.js
+// functions/api/clienti.ts
 const nuovoCliente = createCliente({...});
 
 // Sostituisce null con server timestamp prima di salvare
@@ -109,7 +109,7 @@ Ogni entità ha **2 campi timestamp**:
 
 ## 🏗️ Implementazione nei File
 
-### 1. Factory (shared/schemas/entityFactory.js)
+### 1. Factory (shared/schemas/entityFactory.ts)
 
 ```javascript
 /**
@@ -136,11 +136,11 @@ export function createCliente({...}) {
 }
 ```
 
-### 2. API CREATE (functions/api/*.js)
+### 2. API CREATE (functions/api/*.ts)
 
 ```javascript
 import { FieldValue } from "firebase-admin/firestore";
-import { createCliente } from "../../shared/schemas/entityFactory.js";
+import { createCliente } from "../../shared/schemas/entityFactory.ts";
 
 export const createClienteApi = onCall({...}, async (request) => {
   // 1. Crea oggetto con factory
@@ -161,7 +161,7 @@ export const createClienteApi = onCall({...}, async (request) => {
 });
 ```
 
-### 3. API UPDATE (functions/api/*.js)
+### 3. API UPDATE (functions/api/*.ts)
 
 ```javascript
 export const updateClienteApi = onCall({...}, async (request) => {
@@ -275,7 +275,7 @@ const recentClienti = await db.collection('clienti')
 
 ```javascript
 // Frontend - converte Timestamp in Date
-import { formatDate } from './utils/formatters.js';
+import { formatDate } from './utils/formatters.ts';
 
 function renderCliente(cliente) {
   // cliente.created è Firestore Timestamp
@@ -287,54 +287,6 @@ function renderCliente(cliente) {
     <td>${formattedDate}</td>
   `;
 }
-```
-
----
-
-## 🔄 Migrazione da Vecchia Strategia
-
-Se hai dati esistenti con timestamp ISO string invece di Firestore Timestamp:
-
-### Script Migrazione
-
-```javascript
-// scripts/migrate-timestamps.js
-import { getFirestore, FieldValue } from 'firebase-admin/firestore';
-
-const db = getFirestore();
-
-async function migrateTimestamps() {
-  const snapshot = await db.collection('clienti').get();
-  const batch = db.batch();
-  let count = 0;
-
-  for (const doc of snapshot.docs) {
-    const data = doc.data();
-
-    // Se created è una stringa, converti a Timestamp
-    if (typeof data.created === 'string') {
-      batch.update(doc.ref, {
-        created: FieldValue.serverTimestamp(),
-        changed: FieldValue.serverTimestamp()
-      });
-      count++;
-    }
-
-    // Batch commit ogni 500 documenti
-    if (count > 0 && count % 500 === 0) {
-      await batch.commit();
-      console.log(`Migrati ${count} documenti...`);
-    }
-  }
-
-  if (count % 500 !== 0) {
-    await batch.commit();
-  }
-
-  console.log(`✅ Migrazione completata: ${count} documenti aggiornati`);
-}
-
-migrateTimestamps().catch(console.error);
 ```
 
 ---
@@ -408,10 +360,10 @@ migrateTimestamps().catch(console.error);
 
 ## 🔗 File Correlati
 
-- **Factory**: [shared/schemas/entityFactory.js](../../shared/schemas/entityFactory.js)
-- **API Clienti**: [functions/api/clienti.js](../../functions/api/clienti.js)
-- **API Attachments**: [functions/api/attachments.js](../../functions/api/attachments.js)
-- **API Comments**: [functions/api/comments.js](../../functions/api/comments.js)
+- **Factory**: [shared/schemas/entityFactory.ts](../../shared/schemas/entityFactory.ts)
+- **API Clienti**: [functions/api/clienti.ts](../../functions/api/clienti.ts)
+- **API Attachments**: [functions/api/attachments.ts](../../functions/api/attachments.ts)
+- **API Comments**: [functions/api/comments.ts](../../functions/api/comments.ts)
 - **Test Unitari**: [tests/unit/entityFactory.test.js](../../tests/unit/entityFactory.test.js)
 
 ---
@@ -427,7 +379,7 @@ migrateTimestamps().catch(console.error);
 ## 🎓 Esempio Completo: Nuova Entità
 
 ```javascript
-// 1. Factory (shared/schemas/entityFactory.js)
+// 1. Factory (shared/schemas/entityFactory.ts)
 export function createProdotto({
   nome,
   prezzo,
@@ -448,7 +400,7 @@ export function createProdotto({
   };
 }
 
-// 2. API CREATE (functions/api/prodotti.js)
+// 2. API CREATE (functions/api/prodotti.ts)
 export const createProdottoApi = onCall({...}, async (request) => {
   const nuovoProdotto = createProdotto({
     ...data,
@@ -463,7 +415,7 @@ export const createProdottoApi = onCall({...}, async (request) => {
   await db.collection('prodotti').add(nuovoProdotto);
 });
 
-// 3. API UPDATE (functions/api/prodotti.js)
+// 3. API UPDATE (functions/api/prodotti.ts)
 export const updateProdottoApi = onCall({...}, async (request) => {
   const dataToUpdate = {
     ...updateData,

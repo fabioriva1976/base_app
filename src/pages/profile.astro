@@ -69,7 +69,7 @@ import ProfileLayout from '../layouts/ProfileLayout.astro';
 </ProfileLayout>
 
 <script>
-  import { initProfilePage } from '../scripts/profile.js';
+  import { initProfilePage } from '../scripts/profile.ts';
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initProfilePage);
   } else {

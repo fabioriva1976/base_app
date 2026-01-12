@@ -117,7 +117,7 @@ import AuthLayout from '../layouts/AuthLayout.astro';
 </AuthLayout>
 
 <script>
-  import { initPageAnagraficaClientiPage } from '../scripts/anagrafica-clienti.js';
+  import { initPageAnagraficaClientiPage } from '../scripts/anagrafica-clienti.ts';
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initPageAnagraficaClientiPage);
   } else {

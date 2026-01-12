@@ -7,30 +7,30 @@ Per evitare duplicazione e inconsistenze, le factory delle entita hanno **una so
 ## Architettura
 
 ```
-shared/schemas/entityFactory.js  ← UNICA FONTE (ES6)
+shared/schemas/entityFactory.ts  ← UNICA FONTE (ESM)
            ↓
-    scripts/sync-entity-factories.cjs
+    scripts/sync-entity-factories.ts
            ↓
-functions/schemas/entityFactory.js    ← AUTO-GENERATO (CommonJS)
+functions/schemas/entityFactory.ts    ← AUTO-GENERATO (ESM)
 ```
 
 ## File Coinvolti
 
-1. **Sorgente:** `shared/schemas/entityFactory.js`
+1. **Sorgente:** `shared/schemas/entityFactory.ts`
    - Modifica solo questo file
-   - ES6 modules
+   - ES modules
 
-2. **Target:** `functions/schemas/entityFactory.js`
+2. **Target:** `functions/schemas/entityFactory.ts`
    - Auto-generato
    - Non modificare
 
-3. **Script di sync:** `scripts/sync-entity-factories.cjs`
+3. **Script di sync:** `scripts/sync-entity-factories.ts`
 
-4. **Re-export frontend:** `src/scripts/schemas/entityFactory.js`
+4. **Re-export frontend:** `src/scripts/schemas/entityFactory.ts`
 
 ## Come Usare
 
-1. Modifica le factory in `shared/schemas/entityFactory.js`
+1. Modifica le factory in `shared/schemas/entityFactory.ts`
 2. Esegui `npm run sync-factories`
 3. Verifica frontend e backend
 

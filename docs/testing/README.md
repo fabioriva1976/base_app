@@ -42,10 +42,10 @@ npm run test:coverage:html      # Apri report HTML
 
 | File | Coverage | Target | Priorità |
 |------|----------|--------|----------|
-| `shared/schemas/entityFactory.js` | 83% | 100% | 🔴 ALTA |
-| `functions/api/clienti.js` | 91% | 95% | 🟡 MEDIA |
-| `functions/utils/authHelpers.js` | 75% | 90% | 🟡 MEDIA |
-| `functions/utils/auditLogger.js` | 29% | 85% | 🔴 ALTA |
+| `shared/schemas/entityFactory.ts` | 83% | 100% | 🔴 ALTA |
+| `functions/api/clienti.ts` | 91% | 95% | 🟡 MEDIA |
+| `functions/utils/authHelpers.ts` | 75% | 90% | 🟡 MEDIA |
+| `functions/utils/auditLogger.ts` | 29% | 85% | 🔴 ALTA |
 
 ---
 
@@ -158,9 +158,9 @@ Generati automaticamente in `/coverage`:
 
 ## 📝 Prossimi Passi
 
-1. [ ] Aumentare coverage `entityFactory.js` a 100%
-2. [ ] Creare test per `auditLogger.js` (attualmente 29%)
-3. [ ] Aumentare coverage `authHelpers.js` a 90%
+1. [ ] Aumentare coverage `entityFactory.ts` a 100%
+2. [ ] Creare test per `auditLogger.ts` (attualmente 29%)
+3. [ ] Aumentare coverage `authHelpers.ts` a 90%
 4. [ ] Integrare coverage check in CI/CD pipeline
 5. [ ] Aggiungere badge coverage nel README principale
 6. [ ] Configurare Codecov per tracking trend

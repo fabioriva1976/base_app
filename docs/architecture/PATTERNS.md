@@ -22,18 +22,18 @@ Ogni nuova entita DEVE seguire questi pattern per garantire:
 Quando crei una nuova entita (es: `prodotti`), devi creare questi file:
 
 ### 1. Schema e Factory
-- [ ] `shared/schemas/entityFactory.js` - Aggiungi funzione `createProdotto()`
+- [ ] `shared/schemas/entityFactory.ts` - Aggiungi funzione `createProdotto()`
 
 ### 2. API Backend
-- [ ] `functions/api/prodotti.js` - CRUD CUD (Create, Update, Delete). La lista e realtime via store.
+- [ ] `functions/api/prodotti.ts` - CRUD CUD (Create, Update, Delete). La lista e realtime via store.
 
 ### 3. Test
 - [ ] `tests/functions/prodotti.test.js` - Test per tutte le operazioni CRUD
 
 ### 4. Frontend
 - [ ] `src/pages/prodotti.astro` - Pagina lista/gestione
-- [ ] `src/scripts/prodotti.js` - Logica frontend
-- [ ] `src/stores/prodottiStore.js` - Store realtime per la lista
+- [ ] `src/scripts/prodotti.ts` - Logica frontend
+- [ ] `src/stores/prodottiStore.ts` - Store realtime per la lista
 
 ### 5. Firestore Rules
 - [ ] `firestore.rules` - Aggiungi regole per collection `prodotti`
@@ -47,8 +47,8 @@ Il progetto include 3 entita completamente documentate che puoi usare come templ
 ### 1. **Clienti** (CRUD Standard)
 File di riferimento più completo per entita con CRUD classico.
 
-- 📄 **API**: [functions/api/clienti.js](functions/api/clienti.js)
-- 🏗️ **Factory**: [shared/schemas/entityFactory.js](shared/schemas/entityFactory.js) - `createCliente()`
+- 📄 **API**: [functions/api/clienti.ts](functions/api/clienti.ts)
+- 🏗️ **Factory**: [shared/schemas/entityFactory.ts](shared/schemas/entityFactory.ts) - `createCliente()`
 - 🧪 **Test**: [tests/functions/clienti.test.js](tests/functions/clienti.test.js)
 - 🗄️ **Collection**: `clienti`
 - 👥 **Permessi**: Admin per CUD, Operatore+ per R
@@ -61,8 +61,8 @@ File di riferimento più completo per entita con CRUD classico.
 ### 2. **Users** (Firebase Auth + Firestore)
 Template per entita che usano Firebase Authentication.
 
-- 📄 **API**: [functions/api/users.js](functions/api/users.js)
-- 🏗️ **Factory**: [shared/schemas/entityFactory.js](shared/schemas/entityFactory.js) - `createUtente()`
+- 📄 **API**: [functions/api/users.ts](functions/api/users.ts)
+- 🏗️ **Factory**: [shared/schemas/entityFactory.ts](shared/schemas/entityFactory.ts) - `createUtente()`
 - 🧪 **Test**: [tests/functions/users.test.js](tests/functions/users.test.js)
 - 🗄️ **Collection**: `users` + Firebase Auth
 - 👥 **Permessi**: Admin only, con controllo gerarchico ruoli
@@ -80,8 +80,8 @@ Template per entita che usano Firebase Authentication.
 ### 3. **Attachments** (Firestore + Storage)
 Template per entita che gestiscono file.
 
-- 📄 **API**: [functions/api/attachments.js](functions/api/attachments.js)
-- 🏗️ **Factory**: [shared/schemas/entityFactory.js](shared/schemas/entityFactory.js) - `createAttachment()`
+- 📄 **API**: [functions/api/attachments.ts](functions/api/attachments.ts)
+- 🏗️ **Factory**: [shared/schemas/entityFactory.ts](shared/schemas/entityFactory.ts) - `createAttachment()`
 - 🗄️ **Collection**: `attachments`
 - 💾 **Storage**: Firebase Storage bucket
 - 👥 **Permessi**: Authenticated per C, Admin per UD
@@ -100,7 +100,7 @@ Template per entita che gestiscono file.
 
 ## 🏗️ PATTERN 1: Schema Entity Factory
 
-**File:** `shared/schemas/entityFactory.js`
+**File:** `shared/schemas/entityFactory.ts`
 
 ### Template Base:
 
@@ -193,7 +193,7 @@ export function createCliente({
 
 ## 🔌 PATTERN 2: API Backend CRUD
 
-**File:** `functions/api/[entita].js`
+**File:** `functions/api/[entita].ts`
 
 ### Struttura Standard:
 
@@ -211,10 +211,10 @@ export function createCliente({
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { getApps, initializeApp } from "firebase-admin/app";
-import { requireAdmin } from "../utils/authHelpers.js";
-import { create[EntityName] } from "../../shared/schemas/entityFactory.js";
-import { region, corsOrigins } from "../config.js";
-import { logAudit, AuditAction } from "../utils/auditLogger.js";
+import { requireAdmin } from "../utils/authHelpers.ts";
+import { create[EntityName] } from "../../shared/schemas/entityFactory.ts";
+import { region, corsOrigins } from "../config.ts";
+import { logAudit, AuditAction } from "../utils/auditLogger.ts";
 
 // Inizializza Firebase Admin
 if (getApps().length === 0) {
@@ -440,7 +440,7 @@ import {
     [entita]CreateApi,
     [entita]UpdateApi,
     [entita]DeleteApi
-} from './api/[entita].js';
+} from './api/[entita].ts';
 
 const testEnv = test({
     projectId: 'base-app-12108'
@@ -614,11 +614,11 @@ createProdotto({
 
 ### Nomi File
 
-- **API:** `functions/api/[entita].js` (plurale)
+- **API:** `functions/api/[entita].ts` (plurale)
 - **Test:** `tests/functions/[entita].test.js` (plurale)
-- **Frontend:** `src/scripts/[entita].js` (singolare con trattino)
+- **Frontend:** `src/scripts/[entita].ts` (singolare con trattino)
 - **Pagina:** `src/pages/[entita].astro`
-- **Store:** `src/stores/[entita]Store.js`
+- **Store:** `src/stores/[entita]Store.ts`
 
 ---
 
@@ -674,11 +674,11 @@ Nel file `src/pages/[entita].astro`, aggiungi il tab attachments nella sidebar:
 
 #### PASSO 2: Importa e Configura DocumentUtils nel Frontend
 
-Nel file `src/scripts/[entita].js`:
+Nel file `src/scripts/[entita].ts`:
 
 ```javascript
 // Import
-import * as attachmentUtils from './utils/attachmentUtils.js';
+import * as attachmentUtils from './utils/attachmentUtils.ts';
 
 // Setup (nella funzione init)
 export function init[Entita]Page() {
@@ -769,12 +769,12 @@ match /attachments/{docId} {
 Copia questo pattern per aggiungere attachments ai prodotti:
 
 ```javascript
-// src/scripts/prodotti.js
+// src/scripts/prodotti.ts
 
 import { storage, auth, functions } from '../lib/firebase-client';
 import { doc, getFirestore } from "firebase/firestore";
-import * as attachmentUtils from './utils/attachmentUtils.js';
-import * as actionUtils from './utils/actionUtils.js';
+import * as attachmentUtils from './utils/attachmentUtils.ts';
+import * as actionUtils from './utils/actionUtils.ts';
 import { httpsCallable } from "firebase/functions";
 
 let currentEntityId = null;
@@ -925,11 +925,11 @@ Nel file `src/pages/[entita].astro`, aggiungi il tab note nella sidebar:
 
 #### PASSO 2: Importa e Configura CommentUtils nel Frontend
 
-Nel file `src/scripts/[entita].js`:
+Nel file `src/scripts/[entita].ts`:
 
 ```javascript
 // Import
-import * as commentUtils from './utils/commentUtils.js';
+import * as commentUtils from './utils/commentUtils.ts';
 
 // Setup (nella funzione init)
 export function init[Entita]Page() {
@@ -1032,7 +1032,7 @@ match /comments/{commentId} {
 
 ### 🎯 API Backend (Già Implementate)
 
-Le Cloud Functions per comments sono in `functions/api/comments.js`:
+Le Cloud Functions per comments sono in `functions/api/comments.ts`:
 
 1. **createCommentApi** - Crea nuovo commento
    - Permessi: Tutti gli utenti autenticati
@@ -1053,13 +1053,13 @@ Le Cloud Functions per comments sono in `functions/api/comments.js`:
 Copia questo pattern per aggiungere comments ai prodotti:
 
 ```javascript
-// src/scripts/prodotti.js
+// src/scripts/prodotti.ts
 
 import { storage, auth, functions } from '../lib/firebase-client';
 import { doc, getFirestore } from "firebase/firestore";
-import * as attachmentUtils from './utils/attachmentUtils.js';
-import * as actionUtils from './utils/actionUtils.js';
-import * as commentUtils from './utils/commentUtils.js';
+import * as attachmentUtils from './utils/attachmentUtils.ts';
+import * as actionUtils from './utils/actionUtils.ts';
+import * as commentUtils from './utils/commentUtils.ts';
 import { httpsCallable } from "firebase/functions";
 
 let currentEntityId = null;
@@ -1185,7 +1185,7 @@ Il tab note richiede questi elementi HTML:
 
 ### 📊 Factory Function (Già Implementata)
 
-La factory per comments è in `shared/schemas/entityFactory.js`:
+La factory per comments è in `shared/schemas/entityFactory.ts`:
 
 ```javascript
 export function createComment({

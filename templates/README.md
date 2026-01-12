@@ -4,11 +4,11 @@ Questi template sono pensati per essere copiati e adattati.
 Non sono usati in runtime o nei test.
 
 ## Contenuto
-- `templates/entity.api.template.js` -> CRUD API standard (stile clienti)
-- `templates/entity.test.template.js` -> Test backend standard
+- `templates/entity.api.template.ts` -> CRUD API standard (stile clienti)
+- `templates/entity.test.template.ts` -> Test backend standard
 - `templates/entity.page.template.astro` -> Pagina Astro base
-- `templates/entity.script.template.js` -> Script UI base
-- `templates/entity.store.template.js` -> Store real-time base
+- `templates/entity.script.template.ts` -> Script UI base
+- `templates/entity.store.template.ts` -> Store real-time base
 
 ## Placeholder
 I template usano placeholder che vengono sostituiti dallo script.

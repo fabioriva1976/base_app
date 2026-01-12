@@ -1,5 +1,4 @@
-// functions/api/checkSettings-ai.js
-
+// functions/api/checkSettings-ai.ts
 import { onCall } from "firebase-functions/v2/https";
 import admin from "firebase-admin";
 import { GoogleGenerativeAI } from "@google/generative-ai";
@@ -7,40 +6,32 @@ import axios from "axios";
 import { region, corsOrigins, runtimeOpts } from "../config.js";
 import { requireSuperUser } from "../utils/authHelpers.js";
 import { COLLECTIONS } from "../../shared/constants/collections.js";
-
 if (admin.apps.length === 0) {
     admin.initializeApp();
 }
-
 /**
  * Test configurazione AI - SOLO SUPERUSER
  * Solo i superuser possono testare la configurazione AI per sicurezza
  */
 export const checkSettingsAiApi = onCall({ region, cors: corsOrigins, ...runtimeOpts }, async (request) => {
     console.log("🔍 checkSettingsAiApi chiamata");
-
     // ✅ SECURITY: Richiede ruolo superuser
     await requireSuperUser(request);
-
     try {
         const db = admin.firestore();
-
         // Carica la configurazione AI da Firestore
         console.log("📋 Caricamento configurazione AI da Firestore...");
         const aiConfigDoc = await db.collection(COLLECTIONS.CONFIG).doc("ai").get();
-
         if (!aiConfigDoc.exists) {
             console.error("❌ Documento configurazione AI non trovato");
             throw new Error("❌ Configurazione AI non trovata in Firestore. Configura l'AI prima di testare.");
         }
-
         const aiConfig = aiConfigDoc.data();
         console.log("✅ Configurazione AI caricata:", {
             provider: aiConfig.provider,
             model: aiConfig.model,
             hasApiKey: !!aiConfig.apiKey
         });
-
         // Verifica che tutti i parametri necessari siano presenti
         if (!aiConfig.provider || !aiConfig.apiKey || !aiConfig.model) {
             console.error("❌ Configurazione incompleta:", {
@@ -50,28 +41,28 @@ export const checkSettingsAiApi = onCall({ region, cors: corsOrigins, ...runtime
             });
             throw new Error("❌ Configurazione AI incompleta. Verifica provider, API key e model.");
         }
-
         console.log(`🤖 Testing AI configuration: ${aiConfig.provider} - ${aiConfig.model}`);
-
         // Supporto per diversi provider AI
         if (aiConfig.provider === 'openai') {
             return await testOpenAI(aiConfig);
-        } else if (aiConfig.provider === 'google') {
+        }
+        else if (aiConfig.provider === 'google') {
             return await testGoogleAI(aiConfig);
-        } else if (aiConfig.provider === 'anthropic') {
+        }
+        else if (aiConfig.provider === 'anthropic') {
             throw new Error(`❌ Provider "anthropic" (Claude) non ancora supportato per il test. Implementazione in arrivo.`);
-        } else if (aiConfig.provider === 'azure') {
+        }
+        else if (aiConfig.provider === 'azure') {
             throw new Error(`❌ Provider "azure" non ancora supportato per il test. Implementazione in arrivo.`);
-        } else {
+        }
+        else {
             throw new Error(`❌ Provider "${aiConfig.provider}" non riconosciuto. Provider supportati: google, openai.`);
         }
-
-    } catch (error) {
+    }
+    catch (error) {
         console.error("❌ Errore nel test AI:", error);
-
         // Fornisci messaggi di errore più specifici
         let errorMessage = "Errore durante il test della configurazione AI.";
-
         // Controlla prima se è un nostro errore personalizzato
         if (error.message && error.message.startsWith("❌")) {
             errorMessage = error.message;
@@ -79,12 +70,13 @@ export const checkSettingsAiApi = onCall({ region, cors: corsOrigins, ...runtime
         // Gestisci gli errori comuni
         else if (error.message && error.message.includes("API key")) {
             errorMessage = "❌ API Key non valida. Verifica la chiave API configurata.";
-        } else if (error.message && error.message.includes("quota")) {
+        }
+        else if (error.message && error.message.includes("quota")) {
             errorMessage = "❌ Quota API superata. Verifica il tuo account.";
-        } else if (error.message) {
+        }
+        else if (error.message) {
             errorMessage = `❌ Errore: ${error.message}`;
         }
-
         // Log dettagliato per debugging
         console.error("Dettagli errore AI:", {
             message: error.message,
@@ -92,22 +84,18 @@ export const checkSettingsAiApi = onCall({ region, cors: corsOrigins, ...runtime
             statusText: error.statusText,
             code: error.code
         });
-
         throw new Error(errorMessage);
     }
 });
-
 // Funzione di test per Google AI (Gemini)
 async function testGoogleAI(aiConfig) {
     console.log(`🤖 Testing Google AI: ${aiConfig.model}`);
-
     // Normalizza il nome del modello (rimuovi prefisso "models/" se presente)
     let modelName = aiConfig.model;
     if (modelName.startsWith('models/')) {
         modelName = modelName.replace('models/', '');
         console.log(`ℹ️  Nome modello normalizzato da "${aiConfig.model}" a "${modelName}"`);
     }
-
     // Mappa dei modelli Gemini supportati con l'SDK @google/generative-ai
     // Nota: i modelli 2.5 usano il nome diretto, i modelli 1.5 richiedono il suffisso -latest
     const modelMapping = {
@@ -118,13 +106,11 @@ async function testGoogleAI(aiConfig) {
         'gemini-pro': 'gemini-pro',
         'gemini-pro-vision': 'gemini-pro-vision'
     };
-
     // Usa il mapping se disponibile
     const finalModel = modelMapping[modelName] || modelName;
     if (finalModel !== modelName) {
         console.log(`ℹ️  Modello mappato da "${modelName}" a "${finalModel}"`);
     }
-
     try {
         // Inizializza Google Generative AI
         const genAI = new GoogleGenerativeAI(aiConfig.apiKey);
@@ -135,17 +121,13 @@ async function testGoogleAI(aiConfig) {
                 maxOutputTokens: 100, // Limita per il test
             }
         });
-
         console.log("🔄 Invio prompt di test...");
-
         // Invia un prompt di test semplice
         const testPrompt = "Rispondi solo con 'OK' se funziono correttamente.";
         const result = await model.generateContent(testPrompt);
         const response = await result.response;
         const text = response.text();
-
         console.log("✅ Risposta Google AI ricevuta:", text.substring(0, 100));
-
         return {
             success: true,
             message: "✅ Test Google AI completato con successo!",
@@ -157,50 +139,44 @@ async function testGoogleAI(aiConfig) {
                 responseLength: text.length
             }
         };
-    } catch (error) {
+    }
+    catch (error) {
         // Gestisci errori specifici di Google AI
         if (error.message && error.message.includes('not found')) {
             throw new Error(`❌ Modello "${modelName}" non trovato. Modelli supportati: gemini-2.5-pro, gemini-2.5-flash, gemini-1.5-pro, gemini-1.5-flash, gemini-pro. Verifica anche la tua API key.`);
-        } else if (error.message && error.message.includes('API key')) {
+        }
+        else if (error.message && error.message.includes('API key')) {
             throw new Error("❌ API Key Google non valida. Verifica la chiave API.");
-        } else {
+        }
+        else {
             throw error;
         }
     }
 }
-
 // Funzione di test per OpenAI
 async function testOpenAI(aiConfig) {
     console.log(`🤖 Testing OpenAI: ${aiConfig.model}`);
-
     console.log("🔄 Invio prompt di test...");
-
     try {
-        const response = await axios.post(
-            'https://api.openai.com/v1/chat/completions',
-            {
-                model: aiConfig.model,
-                messages: [
-                    {
-                        role: 'user',
-                        content: 'Rispondi solo con "OK" se funziono correttamente.'
-                    }
-                ],
-                max_tokens: 100,
-                temperature: aiConfig.temperature || 0.7
+        const response = await axios.post('https://api.openai.com/v1/chat/completions', {
+            model: aiConfig.model,
+            messages: [
+                {
+                    role: 'user',
+                    content: 'Rispondi solo con "OK" se funziono correttamente.'
+                }
+            ],
+            max_tokens: 100,
+            temperature: aiConfig.temperature || 0.7
+        }, {
+            headers: {
+                'Authorization': `Bearer ${aiConfig.apiKey}`,
+                'Content-Type': 'application/json'
             },
-            {
-                headers: {
-                    'Authorization': `Bearer ${aiConfig.apiKey}`,
-                    'Content-Type': 'application/json'
-                },
-                timeout: (aiConfig.timeout || 30) * 1000
-            }
-        );
-
+            timeout: (aiConfig.timeout || 30) * 1000
+        });
         const text = response.data.choices[0].message.content;
         console.log("✅ Risposta OpenAI ricevuta:", text.substring(0, 100));
-
         return {
             success: true,
             message: "✅ Test OpenAI completato con successo!",
@@ -212,29 +188,35 @@ async function testOpenAI(aiConfig) {
                 tokensUsed: response.data.usage?.total_tokens
             }
         };
-
-    } catch (error) {
+    }
+    catch (error) {
         // Gestisci errori specifici di OpenAI
         if (error.response) {
             const status = error.response.status;
             const errorData = error.response.data?.error;
-
             if (status === 401) {
                 throw new Error("❌ API Key OpenAI non valida. Verifica la chiave API.");
-            } else if (status === 429) {
+            }
+            else if (status === 429) {
                 throw new Error("❌ Quota OpenAI superata o troppe richieste. Verifica il tuo account.");
-            } else if (status === 404) {
+            }
+            else if (status === 404) {
                 throw new Error(`❌ Modello "${aiConfig.model}" non trovato. Verifica che sia accessibile con la tua API key.`);
-            } else if (errorData?.type === 'insufficient_quota') {
+            }
+            else if (errorData?.type === 'insufficient_quota') {
                 throw new Error("❌ Credito OpenAI esaurito. Aggiungi credito al tuo account.");
-            } else if (errorData?.message) {
+            }
+            else if (errorData?.message) {
                 throw new Error(`❌ Errore OpenAI: ${errorData.message}`);
-            } else {
+            }
+            else {
                 throw new Error(`❌ Errore OpenAI (${status}). Verifica la configurazione.`);
             }
-        } else if (error.code === 'ETIMEDOUT' || error.code === 'ECONNABORTED') {
+        }
+        else if (error.code === 'ETIMEDOUT' || error.code === 'ECONNABORTED') {
             throw new Error("❌ Timeout della richiesta OpenAI. Verifica la connessione.");
-        } else {
+        }
+        else {
             throw error;
         }
     }

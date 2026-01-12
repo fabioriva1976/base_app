@@ -63,12 +63,12 @@
 
 ### Componenti Pattern
 
-1. **Store File** (`src/stores/[entity]Store.js`)
+1. **Store File** (`src/stores/[entity]Store.ts`)
    - Atom stores (data, loading, error)
    - Listener Firebase con `onSnapshot`
    - Funzioni init/stop per lifecycle
 
-2. **Script File** (`src/scripts/[entity].js`)
+2. **Script File** (`src/scripts/[entity].ts`)
    - Subscribe allo store
    - Render UI quando store cambia
    - NO più chiamate manuali a Firestore
@@ -90,7 +90,7 @@
 - Sidebar con lista items
 - Dashboard con statistiche
 
-### Template Store: `src/stores/[entity]Store.js`
+### Template Store: `src/stores/[entity]Store.ts`
 
 ```javascript
 /**
@@ -100,8 +100,8 @@
  * Usato per tabelle, liste, dashboard.
  *
  * @example
- * // In src/scripts/users.js
- * import { usersStore, initUsersListener } from '../stores/usersStore.js';
+ * // In src/scripts/users.ts
+ * import { usersStore, initUsersListener } from '../stores/usersStore.ts';
  *
  * initUsersListener(); // Avvia listener
  * usersStore.subscribe((users) => {
@@ -216,7 +216,7 @@ export function stop[Entity]Listener() {
 
 ### ✅ Esempio Concreto: Users Store
 
-**File:** `src/stores/usersStore.js`
+**File:** `src/stores/usersStore.ts`
 
 ```javascript
 import { atom } from 'nanostores';
@@ -277,7 +277,7 @@ export function stopUsersListener() {
 }
 ```
 
-### Integrazione Script: `src/scripts/[entity].js`
+### Integrazione Script: `src/scripts/[entity].ts`
 
 ```javascript
 /**
@@ -286,7 +286,7 @@ export function stopUsersListener() {
  * Come usare lo store nel componente frontend.
  */
 
-import { [entity]Store, init[Entity]Listener, stop[Entity]Listener } from '../stores/[entity]Store.js';
+import { [entity]Store, init[Entity]Listener, stop[Entity]Listener } from '../stores/[entity]Store.ts';
 
 let entities = [];
 let unsubscribeStore = null;
@@ -377,10 +377,10 @@ async function deleteEntity(id) {
 
 ### ✅ Esempio Concreto: Users Script
 
-**File:** `src/scripts/users.js`
+**File:** `src/scripts/users.ts`
 
 ```javascript
-import { usersStore, initUsersListener, stopUsersListener } from '../stores/usersStore.js';
+import { usersStore, initUsersListener, stopUsersListener } from '../stores/usersStore.ts';
 import { db, auth, functions } from '../lib/firebase-client';
 import { doc, getDoc } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
@@ -449,7 +449,7 @@ async function saveEntity(e) {
 - Dati singola entita in dettaglio
 - Form di modifica entita
 
-### Template Store: `src/stores/current[Entity]Store.js`
+### Template Store: `src/stores/current[Entity]Store.ts`
 
 ```javascript
 /**
@@ -460,7 +460,7 @@ async function saveEntity(e) {
  *
  * @example
  * // In BaseLayout.astro
- * import { initCurrentUserListener } from '../stores/currentUserStore.js';
+ * import { initCurrentUserListener } from '../stores/currentUserStore.ts';
  *
  * onAuthStateChanged(auth, (user) => {
  *   if (user) {
@@ -569,7 +569,7 @@ export function stopCurrent[Entity]Listener() {
 
 ### ✅ Esempio Concreto: Current User Store
 
-**File:** `src/stores/currentUserStore.js`
+**File:** `src/stores/currentUserStore.ts`
 
 ```javascript
 import { atom } from 'nanostores';
@@ -672,7 +672,7 @@ function updateAvatarInHeader(userData) {
 <script>
   import { auth } from '../lib/firebase-client';
   import { onAuthStateChanged } from 'firebase/auth';
-  import { initCurrentUserListener, stopCurrentUserListener } from '../stores/currentUserStore.js';
+  import { initCurrentUserListener, stopCurrentUserListener } from '../stores/currentUserStore.ts';
 
   onAuthStateChanged(auth, async (user) => {
     if (user) {
@@ -688,10 +688,10 @@ function updateAvatarInHeader(userData) {
 </script>
 ```
 
-### Integrazione Script: `src/scripts/profile.js`
+### Integrazione Script: `src/scripts/profile.ts`
 
 ```javascript
-import { currentUserProfileStore } from '../stores/currentUserStore.js';
+import { currentUserProfileStore } from '../stores/currentUserStore.ts';
 import { auth, functions } from '../lib/firebase-client';
 import { httpsCallable } from "firebase/functions";
 
@@ -759,15 +759,15 @@ async function saveProfile(e) {
 ```
 src/
 ├── stores/
-│   ├── usersStore.js              # Lista utenti (collection)
-│   ├── currentUserStore.js        # Profilo utente corrente (documento)
-│   ├── clientiStore.js            # Lista clienti (collection)
-│   └── [entity]Store.js           # Altri stores...
+│   ├── usersStore.ts              # Lista utenti (collection)
+│   ├── currentUserStore.ts        # Profilo utente corrente (documento)
+│   ├── clientiStore.ts            # Lista clienti (collection)
+│   └── [entity]Store.ts           # Altri stores...
 │
 ├── scripts/
-│   ├── users.js                   # Logica utenti + subscribe
-│   ├── profile.js                 # Logica profilo + subscribe
-│   └── [entity].js                # Altri scripts...
+│   ├── users.ts                   # Logica utenti + subscribe
+│   ├── profile.ts                 # Logica profilo + subscribe
+│   └── [entity].ts                # Altri scripts...
 │
 └── layouts/
     └── BaseLayout.astro           # Init listener globali
@@ -778,10 +778,10 @@ src/
 ## 🎨 Convenzioni di Naming
 
 ### Store Files
-- **Collection:** `[entity]Store.js` (plurale)
-  - Esempio: `usersStore.js`, `clientiStore.js`, `prodottiStore.js`
-- **Single Document:** `current[Entity]Store.js` (singolare)
-  - Esempio: `currentUserStore.js`, `currentClienteStore.js`
+- **Collection:** `[entity]Store.ts` (plurale)
+  - Esempio: `usersStore.ts`, `clientiStore.ts`, `prodottiStore.ts`
+- **Single Document:** `current[Entity]Store.ts` (singolare)
+  - Esempio: `currentUserStore.ts`, `currentClienteStore.ts`
 
 ### Exported Names
 
@@ -810,11 +810,11 @@ export function stopCurrent[Entity]Listener() {}          // stopCurrentUserList
 Quando implementi realtime stores per una nuova entita, segui questa checklist:
 
 ### Per Collection (Lista)
-- [ ] Creare `src/stores/[entity]Store.js`
+- [ ] Creare `src/stores/[entity]Store.ts`
 - [ ] Esportare 3 atoms: `[entity]Store`, `[entity]LoadingStore`, `[entity]ErrorStore`
 - [ ] Implementare `init[Entity]Listener()` con `onSnapshot(collection(...))`
 - [ ] Implementare `stop[Entity]Listener()`
-- [ ] Importare store in `src/scripts/[entity].js`
+- [ ] Importare store in `src/scripts/[entity].ts`
 - [ ] Chiamare `init[Entity]Listener()` in `init[Entity]Page()`
 - [ ] Subscribe a `[entity]Store` e aggiornare UI nel callback
 - [ ] Esportare `cleanup[Entity]Page()` che chiama `stop[Entity]Listener()`
@@ -822,7 +822,7 @@ Quando implementi realtime stores per una nuova entita, segui questa checklist:
 - [ ] Rimuovere `loadEntities()` dopo CRUD operations
 
 ### Per Single Document (Profilo)
-- [ ] Creare `src/stores/current[Entity]Store.js`
+- [ ] Creare `src/stores/current[Entity]Store.ts`
 - [ ] Esportare 3 atoms: `current[Entity]Store`, `current[Entity]LoadingStore`, `current[Entity]ErrorStore`
 - [ ] Implementare `initCurrent[Entity]Listener(id)` con `onSnapshot(doc(...))`
 - [ ] Implementare `stopCurrent[Entity]Listener()`
@@ -900,20 +900,20 @@ Questo pattern si integra con:
 
 ### ✅ Entita implementate con questo pattern:
 
-1. **Users** (`src/stores/usersStore.js`)
+1. **Users** (`src/stores/usersStore.ts`)
    - Collection store per lista utenti
-   - Implementato in: `src/scripts/users.js`
+   - Implementato in: `src/scripts/users.ts`
    - Listener inizializzato in: `initUsersPage()`
 
-2. **Current User Profile** (`src/stores/currentUserStore.js`)
+2. **Current User Profile** (`src/stores/currentUserStore.ts`)
    - Document store per profilo utente corrente
-   - Implementato in: `src/scripts/profile.js`, `src/layouts/BaseLayout.astro`
+   - Implementato in: `src/scripts/profile.ts`, `src/layouts/BaseLayout.astro`
    - Listener inizializzato in: `BaseLayout.astro` (onAuthStateChanged)
    - Side effect: Aggiorna automaticamente avatar nell'header
 
-3. **Clienti** (`src/stores/clientiStore.js`)
+3. **Clienti** (`src/stores/clientiStore.ts`)
    - Collection store per anagrafica clienti
-   - Implementato in: `src/scripts/anagrafica-clienti.js`
+   - Implementato in: `src/scripts/anagrafica-clienti.ts`
    - Listener inizializzato in: `initPageAnagraficaClientiPage()`
 
 ### 🔄 Cloud Functions modificate:

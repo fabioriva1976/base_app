@@ -13,7 +13,7 @@ Per questo motivo, **non serve** una cache manuale per liste standard.
 
 ## Quando usare la cache custom (legacy)
 
-Usa `firestoreCache.js` solo se:
+Usa `firestoreCache.ts` solo se:
 - La query e **one-shot** e non serve realtime
 - La query e **costosa** e vuoi riutilizzarla per pochi minuti
 - Non puoi usare `onSnapshot()` (es. operazioni batch o dati derivati)
@@ -22,7 +22,7 @@ Evita la cache custom quando i dati devono essere sempre freschi o quando c'e gi
 
 ## File e API disponibili
 
-**File:** `src/scripts/utils/firestoreCache.js`
+**File:** `src/scripts/utils/firestoreCache.ts`
 
 **Funzioni:**
 - `getCached(key, fetchFn, ttl)`
@@ -34,7 +34,7 @@ Evita la cache custom quando i dati devono essere sempre freschi o quando c'e gi
 ## Esempio (legacy)
 
 ```javascript
-import { getCached, invalidateCache } from './utils/firestoreCache.js';
+import { getCached, invalidateCache } from './utils/firestoreCache.ts';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 
 async function loadEntities() {

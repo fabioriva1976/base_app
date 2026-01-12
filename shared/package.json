@@ -3,5 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "main": "./schemas/entityFactory.js"
+  "main": "./schemas/entityFactory.js",
+  "types": "./schemas/entityFactory.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  }
 }

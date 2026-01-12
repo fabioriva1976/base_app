@@ -2,7 +2,6 @@ import { onDocumentCreated, onDocumentUpdated, onDocumentDeleted } from "firebas
 import { logAudit, AuditAction } from "../utils/auditLogger.js";
 import { region, runtimeOpts } from "../config.js";
 import { COLLECTIONS } from "../../shared/constants/collections.js";
-
 /**
  * Controlla se ci sono effettivamente cambiamenti nei dati, escludendo campi di sistema
  * @param {Object} beforeData - Dati prima della modifica
@@ -12,33 +11,27 @@ import { COLLECTIONS } from "../../shared/constants/collections.js";
 function hasActualChanges(beforeData, afterData) {
     // Campi di sistema da ignorare nel confronto
     const systemFields = ['created', 'changed', 'timestamp', 'lastModifiedBy', 'lastModifiedByEmail'];
-
     // Estrai tutti i campi unici da entrambi gli oggetti
     const allKeys = new Set([
         ...Object.keys(beforeData || {}),
         ...Object.keys(afterData || {})
     ]);
-
     // Controlla se c'è almeno un campo non di sistema che è cambiato
     for (const key of allKeys) {
         // Salta i campi di sistema
-        if (systemFields.includes(key)) continue;
-
+        if (systemFields.includes(key))
+            continue;
         const oldValue = beforeData?.[key];
         const newValue = afterData?.[key];
-
         // Confronta i valori
         if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
             return true; // Trovato un cambiamento
         }
     }
-
     return false; // Nessun cambiamento reale
 }
-
 // NOTA: I trigger per la collezione 'utenti' sono gestiti in onUtentiChange.js
 // per evitare duplicati negli audit logs
-
 // Trigger per anagrafica_clienti
 export const onAnagraficaClientiCreate = onDocumentCreated({ region, document: `${COLLECTIONS.CLIENTI}/{docId}`, ...runtimeOpts }, async (event) => {
     const afterData = event.data.data();
@@ -56,22 +49,18 @@ export const onAnagraficaClientiCreate = onDocumentCreated({ region, document: `
         source: 'web'
     });
 });
-
 export const onAnagraficaClientiUpdate = onDocumentUpdated({ region, document: `${COLLECTIONS.CLIENTI}/{docId}`, ...runtimeOpts }, async (event) => {
     const beforeData = event.data.before.data();
     const afterData = event.data.after.data();
-
     // Controlla se ci sono effettivamente cambiamenti nei dati (escludendo campi di sistema)
     if (!hasActualChanges(beforeData, afterData)) {
         console.log(`Nessun cambiamento reale per anagrafica_clienti/${event.params.docId}, audit log non creato`);
         return;
     }
-
     if (afterData?.lastModifiedBy) {
         console.log(`Audit log già registrato dalle API per cliente ${event.params.docId}, trigger skip`);
         return;
     }
-
     await logAudit({
         entityType: COLLECTIONS.CLIENTI,
         entityId: event.params.docId,
@@ -83,7 +72,6 @@ export const onAnagraficaClientiUpdate = onDocumentUpdated({ region, document: `
         source: 'web'
     });
 });
-
 export const onAnagraficaClientiDelete = onDocumentDeleted({ region, document: `${COLLECTIONS.CLIENTI}/{docId}`, ...runtimeOpts }, async (event) => {
     const beforeData = event.data.data();
     if (beforeData?.lastModifiedBy) {
@@ -100,7 +88,6 @@ export const onAnagraficaClientiDelete = onDocumentDeleted({ region, document: `
         source: 'web'
     });
 });
-
 // Trigger per attachments
 export const onAttachmentsCreate = onDocumentCreated({ region, document: `${COLLECTIONS.ATTACHMENTS}/{docId}`, ...runtimeOpts }, async (event) => {
     const afterData = event.data.data();
@@ -118,22 +105,18 @@ export const onAttachmentsCreate = onDocumentCreated({ region, document: `${COLL
         source: 'web'
     });
 });
-
 export const onAttachmentsUpdate = onDocumentUpdated({ region, document: `${COLLECTIONS.ATTACHMENTS}/{docId}`, ...runtimeOpts }, async (event) => {
     const beforeData = event.data.before.data();
     const afterData = event.data.after.data();
-
     // Controlla se ci sono effettivamente cambiamenti nei dati (escludendo campi di sistema)
     if (!hasActualChanges(beforeData, afterData)) {
         console.log(`Nessun cambiamento reale per attachments/${event.params.docId}, audit log non creato`);
         return;
     }
-
     if (afterData?.lastModifiedBy) {
         console.log(`Audit log già registrato dalle API per attachment ${event.params.docId}, trigger skip`);
         return;
     }
-
     await logAudit({
         entityType: COLLECTIONS.ATTACHMENTS,
         entityId: event.params.docId,
@@ -145,7 +128,6 @@ export const onAttachmentsUpdate = onDocumentUpdated({ region, document: `${COLL
         source: 'web'
     });
 });
-
 export const onAttachmentsDelete = onDocumentDeleted({ region, document: `${COLLECTIONS.ATTACHMENTS}/{docId}`, ...runtimeOpts }, async (event) => {
     const beforeData = event.data.data();
     if (beforeData?.lastModifiedBy) {

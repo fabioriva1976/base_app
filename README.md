@@ -34,6 +34,24 @@ Prerequisiti: Docker + docker-compose. Tutto parte nel container `firebase-cli` 
 Se ti serve una shell (es. per comandi firebase manuali):  
 `docker compose exec -it firebase-cli sh`
 
+## 🧩 Comandi TypeScript (quando usarli)
+
+- `npm run build:scripts`  
+  Compila gli script TS in `scripts/` (generatori e sync).  
+  Usalo quando devi eseguire `sync-factories` o `generate:entity`.
+- `npm run sync-factories`  
+  Copia `shared/schemas/entityFactory.ts` in `functions/schemas/entityFactory.ts`.  
+  Usalo dopo ogni modifica alla factory, prima di build/deploy.
+- `npm run generate:entity <entita_plural> <EntityName>`  
+  Genera i file template per una nuova entita.  
+  Usalo quando crei una nuova entita.
+- `npm --prefix shared run build`  
+  Compila il pacchetto `shared` in JS/d.ts.  
+  Usalo prima di deploy o quando vuoi verificare la compilazione.
+- `npm --prefix functions run build`  
+  Compila le Cloud Functions TS in JS.  
+  Usalo prima di `firebase deploy`.
+
 
 ## 🧪 Testing
 
@@ -112,13 +130,13 @@ Questo progetto segue pattern standardizzati per facilitare l'aggiunta di nuove 
 **Per creare una nuova entita (es: "prodotti"):**
 
 1. Leggi [PATTERNS.md](docs/architecture/PATTERNS.md) - Guida completa ai pattern
-2. Aggiungi factory in `shared/schemas/entityFactory.js`
-3. Crea API in `functions/api/prodotti.js` (usa `functions/api/clienti.js` come template)
+2. Aggiungi factory in `shared/schemas/entityFactory.ts`
+3. Crea API in `functions/api/prodotti.ts` (usa `functions/api/clienti.ts` come template)
 4. Crea test in `tests/functions/prodotti.test.js` (usa `tests/functions/clienti.test.js` come template)
-5. Aggiungi store realtime in `src/stores/prodottiStore.js`
+5. Aggiungi store realtime in `src/stores/prodottiStore.ts`
 6. Esegui `npm test` per verificare
 
 **File di riferimento:**
-- 📄 Template API: `functions/api/clienti.js` (commentato per AI)
-- 🏗️ Factory: `shared/schemas/entityFactory.js`
+- 📄 Template API: `functions/api/clienti.ts` (commentato per AI)
+- 🏗️ Factory: `shared/schemas/entityFactory.ts`
 - 🧪 Test: `tests/functions/clienti.test.js`
