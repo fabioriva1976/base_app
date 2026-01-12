@@ -94,6 +94,10 @@ export const createClienteApi = onCall({
             createdByEmail: token.email,
         });
 
+        // 3.1. TIMESTAMP: Sostituisce null con server timestamp
+        nuovoCliente.created = FieldValue.serverTimestamp();
+        nuovoCliente.changed = FieldValue.serverTimestamp();
+
         // 4. DATABASE: Salva il nuovo cliente in Firestore
         const docRef = await db.collection(COLLECTION_NAME).add(nuovoCliente);
 
@@ -150,18 +154,12 @@ export const updateClienteApi = onCall({
         const oldDoc = await clienteRef.get();
         const oldData = oldDoc.exists ? oldDoc.data() : null;
 
-        // Aggiunge il timestamp di aggiornamento
-        const now = new Date().toISOString();
+        // Aggiunge il timestamp di aggiornamento e audit fields
         const dataToUpdate = {
             ...updateData,
-            updatedAt: FieldValue.serverTimestamp(),
-            changed: now,
+            changed: FieldValue.serverTimestamp(),
             lastModifiedBy: uid,
-            lastModifiedByEmail: request.auth.token.email,
-            createdAt: FieldValue.delete(),
-            updatedAt: FieldValue.delete(),
-            createdBy: FieldValue.delete(),
-            createdByEmail: FieldValue.delete()
+            lastModifiedByEmail: request.auth.token.email
         };
 
         await clienteRef.update(dataToUpdate);

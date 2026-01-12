@@ -91,6 +91,10 @@ export const createCommentApi = onCall({
             createdByEmail: token.email || null
         });
 
+        // 3.1. TIMESTAMP: Sostituisce null con server timestamp
+        nuovoComment.created = FieldValue.serverTimestamp();
+        nuovoComment.changed = FieldValue.serverTimestamp();
+
         // 4. DATABASE: Salva in Firestore
         const docRef = await db.collection(COLLECTION_NAME).add(nuovoComment);
 

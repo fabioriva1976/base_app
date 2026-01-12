@@ -97,6 +97,10 @@ export const createAttachmentRecordApi = onCall(
         createdByEmail: user.token.email,
       });
 
+      // 3.1. TIMESTAMP: Sostituisce null con server timestamp
+      nuovoAttachment.created = FieldValue.serverTimestamp();
+      nuovoAttachment.changed = FieldValue.serverTimestamp();
+
       // 4. DATABASE: Salva il nuovo documento in Firestore
       const docRef = await db.collection(COLLECTION_NAME).add(nuovoAttachment);
 
@@ -229,10 +233,12 @@ export const updateAttachmentApi = onCall(
       const oldDoc = await docRef.get();
       const oldData = oldDoc.exists ? oldDoc.data() : null;
 
-      // 2. DATABASE: Aggiunge timestamp di aggiornamento
+      // 2. DATABASE: Aggiunge timestamp di aggiornamento e audit fields
       const dataToUpdate = {
         ...updateData,
-        updatedAt: FieldValue.serverTimestamp(),
+        changed: FieldValue.serverTimestamp(),
+        lastModifiedBy: uid,
+        lastModifiedByEmail: request.auth.token.email
       };
 
       await docRef.update(dataToUpdate);
