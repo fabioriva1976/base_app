@@ -1,0 +1,6 @@
+# Aggiungi queste righe al tuo .gitignore esistente
+
+# Code Coverage Reports
+coverage/
+*.lcov
+.nyc_output/

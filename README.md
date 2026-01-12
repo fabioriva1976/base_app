@@ -55,6 +55,14 @@ Se ti serve una shell (es. per comandi firebase manuali):
 Accedi a: http://localhost:7900/vnc.html
 
 
+### Coverage
+# Test Coverage
+`docker exec firebase_base_app npm run test:coverage`
+
+# per vedere il report
+`xdg-open coverage/lcov-report/index.html`
+
+
 ## Sincronizzare Indici Firestore in Locale
 Per scaricare gli indici composti da produzione e usarli con l'emulatore:
 1. Entra nel container: 
