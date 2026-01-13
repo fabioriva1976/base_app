@@ -1740,6 +1740,10 @@ textarea.form-control {
 .error-404-container {
     text-align: center;
     padding: 4rem 2rem;
+    min-height: 75vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .error-404-title {

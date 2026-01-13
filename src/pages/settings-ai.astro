@@ -7,7 +7,7 @@ const { user } = Astro.locals;
 // Solo superuser può accedere alle configurazioni (visualizzazione read-only per admin)
 // Se non è autenticato o non ha almeno ruolo admin, redirect
 if (!user || (!canAccessConfig(user) && user.ruolo !== 'admin')) {
-  return Astro.redirect('/access-denied');
+  return Astro.redirect('/accesso-negato');
 }
 
 const canModify = canAccessConfig(user);

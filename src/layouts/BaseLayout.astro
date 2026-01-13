@@ -8,6 +8,7 @@ import { buildTitle } from '../lib/site';
 const { title } = Astro.props;
 const user = Astro.locals.user;
 const pageTitle = buildTitle(title);
+const hasSidebar = Astro.slots.has('sidebar');
 
 // Genera l'avatar URL lato server per evitare il flash
 const displayName = user?.email?.split('@')[0] || 'User';
@@ -34,7 +35,7 @@ const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(display
 </head>
 <body>
     <div class="app-wrapper">
-        <slot name="sidebar" />
+        {hasSidebar ? <slot name="sidebar" /> : <aside class="sidebar" aria-hidden="true"></aside>}
 
         <div class="content-wrapper">
             <header class="main-header">

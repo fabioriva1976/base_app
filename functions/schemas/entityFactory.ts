@@ -21,6 +21,8 @@
  * - null è placeholder che indica "usa server timestamp"
  */
 
+import { ClienteSchema, UtenteSchema, type ClienteInput, type UtenteInput } from './zodSchemas.ts';
+
 /**
  * Placeholder per timestamp che deve essere sostituito con FieldValue.serverTimestamp()
  * quando si salva in Firestore.
@@ -97,22 +99,10 @@ interface AttachmentEntity extends AuditFields {
   changed: TimestampPlaceholder;
 }
 
-interface ClienteInput {
-  ragione_sociale?: string;
-  codice?: string;
-  email?: NullableString;
-  telefono?: NullableString;
-  partita_iva?: NullableString;
-  codice_fiscale?: NullableString;
-  indirizzo?: NullableString;
-  citta?: NullableString;
-  cap?: NullableString;
-  provincia?: NullableString;
-  note?: NullableString;
-  status?: boolean;
+type ClienteFactoryInput = Partial<ClienteInput> & {
   createdBy?: NullableString;
   createdByEmail?: NullableString;
-}
+};
 
 interface ClienteEntity extends AuditFields {
   ragione_sociale: string;
@@ -131,17 +121,10 @@ interface ClienteEntity extends AuditFields {
   changed: TimestampPlaceholder;
 }
 
-interface UtenteInput {
-  uid?: string;
-  email?: string;
-  ruolo?: string | string[];
-  displayName?: string;
-  disabled?: boolean;
-  photoURL?: NullableString;
-  metadata?: Record<string, unknown>;
+type UtenteFactoryInput = Partial<UtenteInput> & {
   createdBy?: NullableString;
   createdByEmail?: NullableString;
-}
+};
 
 interface UtenteEntity extends AuditFields {
   uid: string;
@@ -291,32 +274,40 @@ export function createCliente({
   cap = null,
   provincia = null,
   note = null,
-  status = true,
+  status,
   createdBy = null,
   createdByEmail = null
-}: ClienteInput = {}): ClienteEntity {
-  if (!ragione_sociale) {
-    throw new Error('ragione_sociale è obbligatorio');
-  }
-  if (!codice) {
-    throw new Error('codice è obbligatorio');
-  }
+}: ClienteFactoryInput = {}): ClienteEntity {
+  const parsed = ClienteSchema.parse({
+    ragione_sociale,
+    codice,
+    email,
+    telefono,
+    partita_iva,
+    codice_fiscale,
+    indirizzo,
+    citta,
+    cap,
+    provincia,
+    note,
+    status
+  });
 
   const auditFields = normalizeAuditFields(createdBy, createdByEmail);
 
   return {
-    ragione_sociale: String(ragione_sociale),
-    codice: String(codice),
-    email: email ? String(email).toLowerCase() : null,
-    telefono: telefono ? String(telefono) : null,
-    partita_iva: partita_iva ? String(partita_iva) : null,
-    codice_fiscale: codice_fiscale ? String(codice_fiscale).toUpperCase() : null,
-    indirizzo: indirizzo ? String(indirizzo) : null,
-    citta: citta ? String(citta) : null,
-    cap: cap ? String(cap) : null,
-    provincia: provincia ? String(provincia) : null,
-    note: note ? String(note) : null,
-    status: Boolean(status),
+    ragione_sociale: parsed.ragione_sociale,
+    codice: parsed.codice,
+    email: parsed.email ?? null,
+    telefono: parsed.telefono ?? null,
+    partita_iva: parsed.partita_iva ?? null,
+    codice_fiscale: parsed.codice_fiscale ?? null,
+    indirizzo: parsed.indirizzo ?? null,
+    citta: parsed.citta ?? null,
+    cap: parsed.cap ?? null,
+    provincia: parsed.provincia ?? null,
+    note: parsed.note ?? null,
+    status: parsed.status,
     created: SERVER_TIMESTAMP,
     changed: SERVER_TIMESTAMP,
     createdBy: auditFields.createdBy,
@@ -346,28 +337,34 @@ export function createCliente({
 export function createUtente({
   uid,
   email,
-  ruolo = 'operatore',
-  displayName = '',
-  disabled = false,
-  photoURL = null,
-  metadata = {},
+  ruolo,
+  displayName,
+  disabled,
+  photoURL,
+  metadata,
   createdBy = null,
   createdByEmail = null
-}: UtenteInput = {}): UtenteEntity {
-  if (!uid || !email) {
-    throw new Error('uid ed email sono obbligatori');
-  }
+}: UtenteFactoryInput = {}): UtenteEntity {
+  const parsed = UtenteSchema.parse({
+    uid,
+    email,
+    ruolo: ruolo ?? 'operatore',
+    displayName,
+    disabled,
+    photoURL,
+    metadata
+  });
 
   const auditFields = normalizeAuditFields(createdBy, createdByEmail);
 
   return {
-    uid: String(uid),
-    email: String(email).toLowerCase(),
-    ruolo: Array.isArray(ruolo) ? ruolo.map(String) : [String(ruolo)],
-    displayName: displayName ? String(displayName) : '',
-    disabled: Boolean(disabled),
-    photoURL: photoURL ? String(photoURL) : null,
-    metadata: metadata && typeof metadata === 'object' ? { ...metadata } : {},
+    uid: parsed.uid,
+    email: parsed.email,
+    ruolo: Array.isArray(parsed.ruolo) ? parsed.ruolo : [parsed.ruolo],
+    displayName: parsed.displayName,
+    disabled: parsed.disabled,
+    photoURL: parsed.photoURL ?? null,
+    metadata: parsed.metadata,
     created: SERVER_TIMESTAMP,
     changed: SERVER_TIMESTAMP,
     createdBy: auditFields.createdBy,

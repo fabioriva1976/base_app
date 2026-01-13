@@ -12,6 +12,7 @@
  * - FieldValue.serverTimestamp() garantisce timestamp server affidabile
  * - null è placeholder che indica "usa server timestamp"
  */
+import { type ClienteInput, type UtenteInput } from './zodSchemas.ts';
 /**
  * Placeholder per timestamp che deve essere sostituito con FieldValue.serverTimestamp()
  * quando si salva in Firestore.
@@ -79,22 +80,10 @@ interface AttachmentEntity extends AuditFields {
     created: TimestampPlaceholder;
     changed: TimestampPlaceholder;
 }
-interface ClienteInput {
-    ragione_sociale?: string;
-    codice?: string;
-    email?: NullableString;
-    telefono?: NullableString;
-    partita_iva?: NullableString;
-    codice_fiscale?: NullableString;
-    indirizzo?: NullableString;
-    citta?: NullableString;
-    cap?: NullableString;
-    provincia?: NullableString;
-    note?: NullableString;
-    status?: boolean;
+type ClienteFactoryInput = Partial<ClienteInput> & {
     createdBy?: NullableString;
     createdByEmail?: NullableString;
-}
+};
 interface ClienteEntity extends AuditFields {
     ragione_sociale: string;
     codice: string;
@@ -111,17 +100,10 @@ interface ClienteEntity extends AuditFields {
     created: TimestampPlaceholder;
     changed: TimestampPlaceholder;
 }
-interface UtenteInput {
-    uid?: string;
-    email?: string;
-    ruolo?: string | string[];
-    displayName?: string;
-    disabled?: boolean;
-    photoURL?: NullableString;
-    metadata?: Record<string, unknown>;
+type UtenteFactoryInput = Partial<UtenteInput> & {
     createdBy?: NullableString;
     createdByEmail?: NullableString;
-}
+};
 interface UtenteEntity extends AuditFields {
     uid: string;
     email: string;
@@ -185,7 +167,7 @@ export declare function createAttachmentMetadata({ entityId, entityCollection, u
  * @param {string|null} params.createdByEmail - Email utente creatore (null = SYSTEM)
  * @returns {object} Oggetto cliente validato
  */
-export declare function createCliente({ ragione_sociale, codice, email, telefono, partita_iva, codice_fiscale, indirizzo, citta, cap, provincia, note, status, createdBy, createdByEmail }?: ClienteInput): ClienteEntity;
+export declare function createCliente({ ragione_sociale, codice, email, telefono, partita_iva, codice_fiscale, indirizzo, citta, cap, provincia, note, status, createdBy, createdByEmail }?: ClienteFactoryInput): ClienteEntity;
 /**
  * 👤 Factory: Utente
  *
@@ -203,7 +185,7 @@ export declare function createCliente({ ragione_sociale, codice, email, telefono
  * @param {string|null} params.createdByEmail - Email utente creatore (null = SYSTEM)
  * @returns {object} Oggetto utente validato
  */
-export declare function createUtente({ uid, email, ruolo, displayName, disabled, photoURL, metadata, createdBy, createdByEmail }?: UtenteInput): UtenteEntity;
+export declare function createUtente({ uid, email, ruolo, displayName, disabled, photoURL, metadata, createdBy, createdByEmail }?: UtenteFactoryInput): UtenteEntity;
 /**
  * 💬 Factory: Comment
  *

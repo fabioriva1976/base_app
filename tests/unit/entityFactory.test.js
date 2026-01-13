@@ -100,11 +100,11 @@ describe('Unit Test: entityFactory', () => {
     it('dovrebbe lanciare errore se mancano campi obbligatori', () => {
       expect(() => {
         createCliente({ ragione_sociale: 'Test' }); // Manca codice
-      }).toThrow('codice è obbligatorio');
+      }).toThrow('Il codice è obbligatorio');
 
       expect(() => {
         createCliente({ codice: 'T001' }); // Manca ragione_sociale
-      }).toThrow('ragione_sociale è obbligatorio');
+      }).toThrow('La ragione sociale è obbligatoria');
     });
   });
 

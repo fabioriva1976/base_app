@@ -70,8 +70,8 @@ export declare const ClienteSchema: z.ZodObject<{
     codice: string;
     email: string | null;
     codice_fiscale: string | null;
-    provincia: string | null;
     status: boolean;
+    provincia: string | null;
     telefono?: string | null | undefined;
     partita_iva?: string | null | undefined;
     indirizzo?: string | null | undefined;
@@ -86,11 +86,11 @@ export declare const ClienteSchema: z.ZodObject<{
     partita_iva?: string | null | undefined;
     codice_fiscale?: string | null | undefined;
     indirizzo?: string | null | undefined;
+    status?: boolean | undefined;
     citta?: string | null | undefined;
     cap?: string | null | undefined;
     provincia?: string | null | undefined;
     note?: string | null | undefined;
-    status?: boolean | undefined;
 }>;
 /**
  * Type TypeScript derivato automaticamente dallo schema Cliente
@@ -120,11 +120,11 @@ export declare const ClienteUpdateSchema: z.ZodObject<{
     partita_iva?: string | null | undefined;
     codice_fiscale?: string | null | undefined;
     indirizzo?: string | null | undefined;
+    status?: boolean | undefined;
     citta?: string | null | undefined;
     cap?: string | null | undefined;
     provincia?: string | null | undefined;
     note?: string | null | undefined;
-    status?: boolean | undefined;
 }, {
     ragione_sociale?: string | undefined;
     codice?: string | undefined;
@@ -133,11 +133,11 @@ export declare const ClienteUpdateSchema: z.ZodObject<{
     partita_iva?: string | null | undefined;
     codice_fiscale?: string | null | undefined;
     indirizzo?: string | null | undefined;
+    status?: boolean | undefined;
     citta?: string | null | undefined;
     cap?: string | null | undefined;
     provincia?: string | null | undefined;
     note?: string | null | undefined;
-    status?: boolean | undefined;
 }>;
 /**
  * Type TypeScript per UPDATE
@@ -155,21 +155,21 @@ export declare const UtenteSchema: z.ZodObject<{
     photoURL: z.ZodEffects<z.ZodNullable<z.ZodOptional<z.ZodString>>, string | null | undefined, string | null | undefined>;
     metadata: z.ZodDefault<z.ZodRecord<z.ZodString, z.ZodUnknown>>;
 }, "strip", z.ZodTypeAny, {
-    metadata: Record<string, unknown>;
     email: string;
     uid: string;
     ruolo: "operatore" | "admin" | "superuser" | ("operatore" | "admin" | "superuser")[];
     displayName: string;
     disabled: boolean;
+    metadata: Record<string, unknown>;
     photoURL?: string | null | undefined;
 }, {
     email: string;
     uid: string;
     ruolo: "operatore" | "admin" | "superuser" | ("operatore" | "admin" | "superuser")[];
-    metadata?: Record<string, unknown> | undefined;
     displayName?: string | undefined;
     disabled?: boolean | undefined;
     photoURL?: string | null | undefined;
+    metadata?: Record<string, unknown> | undefined;
 }>;
 export type UtenteInput = z.infer<typeof UtenteSchema>;
 export declare const UtenteUpdateSchema: z.ZodObject<{
@@ -181,21 +181,21 @@ export declare const UtenteUpdateSchema: z.ZodObject<{
     photoURL: z.ZodOptional<z.ZodEffects<z.ZodNullable<z.ZodOptional<z.ZodString>>, string | null | undefined, string | null | undefined>>;
     metadata: z.ZodOptional<z.ZodDefault<z.ZodRecord<z.ZodString, z.ZodUnknown>>>;
 }, "strip", z.ZodTypeAny, {
-    metadata?: Record<string, unknown> | undefined;
     email?: string | undefined;
     uid?: string | undefined;
     ruolo?: "operatore" | "admin" | "superuser" | ("operatore" | "admin" | "superuser")[] | undefined;
     displayName?: string | undefined;
     disabled?: boolean | undefined;
     photoURL?: string | null | undefined;
+    metadata?: Record<string, unknown> | undefined;
 }, {
-    metadata?: Record<string, unknown> | undefined;
     email?: string | undefined;
     uid?: string | undefined;
     ruolo?: "operatore" | "admin" | "superuser" | ("operatore" | "admin" | "superuser")[] | undefined;
     displayName?: string | undefined;
     disabled?: boolean | undefined;
     photoURL?: string | null | undefined;
+    metadata?: Record<string, unknown> | undefined;
 }>;
 export type UtenteUpdateInput = z.infer<typeof UtenteUpdateSchema>;
 /**
@@ -206,13 +206,13 @@ export declare const CommentSchema: z.ZodObject<{
     entityId: z.ZodString;
     entityCollection: z.ZodString;
 }, "strip", z.ZodTypeAny, {
+    text: string;
     entityId: string;
     entityCollection: string;
-    text: string;
 }, {
+    text: string;
     entityId: string;
     entityCollection: string;
-    text: string;
 }>;
 export type CommentInput = z.infer<typeof CommentSchema>;
 /**
@@ -242,9 +242,6 @@ export declare const AttachmentSchema: z.ZodObject<{
         description?: string | undefined;
     }>>;
 }, "strip", z.ZodTypeAny, {
-    nome: string;
-    tipo: string;
-    storagePath: string;
     metadata: {
         url: string;
         size: number;
@@ -252,6 +249,9 @@ export declare const AttachmentSchema: z.ZodObject<{
         entityId?: string | null | undefined;
         entityCollection?: string | null | undefined;
     };
+    nome: string;
+    tipo: string;
+    storagePath: string;
 }, {
     nome: string;
     tipo: string;

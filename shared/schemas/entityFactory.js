@@ -12,6 +12,7 @@
  * - FieldValue.serverTimestamp() garantisce timestamp server affidabile
  * - null è placeholder che indica "usa server timestamp"
  */
+import { ClienteSchema, UtenteSchema } from "./zodSchemas.js";
 /**
  * Placeholder per timestamp che deve essere sostituito con FieldValue.serverTimestamp()
  * quando si salva in Firestore.
@@ -130,27 +131,35 @@ export function createAttachmentMetadata({ entityId = null, entityCollection = n
  * @param {string|null} params.createdByEmail - Email utente creatore (null = SYSTEM)
  * @returns {object} Oggetto cliente validato
  */
-export function createCliente({ ragione_sociale, codice, email = null, telefono = null, partita_iva = null, codice_fiscale = null, indirizzo = null, citta = null, cap = null, provincia = null, note = null, status = true, createdBy = null, createdByEmail = null } = {}) {
-    if (!ragione_sociale) {
-        throw new Error('ragione_sociale è obbligatorio');
-    }
-    if (!codice) {
-        throw new Error('codice è obbligatorio');
-    }
+export function createCliente({ ragione_sociale, codice, email = null, telefono = null, partita_iva = null, codice_fiscale = null, indirizzo = null, citta = null, cap = null, provincia = null, note = null, status, createdBy = null, createdByEmail = null } = {}) {
+    const parsed = ClienteSchema.parse({
+        ragione_sociale,
+        codice,
+        email,
+        telefono,
+        partita_iva,
+        codice_fiscale,
+        indirizzo,
+        citta,
+        cap,
+        provincia,
+        note,
+        status
+    });
     const auditFields = normalizeAuditFields(createdBy, createdByEmail);
     return {
-        ragione_sociale: String(ragione_sociale),
-        codice: String(codice),
-        email: email ? String(email).toLowerCase() : null,
-        telefono: telefono ? String(telefono) : null,
-        partita_iva: partita_iva ? String(partita_iva) : null,
-        codice_fiscale: codice_fiscale ? String(codice_fiscale).toUpperCase() : null,
-        indirizzo: indirizzo ? String(indirizzo) : null,
-        citta: citta ? String(citta) : null,
-        cap: cap ? String(cap) : null,
-        provincia: provincia ? String(provincia) : null,
-        note: note ? String(note) : null,
-        status: Boolean(status),
+        ragione_sociale: parsed.ragione_sociale,
+        codice: parsed.codice,
+        email: parsed.email ?? null,
+        telefono: parsed.telefono ?? null,
+        partita_iva: parsed.partita_iva ?? null,
+        codice_fiscale: parsed.codice_fiscale ?? null,
+        indirizzo: parsed.indirizzo ?? null,
+        citta: parsed.citta ?? null,
+        cap: parsed.cap ?? null,
+        provincia: parsed.provincia ?? null,
+        note: parsed.note ?? null,
+        status: parsed.status,
         created: SERVER_TIMESTAMP,
         changed: SERVER_TIMESTAMP,
         createdBy: auditFields.createdBy,
@@ -176,19 +185,25 @@ export function createCliente({ ragione_sociale, codice, email = null, telefono 
  * @param {string|null} params.createdByEmail - Email utente creatore (null = SYSTEM)
  * @returns {object} Oggetto utente validato
  */
-export function createUtente({ uid, email, ruolo = 'operatore', displayName = '', disabled = false, photoURL = null, metadata = {}, createdBy = null, createdByEmail = null } = {}) {
-    if (!uid || !email) {
-        throw new Error('uid ed email sono obbligatori');
-    }
+export function createUtente({ uid, email, ruolo, displayName, disabled, photoURL, metadata, createdBy = null, createdByEmail = null } = {}) {
+    const parsed = UtenteSchema.parse({
+        uid,
+        email,
+        ruolo: ruolo ?? 'operatore',
+        displayName,
+        disabled,
+        photoURL,
+        metadata
+    });
     const auditFields = normalizeAuditFields(createdBy, createdByEmail);
     return {
-        uid: String(uid),
-        email: String(email).toLowerCase(),
-        ruolo: Array.isArray(ruolo) ? ruolo.map(String) : [String(ruolo)],
-        displayName: displayName ? String(displayName) : '',
-        disabled: Boolean(disabled),
-        photoURL: photoURL ? String(photoURL) : null,
-        metadata: metadata && typeof metadata === 'object' ? { ...metadata } : {},
+        uid: parsed.uid,
+        email: parsed.email,
+        ruolo: Array.isArray(parsed.ruolo) ? parsed.ruolo : [parsed.ruolo],
+        displayName: parsed.displayName,
+        disabled: parsed.disabled,
+        photoURL: parsed.photoURL ?? null,
+        metadata: parsed.metadata,
         created: SERVER_TIMESTAMP,
         changed: SERVER_TIMESTAMP,
         createdBy: auditFields.createdBy,
