@@ -12,7 +12,7 @@
  * - FieldValue.serverTimestamp() garantisce timestamp server affidabile
  * - null è placeholder che indica "usa server timestamp"
  */
-import { type ClienteInput, type UtenteInput } from './zodSchemas.ts';
+import { type AttachmentInput, type ClienteInput, type CommentInput, type UtenteInput } from './zodSchemas.ts';
 /**
  * Placeholder per timestamp che deve essere sostituito con FieldValue.serverTimestamp()
  * quando si salva in Firestore.
@@ -64,14 +64,11 @@ interface AttachmentMetadata {
     size: number;
     description: string;
 }
-interface AttachmentInput {
-    nome?: string;
-    tipo?: string;
-    storagePath?: string;
+type AttachmentFactoryInput = Partial<Omit<AttachmentInput, 'metadata'>> & {
     metadata?: AttachmentMetadataInput;
     createdBy?: NullableString;
     createdByEmail?: NullableString;
-}
+};
 interface AttachmentEntity extends AuditFields {
     nome: string;
     tipo: string;
@@ -115,13 +112,10 @@ interface UtenteEntity extends AuditFields {
     created: TimestampPlaceholder;
     changed: TimestampPlaceholder;
 }
-interface CommentInput {
-    text?: string;
-    entityId?: string;
-    entityCollection?: string;
+type CommentFactoryInput = Partial<CommentInput> & {
     createdBy?: NullableString;
     createdByEmail?: NullableString;
-}
+};
 interface CommentEntity extends AuditFields {
     text: string;
     entityId: string;
@@ -143,7 +137,7 @@ interface CommentEntity extends AuditFields {
  * @param {string|null} params.createdByEmail - Email utente creatore (null = SYSTEM)
  * @returns {object} Oggetto attachment validato
  */
-export declare function createAttachment({ nome, tipo, storagePath, metadata, createdBy, createdByEmail }?: AttachmentInput): AttachmentEntity;
+export declare function createAttachment({ nome, tipo, storagePath, metadata, createdBy, createdByEmail }?: AttachmentFactoryInput): AttachmentEntity;
 export declare function createAttachmentMetadata({ entityId, entityCollection, url, size, description }?: AttachmentMetadataInput): AttachmentMetadata;
 /**
  * 👥 Factory: Cliente
@@ -199,5 +193,5 @@ export declare function createUtente({ uid, email, ruolo, displayName, disabled,
  * @param {string|null} params.createdByEmail - Email utente creatore (null = SYSTEM)
  * @returns {object} Oggetto comment validato
  */
-export declare function createComment({ text, entityId, entityCollection, createdBy, createdByEmail }?: CommentInput): CommentEntity;
+export declare function createComment({ text, entityId, entityCollection, createdBy, createdByEmail }?: CommentFactoryInput): CommentEntity;
 export {};

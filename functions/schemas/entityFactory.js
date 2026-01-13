@@ -19,7 +19,7 @@
  * - FieldValue.serverTimestamp() garantisce timestamp server affidabile
  * - null è placeholder che indica "usa server timestamp"
  */
-import { ClienteSchema, UtenteSchema } from "./zodSchemas.js";
+import { AttachmentSchema, ClienteSchema, CommentSchema, UtenteSchema } from "./zodSchemas.js";
 /**
  * Placeholder per timestamp che deve essere sostituito con FieldValue.serverTimestamp()
  * quando si salva in Firestore.
@@ -84,21 +84,18 @@ function normalizeAuditFields(createdBy, createdByEmail) {
  * @returns {object} Oggetto attachment validato
  */
 export function createAttachment({ nome, tipo, storagePath, metadata = {}, createdBy = null, createdByEmail = null } = {}) {
-    if (!nome || !tipo || !storagePath) {
-        throw new Error('nome, tipo e storagePath sono obbligatori');
-    }
+    const parsed = AttachmentSchema.parse({
+        nome,
+        tipo,
+        storagePath,
+        metadata
+    });
     const auditFields = normalizeAuditFields(createdBy, createdByEmail);
     return {
-        nome: String(nome),
-        tipo: String(tipo),
-        storagePath: String(storagePath),
-        metadata: {
-            entityId: metadata.entityId ? String(metadata.entityId) : null,
-            entityCollection: metadata.entityCollection ? String(metadata.entityCollection) : null,
-            url: metadata.url ? String(metadata.url) : '',
-            size: Number(metadata.size) || 0,
-            description: metadata.description ? String(metadata.description) : ''
-        },
+        nome: parsed.nome,
+        tipo: parsed.tipo,
+        storagePath: parsed.storagePath,
+        metadata: createAttachmentMetadata(parsed.metadata),
         created: SERVER_TIMESTAMP,
         changed: SERVER_TIMESTAMP,
         createdBy: auditFields.createdBy,
@@ -233,14 +230,16 @@ export function createUtente({ uid, email, ruolo, displayName, disabled, photoUR
  * @returns {object} Oggetto comment validato
  */
 export function createComment({ text, entityId, entityCollection, createdBy = null, createdByEmail = null } = {}) {
-    if (!text || !entityId || !entityCollection) {
-        throw new Error('text, entityId e entityCollection sono obbligatori');
-    }
+    const parsed = CommentSchema.parse({
+        text,
+        entityId,
+        entityCollection
+    });
     const auditFields = normalizeAuditFields(createdBy, createdByEmail);
     return {
-        text: String(text),
-        entityId: String(entityId),
-        entityCollection: String(entityCollection),
+        text: parsed.text,
+        entityId: parsed.entityId,
+        entityCollection: parsed.entityCollection,
         created: SERVER_TIMESTAMP,
         changed: SERVER_TIMESTAMP,
         createdBy: auditFields.createdBy,

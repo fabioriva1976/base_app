@@ -225,7 +225,7 @@ export declare const AttachmentSchema: z.ZodObject<{
     metadata: z.ZodDefault<z.ZodObject<{
         entityId: z.ZodOptional<z.ZodNullable<z.ZodString>>;
         entityCollection: z.ZodOptional<z.ZodNullable<z.ZodString>>;
-        url: z.ZodDefault<z.ZodString>;
+        url: z.ZodDefault<z.ZodUnion<[z.ZodString, z.ZodLiteral<"">]>>;
         size: z.ZodDefault<z.ZodNumber>;
         description: z.ZodDefault<z.ZodString>;
     }, "strip", z.ZodTypeAny, {

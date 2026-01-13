@@ -6,7 +6,7 @@ Test end-to-end per verificare il sistema di controllo permessi basato su ruoli 
 
 ## 📋 Test Implementati
 
-### 1. **permessi-ruolo-operatore.cy.js**
+### 1. **permessi/permessi-ruolo-operatore.cy.js**
 
 Verifica permessi per ruolo **OPERATORE**:
 
@@ -26,7 +26,7 @@ Verifica permessi per ruolo **OPERATORE**:
 
 ---
 
-### 2. **permessi-ruolo-admin.cy.js**
+### 2. **permessi/permessi-ruolo-admin.cy.js**
 
 Verifica permessi per ruolo **ADMIN**:
 
@@ -47,7 +47,7 @@ Verifica permessi per ruolo **ADMIN**:
 
 ---
 
-### 3. **permessi-ruolo-superuser.cy.js**
+### 3. **permessi/permessi-ruolo-superuser.cy.js**
 
 Verifica permessi per ruolo **SUPERUSER**:
 
@@ -103,20 +103,20 @@ npm run test:e2e:permessi:ui
 docker exec cypress_ui npm run test:e2e:permessi:headless
 
 # Oppure esegui un test specifico
-docker exec cypress_ui npx cypress run --spec "cypress/e2e/permessi-ruolo-operatore.cy.js"
+docker exec cypress_ui npx cypress run --spec "cypress/e2e/permessi/permessi-ruolo-operatore.cy.js"
 ```
 
 ### Eseguire Test Specifico
 
 ```bash
 # Solo operatore
-npx cypress run --spec "cypress/e2e/permessi-ruolo-operatore.cy.js"
+npx cypress run --spec "cypress/e2e/permessi/permessi-ruolo-operatore.cy.js"
 
 # Solo admin
-npx cypress run --spec "cypress/e2e/permessi-ruolo-admin.cy.js"
+npx cypress run --spec "cypress/e2e/permessi/permessi-ruolo-admin.cy.js"
 
 # Solo superuser
-npx cypress run --spec "cypress/e2e/permessi-ruolo-superuser.cy.js"
+npx cypress run --spec "cypress/e2e/permessi/permessi-ruolo-superuser.cy.js"
 ```
 
 ---
@@ -311,9 +311,9 @@ npm run test:e2e:permessi:ui
 
 Prima di deployare in produzione, verifica che tutti i test passino:
 
-- [ ] `permessi-ruolo-operatore.cy.js` → Tutti i test verdi
-- [ ] `permessi-ruolo-admin.cy.js` → Tutti i test verdi
-- [ ] `permessi-ruolo-superuser.cy.js` → Tutti i test verdi
+- [ ] `permessi/permessi-ruolo-operatore.cy.js` → Tutti i test verdi
+- [ ] `permessi/permessi-ruolo-admin.cy.js` → Tutti i test verdi
+- [ ] `permessi/permessi-ruolo-superuser.cy.js` → Tutti i test verdi
 - [ ] Nessun falso positivo (utenti vedono pagine che non dovrebbero)
 - [ ] Nessun falso negativo (utenti bloccati da pagine che dovrebbero vedere)
 - [ ] Pagina "Accesso Negato" ha design corretto e link funzionanti

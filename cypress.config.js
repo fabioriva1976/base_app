@@ -27,9 +27,9 @@ export default defineConfig({
       'cypress/e2e/anagrafica-clienti/anagrafica-clienti-note.cy.js',
 
       // Permessi tests
-      'cypress/e2e/permessi-ruolo-operatore.cy.js',
-      'cypress/e2e/permessi-ruolo-admin.cy.js',
-      'cypress/e2e/permessi-ruolo-superuser.cy.js'
+      'cypress/e2e/permessi/permessi-ruolo-operatore.cy.js',
+      'cypress/e2e/permessi/permessi-ruolo-admin.cy.js',
+      'cypress/e2e/permessi/permessi-ruolo-superuser.cy.js'
     ],
   },
 });

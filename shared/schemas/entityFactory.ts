@@ -82,7 +82,8 @@ interface AttachmentMetadata {
   description: string;
 }
 
-type AttachmentFactoryInput = Partial<AttachmentInput> & {
+type AttachmentFactoryInput = Partial<Omit<AttachmentInput, 'metadata'>> & {
+  metadata?: AttachmentMetadataInput;
   createdBy?: NullableString;
   createdByEmail?: NullableString;
 };

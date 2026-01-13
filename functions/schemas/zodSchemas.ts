@@ -245,7 +245,7 @@ export const AttachmentSchema = z.object({
   metadata: z.object({
     entityId: z.string().nullable().optional(),
     entityCollection: z.string().nullable().optional(),
-    url: z.string().url('URL non valido').default(''),
+    url: z.string().url('URL non valido').or(z.literal('')).default(''),
     size: z.number().min(0).default(0),
     description: z.string().max(500, 'Massimo 500 caratteri').default('')
   }).default({})
