@@ -13,7 +13,16 @@
  * - null è placeholder che indica "usa server timestamp"
  */
 
-import { ClienteSchema, UtenteSchema, type ClienteInput, type UtenteInput } from './zodSchemas.ts';
+import {
+  AttachmentSchema,
+  ClienteSchema,
+  CommentSchema,
+  UtenteSchema,
+  type AttachmentInput,
+  type ClienteInput,
+  type CommentInput,
+  type UtenteInput
+} from './zodSchemas.ts';
 
 /**
  * Placeholder per timestamp che deve essere sostituito con FieldValue.serverTimestamp()
@@ -73,14 +82,10 @@ interface AttachmentMetadata {
   description: string;
 }
 
-interface AttachmentInput {
-  nome?: string;
-  tipo?: string;
-  storagePath?: string;
-  metadata?: AttachmentMetadataInput;
+type AttachmentFactoryInput = Partial<AttachmentInput> & {
   createdBy?: NullableString;
   createdByEmail?: NullableString;
-}
+};
 
 interface AttachmentEntity extends AuditFields {
   nome: string;
@@ -130,13 +135,10 @@ interface UtenteEntity extends AuditFields {
   changed: TimestampPlaceholder;
 }
 
-interface CommentInput {
-  text?: string;
-  entityId?: string;
-  entityCollection?: string;
+type CommentFactoryInput = Partial<CommentInput> & {
   createdBy?: NullableString;
   createdByEmail?: NullableString;
-}
+};
 
 interface CommentEntity extends AuditFields {
   text: string;
@@ -189,24 +191,21 @@ export function createAttachment({
   metadata = {},
   createdBy = null,
   createdByEmail = null
-}: AttachmentInput = {}): AttachmentEntity {
-  if (!nome || !tipo || !storagePath) {
-    throw new Error('nome, tipo e storagePath sono obbligatori');
-  }
+}: AttachmentFactoryInput = {}): AttachmentEntity {
+  const parsed = AttachmentSchema.parse({
+    nome,
+    tipo,
+    storagePath,
+    metadata
+  });
 
   const auditFields = normalizeAuditFields(createdBy, createdByEmail);
 
   return {
-    nome: String(nome),
-    tipo: String(tipo),
-    storagePath: String(storagePath),
-    metadata: {
-      entityId: metadata.entityId ? String(metadata.entityId) : null,
-      entityCollection: metadata.entityCollection ? String(metadata.entityCollection) : null,
-      url: metadata.url ? String(metadata.url) : '',
-      size: Number(metadata.size) || 0,
-      description: metadata.description ? String(metadata.description) : ''
-    },
+    nome: parsed.nome,
+    tipo: parsed.tipo,
+    storagePath: parsed.storagePath,
+    metadata: createAttachmentMetadata(parsed.metadata),
     created: SERVER_TIMESTAMP,
     changed: SERVER_TIMESTAMP,
     createdBy: auditFields.createdBy,
@@ -385,17 +384,19 @@ export function createComment({
   entityCollection,
   createdBy = null,
   createdByEmail = null
-}: CommentInput = {}): CommentEntity {
-  if (!text || !entityId || !entityCollection) {
-    throw new Error('text, entityId e entityCollection sono obbligatori');
-  }
+}: CommentFactoryInput = {}): CommentEntity {
+  const parsed = CommentSchema.parse({
+    text,
+    entityId,
+    entityCollection
+  });
 
   const auditFields = normalizeAuditFields(createdBy, createdByEmail);
 
   return {
-    text: String(text),
-    entityId: String(entityId),
-    entityCollection: String(entityCollection),
+    text: parsed.text,
+    entityId: parsed.entityId,
+    entityCollection: parsed.entityCollection,
     created: SERVER_TIMESTAMP,
     changed: SERVER_TIMESTAMP,
     createdBy: auditFields.createdBy,

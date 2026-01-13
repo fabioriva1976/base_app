@@ -41,14 +41,13 @@ Il sistema implementa un **Role-Based Access Control (RBAC)** con 3 livelli di r
 - ✅ Eliminare clienti
 - ✅ **Visualizzare utenti**
 - ✅ Creare/modificare/eliminare utenti
-- ✅ Gestire settings
 - ✅ Visualizzare audit logs
 - ❌ **NON può** creare altri superuser
+- ❌ **NON può** accedere alle configurazioni (solo superuser)
 
 **Menu visibile**:
-- Dashboard
-- Clienti
-- **Utenti** ← Aggiunto rispetto a operatore
+- **Menu principale**: Dashboard, Clienti
+- **Menu profilo**: Il Mio Profilo, **Utenti**
 
 ### 🟣 SUPERUSER
 
@@ -58,11 +57,8 @@ Il sistema implementa un **Role-Based Access Control (RBAC)** con 3 livelli di r
 - ✅ Accesso illimitato a tutte le funzionalità
 
 **Menu visibile**:
-- Dashboard
-- Clienti
-- Utenti
-- Settings (quando implementato)
-- Audit Logs (quando implementato)
+- **Menu principale**: Dashboard, Clienti
+- **Menu profilo**: Il Mio Profilo, Utenti, SMTP, Agenti AI
 
 ---
 
@@ -103,7 +99,7 @@ export function isAdmin(userRole): boolean
 export function canAccessRoute(userRole, path): boolean
 ```
 
-### 2. Sidebar Dinamica
+### 2. Sidebar Dinamica (Menu Principale)
 
 **File**: [src/components/Sidebar.astro](../../src/components/Sidebar.astro)
 
@@ -113,8 +109,7 @@ const userRole = user?.ruolo;
 
 const allNavItems = [
   { href: '/dashboard', label: 'Dashboard', permission: 'canViewDashboard' },
-  { href: '/anagrafica-clienti', label: 'Clienti', permission: 'canViewClienti' },
-  { href: '/users', label: 'Utenti', permission: 'canViewUsers' }  // ← Solo admin
+  { href: '/anagrafica-clienti', label: 'Clienti', permission: 'canViewClienti' }
 ];
 
 // Filtra in base ai permessi
@@ -123,7 +118,23 @@ const navItems = allNavItems.filter(item =>
 );
 ```
 
-### 3. Middleware Protezione Rotte
+### 3. Sidebar Profilo (Menu Profilo)
+
+**File**: [src/components/SidebarProfile.astro](../../src/components/SidebarProfile.astro)
+
+```typescript
+const user = Astro.locals.user;
+const userRole = user?.ruolo;
+
+const profileItems = [
+  { href: '/profile', label: 'Il Mio Profilo', visible: true },
+  { href: '/users', label: 'Utenti', visible: hasPermission(userRole, 'canViewUsers') },
+  { href: '/settings-smtp', label: 'SMTP', visible: hasPermission(userRole, 'canViewSettings') },
+  { href: '/settings-ai', label: 'Agenti AI', visible: hasPermission(userRole, 'canViewSettings') }
+];
+```
+
+### 4. Middleware Protezione Rotte
 
 **File**: [src/middleware/index.ts](../../src/middleware/index.ts)
 
@@ -135,7 +146,7 @@ if (!canAccessRoute(userRole, url.pathname)) {
 }
 ```
 
-### 4. Pagina Accesso Negato
+### 5. Pagina Accesso Negato
 
 **File**: [src/pages/accesso-negato.astro](../../src/pages/accesso-negato.astro)
 
@@ -146,14 +157,16 @@ Pagina dedicata mostrata quando un utente tenta di accedere a una risorsa senza 
 - ✅ Pulsanti: "Torna alla Dashboard" e "Indietro"
 - ✅ Box informativo con suggerimenti
 
-**Rotte protette**:
+**Rotte protette (middleware)**:
 ```typescript
 export const PROTECTED_ROUTES = {
   '/users': 'canViewUsers',           // Solo admin/superuser
-  '/settings': 'canViewSettings',     // Solo admin/superuser
   '/audit-logs': 'canViewAuditLogs'   // Solo admin/superuser
 };
 ```
+
+**Rotte protette (page-level)**:
+- `/settings-smtp` e `/settings-ai` fanno redirect a `/accesso-negato` se non autorizzato.
 
 ---
 
@@ -174,7 +187,7 @@ export const PROTECTED_ROUTES = {
 
 3. **Verifica**:
    - Login all'app
-   - Controlla sidebar
+   - Controlla sidebar principale
    - ✅ Vedi: Dashboard, Clienti
    - ❌ **NON vedi**: Utenti
 
@@ -191,7 +204,7 @@ export const PROTECTED_ROUTES = {
    - ✅ Console mostra: `[MIDDLEWARE DEV] Accesso negato: utente con ruolo "operatore" non può accedere a "/users"`
    - ✅ Puoi cliccare "Torna alla Dashboard" o "Indietro"
 
-### Test 3: Admin vede link "Utenti"
+### Test 3: Admin vede link "Utenti" nel menu profilo
 
 1. **Setup**: Imposta utente come admin
    ```bash
@@ -203,14 +216,14 @@ export const PROTECTED_ROUTES = {
 
 3. **Verifica**:
    - Login all'app
-   - Controlla sidebar
-   - ✅ Vedi: Dashboard, Clienti, **Utenti**
+   - Vai su `/profile`
+   - ✅ Vedi: Il Mio Profilo, **Utenti**
 
 ### Test 4: Admin può accedere a /users
 
 1. **Setup**: Stesso setup Test 3 (admin)
 
-2. **Azione**: Clicca su "Utenti" nel menu
+2. **Azione**: Clicca su "Utenti" nel menu profilo
 
 3. **Verifica**:
    - ✅ Accedi alla pagina `/users`
@@ -264,16 +277,19 @@ sequenceDiagram
 - Import `hasPermission()`
 - Lettura ruolo da `Astro.locals.user`
 - Filtro voci menu in base a permessi
-- Aggiunto link "Utenti" con `permission: 'canViewUsers'`
+- Menu principale contiene solo Dashboard/Clienti
 
-### 3. [src/middleware/index.ts](../../src/middleware/index.ts) (MODIFICATO)
+### 3. [src/components/SidebarProfile.astro](../../src/components/SidebarProfile.astro) (MODIFICATO)
+- Menu profilo con Utenti/SMTP/Agenti AI in base ai permessi
+
+### 4. [src/middleware/index.ts](../../src/middleware/index.ts) (MODIFICATO)
 - Import `canAccessRoute()`
 - Controllo permessi dopo autenticazione
 - Redirect a `/accesso-negato` se accesso negato
 - Aggiunto `/accesso-negato` ai path pubblici
 - Implementato sia per DEV che PROD
 
-### 4. [src/pages/accesso-negato.astro](../../src/pages/accesso-negato.astro) (NUOVO)
+### 5. [src/pages/accesso-negato.astro](../../src/pages/accesso-negato.astro) (NUOVO)
 - Pagina dedicata per accesso negato
 - Design professionale con animazioni
 - Icona shield con X rossa
@@ -287,28 +303,17 @@ sequenceDiagram
 
 ### Aggiungere Nuova Rotta Protetta
 
-**Esempio**: Proteggere `/settings` solo per admin
+**Esempio**: Proteggere `/reports` con middleware
 
 1. **Aggiungi permesso in permissions.ts**:
 ```typescript
 export const PROTECTED_ROUTES = {
   '/users': 'canViewUsers',
-  '/settings': 'canViewSettings'  // ← Nuovo
+  '/reports': 'canViewReports'
 };
 ```
 
-2. **Aggiungi link nel menu** (Sidebar.astro):
-```typescript
-const allNavItems = [
-  // ...
-  {
-    href: '/settings',
-    label: 'Impostazioni',
-    icon: `<path d="...">`,
-    permission: 'canViewSettings'  // ← Nuovo
-  }
-];
-```
+2. **Aggiungi link nel menu** (Sidebar.astro o SidebarProfile.astro)
 
 3. **Fatto!** Il middleware protegge automaticamente la rotta
 
@@ -384,8 +389,8 @@ ruolo: z.union([
 | Create Utente | ❌ | ✅ | ✅ |
 | Update Utente | ❌ | ✅ | ✅ |
 | Delete Utente | ❌ | ✅ | ✅ |
-| View Settings | ❌ | ✅ | ✅ |
-| Update Settings | ❌ | ✅ | ✅ |
+| View Settings | ❌ | ❌ | ✅ |
+| Update Settings | ❌ | ❌ | ✅ |
 | View Audit Logs | ❌ | ✅ | ✅ |
 | Manage Superusers | ❌ | ❌ | ✅ |
 
@@ -397,22 +402,24 @@ ruolo: z.union([
 - [ ] Login come operatore
 - [ ] Verifica menu mostra solo: Dashboard, Clienti
 - [ ] Verifica menu NON mostra: Utenti
-- [ ] Prova navigare a `/users` → redirect a `/dashboard`
+- [ ] Prova navigare a `/users` → redirect a `/accesso-negato`
 - [ ] Verifica console mostra "Accesso negato"
 - [ ] Verifica può creare/modificare clienti
 - [ ] Verifica NON può eliminare clienti (API restituisce 403)
 
 ### Test Admin
 - [ ] Login come admin
-- [ ] Verifica menu mostra: Dashboard, Clienti, Utenti
-- [ ] Click su "Utenti" → accesso OK
+- [ ] Verifica menu principale mostra: Dashboard, Clienti
+- [ ] Verifica menu profilo mostra: Il Mio Profilo, Utenti
+- [ ] Click su "Utenti" (menu profilo) → accesso OK
 - [ ] Verifica può vedere lista utenti
 - [ ] Verifica può creare/modificare/eliminare clienti
 - [ ] Verifica può gestire utenti
 
 ### Test Superuser
 - [ ] Login come superuser
-- [ ] Verifica può fare tutto
+- [ ] Verifica menu profilo mostra: Utenti, SMTP, Agenti AI
+- [ ] Verifica può accedere a `/settings-smtp` e `/settings-ai`
 - [ ] Verifica può creare altri superuser
 
 ---

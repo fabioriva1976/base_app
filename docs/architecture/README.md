@@ -28,7 +28,7 @@ Pattern per aggiornamenti realtime UI con nanostores + Firebase snapshots.
 ---
 
 ### [FACTORIES_SYNC.md](FACTORIES_SYNC.md)
-Sistema di sincronizzazione delle factory functions tra frontend (ES6 modules) e backend (CommonJS).
+Sistema di sincronizzazione delle factory functions tra frontend e backend (ESM).
 
 **Quando usare:** Quando devi modificare o creare nuove factory functions per entita.
 

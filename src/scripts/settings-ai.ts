@@ -198,7 +198,7 @@ function updateStatus(data) {
     const modelElement = document.getElementById('status-model');
     const temperatureElement = document.getElementById('status-temperature');
     const maxTokensElement = document.getElementById('status-maxTokens');
-    const updatedAtElement = document.getElementById('status-updatedAt');
+    const changedElement = document.getElementById('status-changed');
 
     if (providerElement) {
         const providerNames = {
@@ -223,10 +223,10 @@ function updateStatus(data) {
         maxTokensElement.textContent = data.maxTokens || '-';
     }
 
-    const changedValue = data.changed || data.updatedAt;
-    if (updatedAtElement && changedValue) {
+    const changedValue = data.changed;
+    if (changedElement && changedValue) {
         const date = changedValue.toDate ? changedValue.toDate() : new Date(changedValue);
-        updatedAtElement.textContent = date.toLocaleDateString('it-IT', {
+        changedElement.textContent = date.toLocaleDateString('it-IT', {
             year: 'numeric',
             month: 'long',
             day: 'numeric',

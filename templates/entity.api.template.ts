@@ -92,17 +92,11 @@ export const update__ENTITY_PASCAL__Api = onCall(
       const oldDoc = await docRef.get();
       const oldData = oldDoc.exists ? oldDoc.data() : null;
 
-      const now = new Date().toISOString();
       const dataToUpdate = {
         ...updateData,
-        updatedAt: FieldValue.serverTimestamp(),
-        changed: now,
+        changed: FieldValue.serverTimestamp(),
         lastModifiedBy: uid,
-        lastModifiedByEmail: request.auth.token.email,
-        createdAt: FieldValue.delete(),
-        updatedAt: FieldValue.delete(),
-        createdBy: FieldValue.delete(),
-        createdByEmail: FieldValue.delete()
+        lastModifiedByEmail: request.auth.token.email
       };
 
       await docRef.update(dataToUpdate);

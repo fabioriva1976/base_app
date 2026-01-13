@@ -2,7 +2,7 @@
  * 🧪 Test Permessi - Ruolo SUPERUSER
  *
  * Verifica che gli utenti con ruolo "superuser" abbiano accesso completo:
- * - ✅ Può vedere: Dashboard, Clienti, Utenti, Configurazioni
+ * - ✅ Può vedere: Dashboard, Clienti (menu principale), Utenti e Configurazioni (menu profilo)
  * - ✅ Nessuna restrizione
  * - ✅ Accesso a tutte le pagine senza limitazioni
  */
@@ -21,20 +21,41 @@ describe('Permessi Ruolo SUPERUSER', () => {
   });
 
   describe('🔍 Verifica Link Menu Sidebar', () => {
-    it('dovrebbe mostrare tutti i link del menu', () => {
+    it('dovrebbe mostrare solo Dashboard e Clienti nel menu principale', () => {
       cy.visit('/dashboard');
 
-      // ✅ Tutti i link visibili (superuser ha accesso completo)
+      // ✅ Link visibili (menu principale)
       cy.contains('a', 'Dashboard').should('be.visible');
       cy.contains('a', 'Clienti').should('be.visible');
-      cy.contains('a', 'Utenti').should('be.visible');
-      cy.contains('a', 'Configurazioni').should('be.visible');
+
+      // ❌ Link non presenti nel menu principale
+      cy.contains('a', 'Utenti').should('not.exist');
+      cy.contains('a', 'SMTP').should('not.exist');
+      cy.contains('a', 'Agenti AI').should('not.exist');
     });
 
-    it('dovrebbe mostrare esattamente 4 voci di menu', () => {
+    it('dovrebbe mostrare esattamente 2 voci di menu', () => {
       cy.visit('/dashboard');
 
       // Conta solo i link di navigazione (escludi logout)
+      cy.get('.sidebar nav:not(.nav-bottom) .nav-menu li').should('have.length', 2);
+    });
+  });
+
+  describe('🔍 Verifica Link Menu Profilo', () => {
+    it('dovrebbe mostrare Utenti e Configurazioni', () => {
+      cy.visit('/profile');
+
+      // ✅ Link visibili (menu profilo)
+      cy.contains('a', 'Il Mio Profilo').should('be.visible');
+      cy.contains('a', 'Utenti').should('be.visible');
+      cy.contains('a', 'SMTP').should('be.visible');
+      cy.contains('a', 'Agenti AI').should('be.visible');
+    });
+
+    it('dovrebbe mostrare esattamente 4 voci nel menu profilo', () => {
+      cy.visit('/profile');
+
       cy.get('.sidebar nav:not(.nav-bottom) .nav-menu li').should('have.length', 4);
     });
   });
@@ -61,10 +82,10 @@ describe('Permessi Ruolo SUPERUSER', () => {
       cy.url().should('not.include', '/accesso-negato');
     });
 
-    it('dovrebbe accedere a /configurazioni', () => {
-      cy.visit('/configurazioni');
+    it('dovrebbe accedere a /settings-smtp', () => {
+      cy.visit('/settings-smtp');
 
-      cy.url().should('include', '/configurazioni');
+      cy.url().should('include', '/settings-smtp');
       cy.url().should('not.include', '/accesso-negato');
     });
   });
@@ -77,16 +98,16 @@ describe('Permessi Ruolo SUPERUSER', () => {
       cy.contains('a', 'Clienti').click();
       cy.url().should('include', '/anagrafica-clienti');
 
-      // Clienti → Utenti
+      // Clienti → Profilo
+      cy.get('#profile-toggle').click();
+      cy.url().should('include', '/profile');
+
+      // Profilo → Utenti
       cy.contains('a', 'Utenti').click();
       cy.url().should('include', '/users');
 
-      // Utenti → Configurazioni
-      cy.contains('a', 'Configurazioni').click();
-      cy.url().should('include', '/configurazioni');
-
-      // Configurazioni → Dashboard
-      cy.contains('a', 'Dashboard').click();
+      // Utenti → Dashboard (torna all'app dal menu profilo)
+      cy.get('#back-to-app-btn').click();
       cy.url().should('include', '/dashboard');
     });
 
@@ -95,7 +116,8 @@ describe('Permessi Ruolo SUPERUSER', () => {
         '/dashboard',
         '/anagrafica-clienti',
         '/users',
-        '/configurazioni'
+        '/settings-smtp',
+        '/settings-ai'
       ];
 
       pages.forEach((page) => {
@@ -108,21 +130,23 @@ describe('Permessi Ruolo SUPERUSER', () => {
 
   describe('🔒 Confronto con Altri Ruoli', () => {
     it('superuser dovrebbe avere più permessi di admin', () => {
-      cy.visit('/dashboard');
+      cy.visit('/profile');
 
-      // Superuser vede "Configurazioni" (admin no)
-      cy.contains('a', 'Configurazioni').should('be.visible');
+      // Superuser vede configurazioni (admin no)
+      cy.contains('a', 'SMTP').should('be.visible');
+      cy.contains('a', 'Agenti AI').should('be.visible');
 
       // Verifica accesso effettivo
-      cy.visit('/configurazioni');
-      cy.url().should('include', '/configurazioni');
+      cy.visit('/settings-smtp');
+      cy.url().should('include', '/settings-smtp');
       cy.url().should('not.include', '/accesso-negato');
     });
 
     it('superuser non dovrebbe mai vedere pagina accesso negato', () => {
       const protectedPages = [
         '/users',
-        '/configurazioni',
+        '/settings-smtp',
+        '/settings-ai',
         '/settings',
         '/audit-logs'
       ];
@@ -148,29 +172,29 @@ describe('Permessi Ruolo SUPERUSER', () => {
     });
 
     it('dovrebbe accedere a tutte le rotte protette', () => {
-      cy.visit('/dashboard');
+      cy.visit('/profile');
 
-      // Verifica numero di voci menu (superuser ha tutti i link)
-      cy.get('.sidebar nav:not(.nav-bottom) .nav-menu li').should('have.length.greaterThan', 3);
+      // Verifica numero di voci menu (superuser ha tutti i link nel profilo)
+      cy.get('.sidebar nav:not(.nav-bottom) .nav-menu li').should('have.length', 4);
     });
   });
 
   describe('🧪 Test Robustezza', () => {
     it('dovrebbe mantenere permessi dopo refresh pagina', () => {
-      cy.visit('/configurazioni');
-      cy.url().should('include', '/configurazioni');
+      cy.visit('/settings-smtp');
+      cy.url().should('include', '/settings-smtp');
 
       // Refresh
       cy.reload();
 
       // Dovrebbe ancora essere su configurazioni
-      cy.url().should('include', '/configurazioni');
+      cy.url().should('include', '/settings-smtp');
       cy.url().should('not.include', '/accesso-negato');
     });
 
     it('dovrebbe mantenere permessi navigando avanti/indietro', () => {
       cy.visit('/dashboard');
-      cy.visit('/configurazioni');
+      cy.visit('/settings-smtp');
 
       // Indietro
       cy.go('back');
@@ -178,7 +202,7 @@ describe('Permessi Ruolo SUPERUSER', () => {
 
       // Avanti
       cy.go('forward');
-      cy.url().should('include', '/configurazioni');
+      cy.url().should('include', '/settings-smtp');
       cy.url().should('not.include', '/accesso-negato');
     });
   });

@@ -177,7 +177,15 @@ async function saveEntity(e) {
         showSaveMessage('save-message', err.message || 'Dati non validi', true);
         return;
     }
-    const { createdAt, updatedAt, createdBy, createdByEmail, ...payloadToSend } = normalized;
+    const {
+        created,
+        changed,
+        createdBy,
+        createdByEmail,
+        lastModifiedBy,
+        lastModifiedByEmail,
+        ...payloadToSend
+    } = normalized;
 
     const saveBtn = document.querySelector('button[type=\"submit\"][form=\"entity-form\"]');
     const originalText = saveBtn.textContent;

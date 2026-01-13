@@ -208,8 +208,6 @@ export class ActionManager {
                 'collection',
                 'source',
                 'actionType',
-                'createdAt',
-                'updatedAt',
                 'createdBy',
                 'createdByEmail',
                 'lastModifiedBy',
@@ -270,8 +268,6 @@ export class ActionManager {
             'timestamp',
             'lastModifiedBy',
             'lastModifiedByEmail',
-            'createdAt',
-            'updatedAt',
             'createdBy',
             'createdByEmail',
             'updatedBy'
@@ -314,8 +310,6 @@ export class ActionManager {
             'timestamp',
             'lastModifiedBy',
             'lastModifiedByEmail',
-            'createdAt',
-            'updatedAt',
             'createdBy',
             'createdByEmail',
             'updatedBy'

@@ -249,7 +249,7 @@ function updateStatus(data) {
     const portElement = document.getElementById('status-port');
     const fromElement = document.getElementById('status-from');
     const secureElement = document.getElementById('status-secure');
-    const updatedAtElement = document.getElementById('status-updatedAt');
+    const changedElement = document.getElementById('status-changed');
 
     if (hostElement) {
         hostElement.textContent = data.host || 'Non configurato';
@@ -269,10 +269,10 @@ function updateStatus(data) {
         secureElement.className = data.secure ? 'status-value configured' : 'status-value';
     }
 
-    const changedValue = data.changed || data.updatedAt;
-    if (updatedAtElement && changedValue) {
+    const changedValue = data.changed;
+    if (changedElement && changedValue) {
         const date = changedValue.toDate ? changedValue.toDate() : new Date(changedValue);
-        updatedAtElement.textContent = date.toLocaleDateString('it-IT', {
+        changedElement.textContent = date.toLocaleDateString('it-IT', {
             year: 'numeric',
             month: 'long',
             day: 'numeric',

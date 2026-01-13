@@ -23,6 +23,7 @@ Quando crei una nuova entita (es: `prodotti`), devi creare questi file:
 
 ### 1. Schema e Factory
 - [ ] `shared/schemas/entityFactory.ts` - Aggiungi funzione `createProdotto()`
+- [ ] `shared/schemas/zodSchemas.ts` - Aggiungi `ProdottoSchema` e `ProdottoUpdateSchema`
 
 ### 2. API Backend
 - [ ] `functions/api/prodotti.ts` - CRUD CUD (Create, Update, Delete). La lista e realtime via store.
@@ -98,7 +99,7 @@ Template per entita che gestiscono file.
 
 ---
 
-## 🏗️ PATTERN 1: Schema Entity Factory
+## 🏗️ PATTERN 1: Schema Entity Factory (con Zod)
 
 **File:** `shared/schemas/entityFactory.ts`
 
@@ -114,10 +115,10 @@ Template per entita che gestiscono file.
  * @param {Object} params - Parametri dell'entita
  * @param {string} params.[CAMPO_OBBLIGATORIO] - Descrizione campo
  * @param {string} [params.[CAMPO_OPZIONALE]] - Descrizione campo opzionale
- * @param {string} [params.lastModifiedBy] - UID utente che crea l'entita
- * @param {string} [params.lastModifiedByEmail] - Email utente che crea l'entita
+ * @param {string|null} [params.createdBy] - UID utente creatore (null = SYSTEM)
+ * @param {string|null} [params.createdByEmail] - Email utente creatore (null = SYSTEM)
  * @returns {Object} Oggetto [ENTITY_NAME] validato
- * @throws {Error} Se campi obbligatori mancanti
+ * @throws {Error} Se i dati non rispettano lo schema Zod
  */
 export function create[EntityName]({
   // CAMPI OBBLIGATORI
@@ -128,31 +129,35 @@ export function create[EntityName]({
   status = true,
 
   // CAMPI AUDIT (sempre presenti)
-  lastModifiedBy = null,
-  lastModifiedByEmail = null
+  createdBy = null,
+  createdByEmail = null
 } = {}) {
-  // 1. VALIDAZIONE: Verifica campi obbligatori
-  if (![campo_obbligatorio]) {
-    throw new Error('[campo_obbligatorio] è obbligatorio');
-  }
+  // 1. VALIDAZIONE: usa Zod
+  const parsed = [EntityName]Schema.parse({
+    campo_obbligatorio,
+    campo_opzionale,
+    status
+  });
 
-  // 2. TIMESTAMP: Genera timestamp ISO
-  const timestamp = new Date().toISOString();
+  // 2. AUDIT: normalizza campi audit
+  const auditFields = normalizeAuditFields(createdBy, createdByEmail);
 
   // 3. RETURN: Oggetto validato con tutti i campi tipizzati
   return {
     // Campi obbligatori
-    [campo_obbligatorio]: String([campo_obbligatorio]),
+    [campo_obbligatorio]: parsed.campo_obbligatorio,
 
     // Campi opzionali (normalizzati)
-    [campo_opzionale]: [campo_opzionale] ? String([campo_opzionale]) : null,
-    status: Boolean(status),
+    [campo_opzionale]: parsed.campo_opzionale ?? null,
+    status: parsed.status,
 
     // Campi audit (sempre presenti)
-    created: timestamp,
-    changed: timestamp,
-    lastModifiedBy: lastModifiedBy ? String(lastModifiedBy) : null,
-    lastModifiedByEmail: lastModifiedByEmail ? String(lastModifiedByEmail).toLowerCase() : null
+    created: SERVER_TIMESTAMP,
+    changed: SERVER_TIMESTAMP,
+    createdBy: auditFields.createdBy,
+    createdByEmail: auditFields.createdByEmail,
+    lastModifiedBy: auditFields.lastModifiedBy,
+    lastModifiedByEmail: auditFields.lastModifiedByEmail
   };
 }
 ```
@@ -165,26 +170,32 @@ export function createCliente({
   email = null,     // OPZIONALE
   telefono = null,
   partita_iva = null,
-  status = true,
-  lastModifiedBy = null,
-  lastModifiedByEmail = null
+  status,
+  createdBy = null,
+  createdByEmail = null
 } = {}) {
-  if (!ragione_sociale) {
-    throw new Error('ragione_sociale è obbligatorio');
-  }
+  const parsed = ClienteSchema.parse({
+    ragione_sociale,
+    email,
+    telefono,
+    partita_iva,
+    status
+  });
 
-  const timestamp = new Date().toISOString();
+  const auditFields = normalizeAuditFields(createdBy, createdByEmail);
 
   return {
-    ragione_sociale: String(ragione_sociale),
-    email: email ? String(email).toLowerCase() : null,
-    telefono: telefono ? String(telefono) : null,
-    partita_iva: partita_iva ? String(partita_iva) : null,
-    status: Boolean(status),
-    created: timestamp,
-    changed: timestamp,
-    lastModifiedBy: lastModifiedBy ? String(lastModifiedBy) : null,
-    lastModifiedByEmail: lastModifiedByEmail ? String(lastModifiedByEmail).toLowerCase() : null
+    ragione_sociale: parsed.ragione_sociale,
+    email: parsed.email ?? null,
+    telefono: parsed.telefono ?? null,
+    partita_iva: parsed.partita_iva ?? null,
+    status: parsed.status,
+    created: SERVER_TIMESTAMP,
+    changed: SERVER_TIMESTAMP,
+    createdBy: auditFields.createdBy,
+    createdByEmail: auditFields.createdByEmail,
+    lastModifiedBy: auditFields.lastModifiedBy,
+    lastModifiedByEmail: auditFields.lastModifiedByEmail
   };
 }
 ```
@@ -208,11 +219,12 @@ export function createCliente({
  * - LIST: gestita da realtime store lato client (no API list)
  */
 
-import { onCall, HttpsError } from "firebase-functions/v2/https";
+import { onCall, HttpsError } from "firebase-functions/v2/https"; // Funzioni Callable
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { getApps, initializeApp } from "firebase-admin/app";
-import { requireAdmin } from "../utils/authHelpers.ts";
-import { create[EntityName] } from "../../shared/schemas/entityFactory.ts";
+import { requireAdmin } from "../utils/authHelpers.ts"; // Helper per sicurezza
+import { [EntityName]Schema, [EntityName]UpdateSchema } from "../../shared/schemas/zodSchemas.ts"; // Schemi Zod
+import { create[EntityName] } from "../../shared/schemas/entityFactory.ts"; // Factory
 import { region, corsOrigins } from "../config.ts";
 import { logAudit, AuditAction } from "../utils/auditLogger.ts";
 
@@ -228,18 +240,23 @@ const COLLECTION_NAME = '[entita]';
 /**
  * 🎯 STEP 1: Validazione Dati
  *
- * Valida i dati prima di salvarli in Firestore.
+ * Valida i dati usando lo schema Zod.
  * Lancia HttpsError se i dati non sono validi.
+ * @param {object} data - I dati da validare
+ * @param {boolean} isPartial - Se true, usa lo schema parziale per UPDATE
+ * @returns {object} I dati validati e tipizzati
  */
-function validate[EntityName]Data(data) {
-    if (!data.[campo_obbligatorio] || typeof data.[campo_obbligatorio] !== 'string') {
-        throw new HttpsError('invalid-argument', '[Campo obbligatorio] è obbligatorio.');
-    }
+function validate[EntityName]Data(data: any, isPartial = false) {
+    const schema = isPartial ? [EntityName]UpdateSchema : [EntityName]Schema;
+    const result = schema.safeParse(data);
 
-    // Validazioni aggiuntive (email, numeri, etc.)
-    if (data.email && !data.email.includes('@')) {
-        throw new HttpsError('invalid-argument', 'Email non valida.');
+    if (!result.success) {
+        // Estrae il primo errore per un messaggio chiaro
+        const firstError = result.error.errors[0];
+        const errorMessage = `${firstError.path.join('.')}: ${firstError.message}`;
+        throw new HttpsError('invalid-argument', errorMessage);
     }
+    return result.data;
 }
 
 /**
@@ -260,8 +277,8 @@ export const [entita]CreateApi = onCall({
     const data = request.data;
 
     try {
-        // 2. VALIDAZIONE: Controlla dati
-        validate[EntityName]Data(data);
+        // 2. VALIDAZIONE: Controlla dati con Zod
+        const validatedData = validate[EntityName]Data(data);
 
         // 3. BUSINESS LOGIC: Crea oggetto con factory
         const nuovo[EntityName] = create[EntityName]({
@@ -318,7 +335,8 @@ export const [entita]UpdateApi = onCall({
     }
 
     try {
-        validate[EntityName]Data(updateData);
+        // Valida i dati con lo schema parziale per l'update
+        const validatedData = validate[EntityName]Data(updateData, true);
 
         const docRef = db.collection(COLLECTION_NAME).doc(id);
 
@@ -326,9 +344,9 @@ export const [entita]UpdateApi = onCall({
         const oldDoc = await docRef.get();
         const oldData = oldDoc.exists ? oldDoc.data() : null;
 
-        // Aggiunge timestamp aggiornamento
+        // Aggiunge timestamp e campi audit all'aggiornamento
         const dataToUpdate = {
-            ...updateData,
+            ...validatedData,
             changed: FieldValue.serverTimestamp(),
         };
 

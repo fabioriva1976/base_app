@@ -3,7 +3,7 @@
   "title": "Documento",
   "description": "Schema per i documenti nella collezione 'documenti'",
   "type": "object",
-  "required": ["titolo", "tipo", "storagePath", "createdAt"],
+  "required": ["titolo", "tipo", "storagePath", "created"],
   "properties": {
     "titolo": {
       "type": "string",
@@ -28,12 +28,12 @@
       "type": "string",
       "description": "ID dell'entità a cui il documento è collegato (opzionale)"
     },
-    "createdAt": {
+    "created": {
       "type": "string",
       "format": "date-time",
       "description": "Data di creazione in formato ISO 8601"
     },
-    "updatedAt": {
+    "changed": {
       "type": "string",
       "format": "date-time",
       "description": "Data ultimo aggiornamento in formato ISO 8601"

@@ -47,4 +47,4 @@ functions/schemas/entityFactory.ts    ← AUTO-GENERATO (ESM)
 - Non creare oggetti a mano: usa sempre le factory
 - Se aggiungi una factory nuova, aggiungi test
 - Rilancia `sync-factories` prima di test/build
-- La factory `createUtente` valida input con Zod (`shared/schemas/zodSchemas.ts`)
+- Le factory `createAttachment`, `createCliente`, `createComment`, `createUtente` validano input con Zod (`shared/schemas/zodSchemas.ts`)

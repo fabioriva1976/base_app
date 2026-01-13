@@ -26,7 +26,7 @@ Il sistema di validazione utilizza **Zod** per garantire type-safety e validazio
 shared/
   schemas/
     zodSchemas.ts          # 🔒 Schemi Zod condivisi
-    entityFactory.ts       # 🏭 Factory per creazione entità
+    entityFactory.ts       # 🏭 Factory per creazione entità (usa Zod)
 
 functions/
   api/
@@ -38,6 +38,8 @@ src/
   scripts/
     anagrafica-clienti.ts  # Frontend form con validazione Zod
 ```
+
+**Nota**: Le factory in `shared/schemas/entityFactory.ts` validano i dati con Zod e gestiscono i campi audit/timestamp separatamente.
 
 ---
 
@@ -274,7 +276,7 @@ async function saveEntity(e) {
         return;
     }
 
-    const { createdAt, updatedAt, createdBy, createdByEmail, ...payloadToSend } = normalized;
+    const { created, changed, createdBy, createdByEmail, ...payloadToSend } = normalized;
 
     // ✅ Invia al backend (già validato client-side)
     try {
