@@ -1,9 +1,17 @@
 #!/bin/bash
 set -euo pipefail
 
+ENV_FILE="${ENV_FILE:-.env}"
+if [ -f "$ENV_FILE" ]; then
+  set -a
+  # shellcheck disable=SC1090
+  . "$ENV_FILE"
+  set +a
+fi
+
 DATA_DIR="/app/emulator-data"
 EXPORT_TMP="/tmp/emulator-export"
-PROJECT="${FIREBASE_PROJECT_ID:-base-app-12108}"
+PROJECT="${FIREBASE_PROJECT_ID:?FIREBASE_PROJECT_ID is required}"
 
 # Assicura la directory montata dal volume
 mkdir -p "$DATA_DIR"

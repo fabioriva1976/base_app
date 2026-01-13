@@ -12,7 +12,11 @@ if (process.env.NODE_ENV !== 'production') {
 
 // Il Project ID viene letto dalle variabili d'ambiente, che sono standard in Google Cloud.
 // Questo elimina l'hardcoding e rende il codice portabile.
-const projectId = process.env.FIREBASE_PROJECT_ID || process.env.GCLOUD_PROJECT || process.env.GOOGLE_CLOUD_PROJECT || 'base-app-12108';
+const projectId = process.env.FIREBASE_PROJECT_ID || process.env.GCLOUD_PROJECT || process.env.GOOGLE_CLOUD_PROJECT;
+
+if (!projectId) {
+  throw new Error('Missing env var: FIREBASE_PROJECT_ID (or GCLOUD_PROJECT/GOOGLE_CLOUD_PROJECT)');
+}
 
 if (!getApps().length) {
   // Questa singola chiamata a initializeApp() funziona ovunque:

@@ -2,7 +2,10 @@
  * Comandi Cypress per pulizia Firestore Emulator
  */
 
-const projectId = Cypress.env('FIREBASE_PROJECT_ID') || 'base-app-12108';
+const projectId = Cypress.env('FIREBASE_PROJECT_ID');
+if (!projectId) {
+  throw new Error('Missing Cypress env var: FIREBASE_PROJECT_ID');
+}
 const firestoreEmulatorUrl = Cypress.env('FIRESTORE_EMULATOR_URL') || 'http://localhost:8080';
 
 /**

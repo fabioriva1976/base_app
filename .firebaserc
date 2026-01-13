@@ -1,5 +1,6 @@
 {
   "projects": {
-    "default": "base-app-12108"
+    "default": "base-app-12108",
+    "base": "base-app-12108"
   }
 }

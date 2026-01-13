@@ -13,7 +13,10 @@ export const runtimeOpts = {
     maxInstances: 10 // Limita il numero massimo di istanze
 };
 // Origini CORS consentite. In locale includiamo anche localhost per permettere le chiamate dagli emulatori/UI dev.
-const projectId = process.env.FIREBASE_PROJECT_ID || process.env.GCLOUD_PROJECT || process.env.GOOGLE_CLOUD_PROJECT || "base-app-12108";
+const projectId = process.env.FIREBASE_PROJECT_ID || process.env.GCLOUD_PROJECT || process.env.GOOGLE_CLOUD_PROJECT;
+if (!projectId) {
+    throw new Error("Missing env var: FIREBASE_PROJECT_ID (or GCLOUD_PROJECT/GOOGLE_CLOUD_PROJECT)");
+}
 const baseCorsOrigins = [
     `https://${projectId}.web.app`,
     `https://${projectId}.firebaseapp.com`

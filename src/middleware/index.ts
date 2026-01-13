@@ -1,7 +1,8 @@
 import { sequence, defineMiddleware } from 'astro:middleware';
 import { COLLECTIONS } from '../../shared/constants/collections.ts';
+import { canAccessRoute } from '../../shared/utils/permissions.ts';
 
-const publicPaths = ['/login', '/api/'];
+const publicPaths = ['/login', '/api/', '/accesso-negato'];
 const assetPaths = ['/assets/', '/favicon', '/_astro/'];
 
 // Helper per estrarre cookie dall'header
@@ -69,6 +70,12 @@ const authMiddleware = defineMiddleware(async (context, next) => {
         emailVerified: payload.email_verified !== undefined ? payload.email_verified : true,
         ruolo: userRole
       };
+
+      // 🔒 CONTROLLO PERMESSI: Verifica se l'utente può accedere alla rotta
+      if (!canAccessRoute(userRole, url.pathname)) {
+        console.log(`[MIDDLEWARE DEV] Accesso negato: utente con ruolo "${userRole}" non può accedere a "${url.pathname}"`);
+        return redirect('/accesso-negato');
+      }
     } catch {
       return redirect('/login');
     }
@@ -123,6 +130,12 @@ const authMiddleware = defineMiddleware(async (context, next) => {
       emailVerified: decodedToken.email_verified,
       ruolo: userRole
     };
+
+    // 🔒 CONTROLLO PERMESSI: Verifica se l'utente può accedere alla rotta
+    if (!canAccessRoute(userRole, url.pathname)) {
+      console.log(`[MIDDLEWARE] Accesso negato: utente con ruolo "${userRole}" non può accedere a "${url.pathname}"`);
+      return redirect('/accesso-negato');
+    }
 
     return next();
   } catch (error) {

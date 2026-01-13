@@ -10,16 +10,29 @@ import {
 import { getStorage, connectStorageEmulator } from 'firebase/storage';
 import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
 
+const requiredEnv = (key: keyof ImportMetaEnv) => {
+  const value = import.meta.env[key];
+  if (!value) {
+    throw new Error(`Missing env var: ${key}`);
+  }
+  return value;
+};
+
 // Project ID centralizzato (override con PUBLIC_FIREBASE_PROJECT_ID se serve)
-const projectId = import.meta.env.PUBLIC_FIREBASE_PROJECT_ID || 'base-app-12108';
+const projectId = requiredEnv('PUBLIC_FIREBASE_PROJECT_ID');
+const apiKey = requiredEnv('PUBLIC_FIREBASE_API_KEY');
+const appId = requiredEnv('PUBLIC_FIREBASE_APP_ID');
+const messagingSenderId = requiredEnv('PUBLIC_FIREBASE_MESSAGING_SENDER_ID');
+const authDomain = import.meta.env.PUBLIC_FIREBASE_AUTH_DOMAIN || `${projectId}.firebaseapp.com`;
+const storageBucket = import.meta.env.PUBLIC_FIREBASE_STORAGE_BUCKET || `${projectId}.firebasestorage.app`;
 
 const firebaseConfig = {
-  apiKey: "AIzaSyD8Wqok8hADg9bipYln3KpQbQ99nHVI-4s",
-  authDomain: `${projectId}.firebaseapp.com`,
+  apiKey,
+  authDomain,
   projectId: projectId,
-  storageBucket: `${projectId}.firebasestorage.app`,
-  messagingSenderId: "261397129842",
-  appId: "1:261397129842:web:e465329890a1220ed6b0eb"
+  storageBucket,
+  messagingSenderId,
+  appId
 };
 
 const region = 'europe-west1';

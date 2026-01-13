@@ -34,6 +34,12 @@ Prerequisiti: Docker + docker-compose. Tutto parte nel container `firebase-cli` 
 Se ti serve una shell (es. per comandi firebase manuali):  
 `docker compose exec -it firebase-cli sh`
 
+## 🔧 Configurazione Firebase (centralizzata)
+
+- Config client/server in `.env` (parti da `.env.example`).
+- Progetti Firebase in `.firebaserc` con alias; usa `firebase use <alias>` prima del deploy.
+- Per cambiare progetto: aggiorna solo `.env` e l'alias in `.firebaserc`.
+
 ## 🧩 Comandi TypeScript (quando usarli)
 
 - `npm run build:scripts`  

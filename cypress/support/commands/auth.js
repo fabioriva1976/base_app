@@ -4,8 +4,15 @@
 
 import { LoginPage } from '../../pages/LoginPage.js';
 
-const apiKey = Cypress.env('FIREBASE_API_KEY') || 'AIzaSyD8Wqok8hADg9bipYln3KpQbQ99nHVI-4s';
-const projectId = Cypress.env('FIREBASE_PROJECT_ID') || 'base-app-12108';
+const apiKey = Cypress.env('FIREBASE_API_KEY');
+if (!apiKey) {
+  throw new Error('Missing Cypress env var: FIREBASE_API_KEY');
+}
+
+const projectId = Cypress.env('FIREBASE_PROJECT_ID');
+if (!projectId) {
+  throw new Error('Missing Cypress env var: FIREBASE_PROJECT_ID');
+}
 const authEmulatorUrl = Cypress.env('FIREBASE_AUTH_EMULATOR_URL') || 'http://localhost:9099';
 const firestoreEmulatorUrl = Cypress.env('FIRESTORE_EMULATOR_URL') || 'http://localhost:8080';
 
@@ -167,4 +174,51 @@ Cypress.Commands.add('clearAllAuthUsers', () => {
 Cypress.Commands.add('login', (email, password) => {
   const loginPage = new LoginPage();
   loginPage.login(email, password);
+});
+
+/**
+ * Login come operatore (crea utente se non esiste)
+ */
+Cypress.Commands.add('loginAsOperatore', (email, password) => {
+  cy.clearAllAuthUsers();
+  cy.clearAllUsers();
+
+  cy.seedOperatore(email, password).then(() => {
+    cy.login(email, password);
+    cy.url().should('include', '/dashboard', { timeout: 10000 });
+  });
+});
+
+/**
+ * Login come admin (crea utente se non esiste)
+ */
+Cypress.Commands.add('loginAsAdmin', (email, password) => {
+  cy.clearAllAuthUsers();
+  cy.clearAllUsers();
+
+  cy.seedAdmin(email, password).then(() => {
+    cy.login(email, password);
+    cy.url().should('include', '/dashboard', { timeout: 10000 });
+  });
+});
+
+/**
+ * Login come superuser (crea utente se non esiste)
+ */
+Cypress.Commands.add('loginAsSuperuser', (email, password) => {
+  cy.clearAllAuthUsers();
+  cy.clearAllUsers();
+
+  cy.seedSuperuser(email, password).then(() => {
+    cy.login(email, password);
+    cy.url().should('include', '/dashboard', { timeout: 10000 });
+  });
+});
+
+/**
+ * Logout (click sul pulsante logout)
+ */
+Cypress.Commands.add('logout', () => {
+  cy.get('#logout-btn').click();
+  cy.url().should('include', '/login', { timeout: 5000 });
 });

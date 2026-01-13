@@ -7,7 +7,10 @@ import { COLLECTIONS } from '../../shared/constants/collections.ts';
 import { clearAllEmulatorData } from '../helpers/cleanup.ts';
 import { seedUserProfile } from '../helpers/userProfile.ts';
 
-const TEST_PROJECT_ID = process.env.TEST_PROJECT_ID || 'base-app-12108';
+const TEST_PROJECT_ID = process.env.TEST_PROJECT_ID || process.env.FIREBASE_PROJECT_ID;
+if (!TEST_PROJECT_ID) {
+  throw new Error('Missing env var: TEST_PROJECT_ID or FIREBASE_PROJECT_ID');
+}
 process.env.FIREBASE_PROJECT_ID = TEST_PROJECT_ID;
 process.env.GCLOUD_PROJECT = TEST_PROJECT_ID;
 process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8080';

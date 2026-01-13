@@ -24,6 +24,7 @@ import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { getApps, initializeApp } from "firebase-admin/app";
 import { requireAdmin } from "../utils/authHelpers.ts";
 import { createCliente } from "../../shared/schemas/entityFactory.ts";
+import { ClienteSchema, ClienteUpdateSchema } from "../../shared/schemas/zodSchemas.ts";
 import { region, corsOrigins } from "../config.ts";
 import { logAudit, AuditAction } from "../utils/auditLogger.ts";
 import { COLLECTIONS } from "../../shared/constants/collections.ts";
@@ -38,24 +39,27 @@ const db = getFirestore();
 const COLLECTION_NAME = COLLECTIONS.CLIENTI;
 
 /**
- * 🎯 STEP 1: VALIDAZIONE
+ * 🎯 STEP 1: VALIDAZIONE (Zod)
  *
- * Valida i dati di un cliente prima di salvarli.
- * Per nuove entità: copia questa funzione e aggiorna i campi validati.
+ * Valida i dati di un cliente usando Zod schema.
+ * Per nuove entità: copia questa funzione e usa lo schema Zod corrispondente.
  *
  * @param {object} data - I dati del cliente da validare
+ * @param {boolean} isPartial - Se true, usa lo schema parziale per UPDATE
  * @throws {HttpsError} Se i dati non sono validi
  */
-function validateClienteData(data) {
-    if (!data.ragione_sociale || typeof data.ragione_sociale !== 'string' || data.ragione_sociale.trim() === '') {
-        throw new HttpsError('invalid-argument', 'La ragione sociale è obbligatoria.');
+function validateClienteData(data: any, isPartial = false) {
+    const schema = isPartial ? ClienteUpdateSchema : ClienteSchema;
+    const result = schema.safeParse(data);
+
+    if (!result.success) {
+        // Estrae il primo errore per messaggio chiaro all'utente
+        const firstError = result.error.errors[0];
+        const errorMessage = `${firstError.path.join('.')}: ${firstError.message}`;
+        throw new HttpsError('invalid-argument', errorMessage);
     }
-    if (!data.codice || typeof data.codice !== 'string' || data.codice.trim() === '') {
-        throw new HttpsError('invalid-argument', 'Il codice cliente è obbligatorio.');
-    }
-    if (data.email && (typeof data.email !== 'string' || !data.email.includes('@'))) {
-        throw new HttpsError('invalid-argument', 'L\'email fornita non è valida.');
-    }
+
+    return result.data;
 }
 
 /**
@@ -84,12 +88,12 @@ export const createClienteApi = onCall({
     const data = request.data;
 
     try {
-        // 2. VALIDAZIONE: Controlla che i dati inviati siano validi
-        validateClienteData(data);
+        // 2. VALIDAZIONE: Controlla che i dati inviati siano validi con Zod
+        const validatedData = validateClienteData(data);
 
         // 3. BUSINESS LOGIC: Crea l'oggetto cliente usando la factory condivisa
         const nuovoCliente = createCliente({
-            ...data,
+            ...validatedData,
             createdBy: uid,
             createdByEmail: token.email,
         });
@@ -146,7 +150,8 @@ export const updateClienteApi = onCall({
     }
 
     try {
-        validateClienteData(updateData);
+        // Valida i dati con schema parziale (per UPDATE)
+        const validatedData = validateClienteData(updateData, true);
 
         const clienteRef = db.collection(COLLECTION_NAME).doc(id);
 
@@ -156,7 +161,7 @@ export const updateClienteApi = onCall({
 
         // Aggiunge il timestamp di aggiornamento e audit fields
         const dataToUpdate = {
-            ...updateData,
+            ...validatedData,
             changed: FieldValue.serverTimestamp(),
             lastModifiedBy: uid,
             lastModifiedByEmail: request.auth.token.email

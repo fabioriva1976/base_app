@@ -1,11 +1,20 @@
 #!/bin/bash
 set -euo pipefail
 
+# Carica .env se presente per variabili locali
+ENV_FILE="${ENV_FILE:-.env}"
+if [ -f "$ENV_FILE" ]; then
+  set -a
+  # shellcheck disable=SC1090
+  . "$ENV_FILE"
+  set +a
+fi
+
 # Script di stop: esporta dati emulatori in una cartella temp interna al container,
 # li copia nella volume condiviso ./emulator-data e poi spegne docker compose.
 
 SERVICE="firebase-cli"
-PROJECT="${FIREBASE_PROJECT_ID:-base-app-12108}"
+PROJECT="${FIREBASE_PROJECT_ID:?FIREBASE_PROJECT_ID is required}"
 
 echo "📦 Eseguo export dati emulatori..."
 docker compose exec -T "$SERVICE" sh -lc '

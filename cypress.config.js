@@ -24,7 +24,12 @@ export default defineConfig({
       'cypress/e2e/anagrafica-clienti/anagrafica-clienti-update-delete.cy.js',
       'cypress/e2e/anagrafica-clienti/anagrafica-clienti-ui.cy.js',
       'cypress/e2e/anagrafica-clienti/anagrafica-clienti-documenti.cy.js',
-      'cypress/e2e/anagrafica-clienti/anagrafica-clienti-note.cy.js'
+      'cypress/e2e/anagrafica-clienti/anagrafica-clienti-note.cy.js',
+
+      // Permessi tests
+      'cypress/e2e/permessi-ruolo-operatore.cy.js',
+      'cypress/e2e/permessi-ruolo-admin.cy.js',
+      'cypress/e2e/permessi-ruolo-superuser.cy.js'
     ],
   },
 });

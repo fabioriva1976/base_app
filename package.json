@@ -23,6 +23,9 @@
     "test:e2e:with-build": "npm run build:packages && npm run test:e2e",
     "test:e2e": "cypress run",
     "test:e2e:open": "cypress open",
+    "test:e2e:permessi": "cypress run --spec \"cypress/e2e/permessi-*.cy.js\"",
+    "test:e2e:permessi:ui": "cypress open --e2e --browser chrome",
+    "test:e2e:permessi:headless": "npx cypress run --spec \"cypress/e2e/permessi-*.cy.js\" --browser electron --headless",
     "cypress:open": "CYPRESS_ELECTRON_FLAGS=\"--no-sandbox --disable-gpu --disable-dev-shm-usage --disable-features=VizDisplayCompositor --no-zygote\" ELECTRON_DISABLE_SANDBOX=1 xvfb-run -a --server-args=\"-screen 0 1280x720x24\" npx cypress open --browser electron",
     "cypress:run": "CYPRESS_ELECTRON_FLAGS=\"--no-sandbox --disable-gpu --disable-dev-shm-usage --disable-features=VizDisplayCompositor --no-zygote\" ELECTRON_DISABLE_SANDBOX=1 xvfb-run -a --server-args=\"-screen 0 1280x720x24\" npx cypress run --browser electron"
   },
@@ -34,7 +37,8 @@
     "firebase-admin": "^12.2.0",
     "firebase-functions": "^5.0.1",
     "nanostores": "^1.1.0",
-    "tailwindcss": "^3.4.4"
+    "tailwindcss": "^3.4.4",
+    "zod": "^3.25.76"
   },
   "workspaces": [
     "functions",

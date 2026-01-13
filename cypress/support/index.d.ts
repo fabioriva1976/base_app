@@ -16,6 +16,10 @@ declare namespace Cypress {
     clearCollection(collection: string): Chainable<void>;
     clearAllClienti(): Chainable<void>;
     login(email: string, password: string): Chainable<void>;
+    loginAsOperatore(email: string, password: string): Chainable<void>;
+    loginAsAdmin(email: string, password: string): Chainable<void>;
+    loginAsSuperuser(email: string, password: string): Chainable<void>;
+    logout(): Chainable<void>;
     searchDataTable(text: string): Chainable<void>;
     findDataTableRow(text: string, options?: { timeout?: number }): Chainable<JQuery<HTMLElement>>;
     waitForTableSync(text: string, options?: { timeout?: number; exists?: boolean }): Chainable<void>;

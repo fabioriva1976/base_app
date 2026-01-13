@@ -6,6 +6,7 @@ import * as actionUtils from './utils/actionUtils.ts';
 import * as commentUtils from './utils/commentUtils.ts';
 import { httpsCallable } from "firebase/functions";
 import { createCliente } from './schemas/entityFactory.ts';
+import { ClienteSchema } from '../../shared/schemas/zodSchemas.ts';
 import { clientiStore, initClientiListener, stopClientiListener } from '../stores/clientiStore.ts';
 
 let entities = [];
@@ -136,30 +137,41 @@ function waitForSearchReady(container, attempts = 20) {
 async function saveEntity(e) {
     e.preventDefault();
     const isNew = !currentEntityId;
-    const payload = {
-        codice: document.getElementById('codice').value,
-        ragione_sociale: document.getElementById('ragione_sociale').value,
-        partita_iva: document.getElementById('piva').value,
-        codice_fiscale: document.getElementById('cf').value,
-        email: document.getElementById('email').value,
-        telefono: document.getElementById('telefono').value,
-        indirizzo: document.getElementById('indirizzo').value,
-        citta: document.getElementById('citta').value,
-        cap: document.getElementById('cap').value,
-        status: document.getElementById('toggle-stato').checked
+
+    // 🔒 STEP 1: Raccogli dati dal form
+    const formData = {
+        codice: (document.getElementById('codice') as HTMLInputElement).value,
+        ragione_sociale: (document.getElementById('ragione_sociale') as HTMLInputElement).value,
+        partita_iva: (document.getElementById('piva') as HTMLInputElement).value || null,
+        codice_fiscale: (document.getElementById('cf') as HTMLInputElement).value || null,
+        email: (document.getElementById('email') as HTMLInputElement).value || null,
+        telefono: (document.getElementById('telefono') as HTMLInputElement).value || null,
+        indirizzo: (document.getElementById('indirizzo') as HTMLInputElement).value || null,
+        citta: (document.getElementById('citta') as HTMLInputElement).value || null,
+        cap: (document.getElementById('cap') as HTMLInputElement).value || null,
+        provincia: (document.getElementById('provincia') as HTMLInputElement)?.value || null,
+        note: (document.getElementById('note') as HTMLTextAreaElement)?.value || null,
+        status: (document.getElementById('toggle-stato') as HTMLInputElement).checked
     };
+
+    // 🔒 STEP 2: Validazione CLIENT-SIDE con Zod
+    const validationResult = ClienteSchema.safeParse(formData);
+
+    if (!validationResult.success) {
+        // Mostra il primo errore trovato
+        const firstError = validationResult.error.errors[0];
+        const errorMessage = `${firstError.path.join('.')}: ${firstError.message}`;
+        showSaveMessage('save-message', errorMessage, true);
+        return;
+    }
+
+    // 🔒 STEP 3: Normalizza dati con factory (per audit fields)
     let normalized;
     try {
         normalized = createCliente({
-            ...payload,
-            codice: payload.codice || null,
-            partita_iva: payload.partita_iva || null,
-            codice_fiscale: payload.codice_fiscale || null,
-            email: payload.email || null,
-            telefono: payload.telefono || null,
-            indirizzo: payload.indirizzo || null,
-            citta: payload.citta || null,
-            cap: payload.cap || null
+            ...validationResult.data,
+            codice: validationResult.data.codice,
+            ragione_sociale: validationResult.data.ragione_sociale
         });
     } catch (err) {
         showSaveMessage('save-message', err.message || 'Dati non validi', true);
