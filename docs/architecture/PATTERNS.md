@@ -290,6 +290,10 @@ export const [entita]CreateApi = onCall({
         // 4. DATABASE: Salva in Firestore
         const docRef = await db.collection(COLLECTION_NAME).add(nuovo[EntityName]);
 
+        // 4.1. Ricarica documento per ottenere timestamp server
+        const newDoc = await docRef.get();
+        const newData = newDoc.exists ? newDoc.data() : nuovo[EntityName];
+
         // 5. AUDIT LOG: Registra azione per tracciabilità (chi, cosa, quando)
         await logAudit({
             entityType: '[entita]',  // es: 'clienti', 'users', 'attachments'
@@ -297,7 +301,7 @@ export const [entita]CreateApi = onCall({
             action: AuditAction.CREATE,
             userId: uid,
             userEmail: token.email,
-            newData: nuovo[EntityName],
+            newData: newData,
             source: 'web'
         });
 
@@ -348,6 +352,8 @@ export const [entita]UpdateApi = onCall({
         const dataToUpdate = {
             ...validatedData,
             changed: FieldValue.serverTimestamp(),
+            lastModifiedBy: uid,
+            lastModifiedByEmail: request.auth.token.email
         };
 
         await docRef.update(dataToUpdate);

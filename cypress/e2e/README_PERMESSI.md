@@ -230,7 +230,7 @@ Aggiungi script per eseguire solo test permessi:
 ```json
 {
   "scripts": {
-    "test:e2e:permessi": "cypress run --spec \"cypress/e2e/permessi-*.cy.js\"",
+    "test:e2e:permessi": "cypress run --spec \"cypress/e2e/permessi/permessi-*.cy.js\"",
     "test:e2e:permessi:ui": "cypress open --e2e --browser chrome"
   }
 }
