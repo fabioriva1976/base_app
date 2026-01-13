@@ -38,6 +38,16 @@ export default defineConfig({
     ssr: {
       external: ['firebase-admin']
     },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            firebase: ['firebase/app', 'firebase/auth', 'firebase/firestore'],
+            vendor: ['nanostores']
+          }
+        }
+      }
+    },
     resolve: {
       alias: {
         '@shared': path.resolve(__dirname, './shared'),
